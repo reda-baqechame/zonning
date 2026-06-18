@@ -1,0 +1,669 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Plan {
+  FREE
+  ESSENTIEL
+  PRO
+  EQUIPE
+}
+
+model User {
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  passwordHash         String
+  name                 String?
+  companyName          String?
+  rbqLicenseClass      String?
+  rbqLicenseNumber     String?
+  rbqVerified          Boolean   @default(false)
+  rbqVerifiedAt        DateTime?
+  trades               String?
+  regions              String?
+  phone                String?
+  phoneVerified        Boolean   @default(false)
+  ampAuthorized        Boolean   @default(false)
+  minProjectCost       Float?
+  maxProjectCost       Float?
+  plan                 Plan      @default(FREE)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  onboardingComplete   Boolean   @default(false)
+  alertSmsEnabled      Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  alerts               AlertSubscription[]
+  complianceRecords    ComplianceRecord[]
+  validationInterviews ValidationInterview[]
+  emailLogs            EmailLog[]
+  usageCounters        UsageCounter[]
+  orgMemberships       OrgMember[]
+  ownedOrganizations   Organization[]        @relation("OrgOwner")
+  conciergeRequest     ConciergeRequest?
+  publicContracts      PublicContractPayment[]
+
+  lastDigestAt DateTime?
+}
+
+model Organization {
+  id                   String   @id @default(cuid())
+  name                 String
+  plan                 Plan     @default(EQUIPE)
+  ownerId              String   @unique
+  owner                User     @relation("OrgOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  stripeSubscriptionId String?
+  createdAt            DateTime @default(now())
+
+  members OrgMember[]
+  apiKeys ApiKey[]
+  webhooks OrgWebhook[]
+}
+
+model OrgMember {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("member")
+  invitedAt DateTime @default(now())
+
+  @@unique([orgId, userId])
+  @@index([userId])
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name      String
+  keyHash   String   @unique
+  keyPrefix String
+  scopes    String   @default("permits,tenders")
+  createdAt DateTime @default(now())
+  lastUsedAt DateTime?
+}
+
+model ConciergeRequest {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          String   @default("pending")
+  stripeSessionId String?
+  opportunities   String?
+  notes           String?
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model DigestSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  borough   String?
+  trade     String?
+  locale    String   @default("fr")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model PublicContractPayment {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  awardDate     DateTime?
+  invoiceDate   DateTime?
+  paymentDue    DateTime?
+  amount        Float?
+  tenderAwardId String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model UsageCounter {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key       String
+  count     Int      @default(0)
+  weekStart DateTime
+
+  @@unique([userId, key, weekStart])
+  @@index([userId])
+}
+
+model RbqLicense {
+  id            String    @id @default(cuid())
+  licenseNumber String    @unique
+  holderName    String?
+  subclass      String?
+  status        String    @default("active")
+  expiryDate    DateTime?
+  sourceUrl     String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([subclass])
+  @@index([status])
+}
+
+model Permit {
+  id                 String    @id @default(cuid())
+  externalId         String?   @unique
+  permitNumber       String?
+  permitType         String
+  workType           String?
+  borough            String?
+  address            String
+  matricule          String?
+  city               String    @default("Montréal")
+  latitude           Float?
+  longitude          Float?
+  estimatedCost      Float?
+  issueDate          DateTime?
+  applicantName      String?
+  applicantContact   String?
+  requiredRbqClasses String?
+  sourceUrl          String
+  sourceFetchedAt    DateTime  @default(now())
+  summaryFr          String?
+  summaryEn          String?
+  summaryGeneratedAt DateTime?
+  createdAt          DateTime  @default(now())
+
+  @@index([matricule])
+  @@index([borough])
+  @@index([city])
+  @@index([issueDate])
+}
+
+model Tender {
+  id                 String    @id @default(cuid())
+  externalId         String?   @unique
+  title              String
+  organization       String?
+  category           String?
+  region             String?
+  estimatedValue     Float?
+  publishedAt        DateTime?
+  closesAt           DateTime?
+  summary            String?
+  aiSummary          String?
+  summaryGeneratedAt DateTime?
+  description        String?
+  requiresAmp        Boolean   @default(false)
+  sourceUrl          String
+  unspsc             String?
+  status             String?
+  createdAt          DateTime  @default(now())
+
+  @@index([closesAt])
+  @@index([status])
+}
+
+model Company {
+  id             String   @id @default(cuid())
+  name           String
+  neq            String?  @unique
+  city           String?
+  region         String?
+  sector         String?
+  certifications String?
+  capabilities   String?
+  rbqNumber      String?
+  sourceUrl        String?
+  email          String?
+  phone          String?
+  isSupplier     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([name])
+}
+
+model PropertyUnit {
+  id              String   @id @default(cuid())
+  externalId      String?  @unique
+  matricule       String   @unique
+  address         String?
+  borough         String?
+  landValue       Float?
+  buildingValue   Float?
+  totalValue      Float?
+  landArea        Float?
+  floors          Int?
+  units           Int?
+  yearBuilt       Int?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([borough])
+}
+
+model PropertyTransaction {
+  id              String    @id @default(cuid())
+  externalId      String?   @unique
+  matricule       String?
+  address         String?
+  borough         String?
+  salePrice       Float?
+  saleDate        DateTime?
+  buildingType    String?
+  sourceUrl       String
+  sourceFetchedAt DateTime  @default(now())
+
+  @@index([matricule])
+  @@index([borough])
+}
+
+model ContaminatedSite {
+  id              String   @id @default(cuid())
+  externalId      String?  @unique
+  address         String?
+  borough         String?
+  region          String?
+  sourceLayer     String   @default("mtl")
+  latitude        Float?
+  longitude       Float?
+  status          String?
+  description     String?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([latitude, longitude])
+  @@index([borough])
+  @@index([sourceLayer])
+  @@index([region])
+}
+
+model MunicipalSupplier {
+  id              String   @id @default(cuid())
+  externalId      String?  @unique
+  supplierNumber  String?
+  name            String
+  neq             String?
+  borough         String?
+  address         String?
+  phone           String?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([neq])
+  @@index([name])
+  @@index([borough])
+}
+
+model CommercialVacancy {
+  id              String   @id @default(cuid())
+  externalId      String?  @unique
+  address         String?
+  borough         String?
+  latitude        Float?
+  longitude       Float?
+  vacancyType     String?
+  areaSqm         Float?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([borough])
+}
+
+model PropertyTax {
+  id              String   @id @default(cuid())
+  externalId      String?  @unique
+  matricule       String?
+  borough         String?
+  taxAmount       Float?
+  year            Int?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([matricule])
+}
+
+model AlertSubscription {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module       String
+  filters      String
+  emailEnabled Boolean  @default(true)
+  smsEnabled   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model ComplianceRecord {
+  id                  String    @id @default(cuid())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contactName         String
+  contactEmail        String?
+  contactPhone        String?
+  sourceType          String
+  sourceUrl           String
+  sourceFetchedAt     DateTime
+  lawfulBasis         String    @default("conspicuous_publication")
+  certificateIssuedAt DateTime?
+  createdAt           DateTime  @default(now())
+}
+
+model ValidationInterview {
+  id              String   @id @default(cuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+  interviewerName String
+  companyName     String
+  role            String
+  q1Pipeline      String?
+  q2RbqPain       String?
+  q3SeaoHours     String?
+  q4WouldPay      String?
+  wouldPayAmount  Int?
+  urgencyScore    Int?
+  notes           String?
+  interviewedAt   DateTime @default(now())
+}
+
+model TenderAward {
+  id              String    @id @default(cuid())
+  externalId      String?   @unique
+  title           String?
+  winnerName      String?
+  buyerName       String?
+  awardAmount     Float?
+  finalValue      Float?
+  contractStatus  String?
+  unspsc          String?
+  category        String?
+  region          String?
+  awardDate       DateTime?
+  sourceUrl       String
+  sourceFetchedAt DateTime  @default(now())
+
+  @@index([unspsc])
+  @@index([category])
+  @@index([winnerName])
+}
+
+model SeaoAmendment {
+  id              String    @id @default(cuid())
+  externalId      String    @unique
+  contractId      String?
+  tenderExternalId String?
+  title           String?
+  amendmentType   String?
+  amount          Float?
+  amendedAt       DateTime?
+  sourceUrl       String
+  sourceFetchedAt DateTime  @default(now())
+
+  @@index([tenderExternalId])
+  @@index([contractId])
+}
+
+model BoroughZoning {
+  id              String   @id @default(cuid())
+  borough         String   @unique
+  densityZone     String?
+  maxFloors       Int?
+  description     String?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+}
+
+model ZoningPoint {
+  id                   String   @id @default(cuid())
+  externalId           String   @unique
+  city                 String   @default("Montréal")
+  borough              String?
+  latitude             Float
+  longitude            Float
+  landUse              String?
+  intensificationLevel String?
+  densityThreshold     Float?
+  zoneCode             String?
+  description          String?
+  sourceUrl            String
+  sourceFetchedAt      DateTime @default(now())
+
+  @@index([latitude, longitude])
+  @@index([city])
+  @@index([borough])
+}
+
+model BoroughPermitDelay {
+  id              String   @id @default(cuid())
+  externalId      String   @unique
+  borough         String
+  phase           String?
+  medianDays      Float?
+  targetDays      Float?
+  period          String?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([borough])
+}
+
+model DevelopmentProject {
+  id              String   @id @default(cuid())
+  externalId      String   @unique
+  name            String?
+  city            String
+  address         String?
+  borough         String?
+  latitude        Float?
+  longitude       Float?
+  unitsPlanned    Int?
+  projectUrl      String?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([city])
+  @@index([latitude, longitude])
+}
+
+model HeritageSite {
+  id              String   @id @default(cuid())
+  externalId      String?  @unique
+  name            String?
+  address         String?
+  borough         String?
+  latitude        Float?
+  longitude       Float?
+  category        String?
+  status          String?
+  description     String?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([latitude, longitude])
+  @@index([borough])
+}
+
+model MunicipalContract {
+  id              String    @id @default(cuid())
+  externalId      String?   @unique
+  supplierName    String?
+  description     String?
+  amount          Float?
+  service         String?
+  borough         String?
+  approvedAt      DateTime?
+  contractNumber  String?
+  sourceUrl       String
+  sourceFetchedAt DateTime  @default(now())
+
+  @@index([supplierName])
+  @@index([borough])
+}
+
+model RoadWork {
+  id              String    @id @default(cuid())
+  externalId      String?   @unique
+  title           String?
+  description     String?
+  borough         String?
+  city            String    @default("Montréal")
+  startDate       DateTime?
+  endDate         DateTime?
+  status          String?
+  latitude        Float?
+  longitude       Float?
+  sourceUrl       String
+  sourceFetchedAt DateTime  @default(now())
+
+  @@index([borough])
+  @@index([city])
+  @@index([latitude, longitude])
+}
+
+model BoroughPermitStat {
+  id              String   @id @default(cuid())
+  externalId      String   @unique
+  borough         String
+  permitType      String?
+  period          String?
+  permitCount     Int?
+  estimatedCost   Float?
+  permitCost      Float?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([borough])
+}
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email     String
+  subject   String
+  type      String
+  sentAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+}
+
+model SyncLog {
+  id               String   @id @default(cuid())
+  source           String
+  status           String
+  recordsProcessed Int
+  error            String?
+  ranAt            DateTime @default(now())
+}
+
+model SyncState {
+  id               String    @id @default(cuid())
+  datasetId        String    @unique
+  lastSuccessAt    DateTime?
+  lastRunAt        DateTime?
+  lastError        String?
+  recordsProcessed Int       @default(0)
+  status           String    @default("idle")
+  cursor           String?
+  sourceModifiedAt DateTime?
+  syncOffset       Int       @default(0)
+  updatedAt        DateTime  @updatedAt
+
+  qualityChecks DatasetQualityCheck[]
+}
+
+model DatasetQualityCheck {
+  id               String   @id @default(cuid())
+  datasetId        String
+  syncState        SyncState @relation(fields: [datasetId], references: [datasetId], onDelete: Cascade)
+  rowsIngested     Int      @default(0)
+  rowsInDb         Int?
+  durationMs       Int?
+  status           String   @default("ok")
+  message          String?
+  sourceModifiedAt DateTime?
+  checkedAt        DateTime @default(now())
+
+  @@index([datasetId, checkedAt])
+  @@index([status])
+}
+
+model OrgWebhook {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  url       String
+  secret    String
+  events    String   @default("permit.created,tender.created")
+  filters   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  deliveries WebhookDelivery[]
+
+  @@index([orgId])
+}
+
+model WebhookDelivery {
+  id          String   @id @default(cuid())
+  webhookId   String
+  webhook     OrgWebhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event       String
+  payload     String
+  status      String   @default("pending")
+  attempts    Int      @default(0)
+  lastError   String?
+  deliveredAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([webhookId])
+  @@index([status])
+}
+
+model VerdictReport {
+  id         String   @id @default(cuid())
+  shareSlug  String   @unique
+  address    String
+  borough    String?
+  tier       String
+  summaryFr  String?
+  summaryEn  String?
+  inputsJson String?
+  viewCount  Int      @default(0)
+  referrer   String?
+  createdAt  DateTime @default(now())
+
+  @@index([address])
+  @@index([createdAt])
+}
+
+model ProcessedStripeEvent {
+  id        String   @id
+  type      String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorEmail String?
+  action     String
+  resource   String?
+  metadata   String?
+  ip         String?
+  requestId  String?
+  createdAt  DateTime @default(now())
+
+  @@index([action])
+  @@index([actorId])
+  @@index([createdAt])
+}

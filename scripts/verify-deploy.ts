@@ -1,0 +1,141 @@
+import "dotenv/config";
+import { loadProdEnv } from "./load-prod-env";
+import { getBootstrapAllowlist, getActiveDatasetIds, COVERAGE_CITIES } from "../src/lib/datasets/registry";
+import { collectEnvIssues } from "../src/lib/env";
+
+loadProdEnv();
+
+const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const secret = process.env.CRON_SECRET;
+
+/** Datasets allowed to be missing after bootstrap (CKAN not yet live). */
+const BOOTSTRAP_ALLOWLIST = new Set(getBootstrapAllowlist());
+
+async function check(path: string, method = "GET", expectStatus?: number) {
+  const headers: Record<string, string> = {};
+  if (secret) headers.Authorization = `Bearer ${secret}`;
+
+  const res = await fetch(`${base}${path}`, { method, headers });
+  const text = await res.text();
+  const ok = expectStatus != null ? res.status === expectStatus : res.ok;
+  const mark = ok ? "✓" : "✗";
+  console.log(`${mark} ${res.status} ${method} ${path}`);
+  try {
+    const json = JSON.parse(text);
+    const preview = JSON.stringify(json, null, 2).slice(0, 800);
+    console.log(preview);
+    return { ok, json };
+  } catch {
+    console.log(text.slice(0, 200));
+    return { ok, json: null };
+  }
+}
+
+async function main() {
+  console.log("ZONNING deploy verification\n");
+  console.log(`Target: ${base}\n`);
+
+  if (!secret) {
+    console.warn("⚠ CRON_SECRET not set — full health check requires auth\n");
+  }
+
+  const activeIds = getActiveDatasetIds();
+  const requiredIds = activeIds.filter((id) => !BOOTSTRAP_ALLOWLIST.has(id));
+
+  const checks: { name: string; run: () => Promise<boolean> }[] = [
+    { name: "liveness /api/health", run: async () => (await check("/api/health")).ok },
+    { name: "sync health (auth)", run: async () => (await check("/api/sync/health")).ok },
+    { name: "sync status (auth)", run: async () => (await check("/api/sync/status")).ok },
+    {
+      name: "public stats (33 datasets, 10 cities)",
+      run: async () => {
+        const { ok, json } = await check("/api/stats/public");
+        if (!ok || !json) return false;
+        const countOk = json.datasetCount === 33;
+        const citiesOk = json.coverageCities === 10 && Array.isArray(json.cities);
+        console.log(`datasetCount=${json.datasetCount} (expect 33), cities=${json.coverageCities}`);
+        return countOk && citiesOk;
+      },
+    },
+    { name: "verdict slug 404", run: async () => (await check("/api/verdict?slug=invalid", "GET", 404)).ok },
+    {
+      name: `dataset bootstrap ${requiredIds.length}/${activeIds.length}`,
+      run: async () => {
+        if (!secret) {
+          console.log("Skipped — set CRON_SECRET for full dataset check");
+          return true;
+        }
+        const { ok, json } = await check("/api/sync/health");
+        if (!ok || !json?.datasets) return false;
+
+        const datasets = json.datasets as {
+          id: string;
+          lastSuccessAt?: string | null;
+          anomaly?: boolean;
+        }[];
+        const missing = requiredIds.filter(
+          (id) => !datasets.find((d) => d.id === id)?.lastSuccessAt
+        );
+        const anomalies = datasets.filter((d) => d.anomaly).length;
+
+        console.log(
+          `Coverage: ${requiredIds.length - missing.length}/${requiredIds.length} required datasets`
+        );
+        if (missing.length > 0) {
+          console.log(`Missing lastSuccessAt: ${missing.join(", ")}`);
+        }
+        console.log(`Quality anomalies: ${anomalies}`);
+        console.log(`Allowlisted (may be empty): ${[...BOOTSTRAP_ALLOWLIST].join(", ")}`);
+
+        return missing.length === 0 && anomalies === 0;
+      },
+    },
+    {
+      name: "env validation (no errors)",
+      run: async () => {
+        const errors = collectEnvIssues().filter((i) => i.severity === "error");
+        if (errors.length > 0) {
+          console.log(errors.map((e) => `${e.key}: ${e.message}`).join("; "));
+        }
+        return errors.length === 0;
+      },
+    },
+    {
+      name: "cron live (auth)",
+      run: async () => (secret ? (await check("/api/cron/sync?mode=live", "POST")).ok : true),
+    },
+    {
+      name: "cron scheduler (auth)",
+      run: async () =>
+        secret ? (await check("/api/cron/sync?mode=scheduler", "POST")).ok : true,
+    },
+    {
+      name: "cron stats (auth)",
+      run: async () => (secret ? (await check("/api/cron/stats", "POST")).ok : true),
+    },
+    {
+      name: "cron alerts (auth)",
+      run: async () => (secret ? (await check("/api/cron/alerts", "POST")).ok : true),
+    },
+    {
+      name: "cron thursday (auth)",
+      run: async () => (secret ? (await check("/api/cron/thursday", "POST")).ok : true),
+    },
+  ];
+
+  console.log(`Active datasets: ${activeIds.length} · Coverage cities: ${COVERAGE_CITIES.length}\n`);
+
+  let passed = 0;
+  for (const c of checks) {
+    console.log(`\n— ${c.name}`);
+    if (await c.run()) passed++;
+  }
+
+  console.log(`\n${passed}/${checks.length} checks passed`);
+  if (passed < checks.length) process.exit(1);
+}
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

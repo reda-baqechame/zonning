@@ -1,0 +1,664 @@
+export type DatasetId =
+  | "permits"
+  | "permits-laval"
+  | "permits-longueuil"
+  | "permits-quebec"
+  | "permits-gatineau"
+  | "permits-levis"
+  | "permit-stats"
+  | "permit-delays"
+  | "tenders"
+  | "suppliers"
+  | "transactions"
+  | "transactions-2023"
+  | "transactions-2025"
+  | "assessment"
+  | "contamination"
+  | "contamination-gtc"
+  | "commercial"
+  | "taxes"
+  | "registre"
+  | "awards"
+  | "zoning"
+  | "pum2050-zoning"
+  | "rbq"
+  | "heritage"
+  | "heritage-eip"
+  | "heritage-lpc"
+  | "pum2050-heritage"
+  | "contracts"
+  | "contracts-boroughs"
+  | "roadworks"
+  | "roadworks-saguenay"
+  | "projects-sherbrooke"
+  | "projects-brossard"
+  | "zoning-trois-rivieres"
+  | "toronto-permits";
+
+export type SyncTier = "fast" | "daily" | "weekly";
+
+export type CkanHost = "quebec" | "montreal";
+
+export type DatasetConfig = {
+  id: DatasetId;
+  label: string;
+  ckanId: string;
+  sourceUrl: string;
+  preferredFormat: string | string[];
+  defaultLimit: number;
+  productionLimit: number;
+  refreshIntervalMinutes: number;
+  tier: SyncTier;
+  syncSource: string;
+  city?: string;
+  ckanHost?: CkanHost;
+  directResourceUrl?: string;
+  arcGisLayerUrl?: string;
+  /** Datasets allowed empty at bootstrap (CKAN not live). */
+  bootstrapAllowlist?: boolean;
+};
+
+export const DATASETS: Record<DatasetId, DatasetConfig> = {
+  permits: {
+    id: "permits",
+    label: "Permis de construction (Montréal)",
+    ckanId: "vmtl-permis-construction",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-permis-construction",
+    preferredFormat: "CSV",
+    defaultLimit: 500,
+    productionLimit: 15000,
+    refreshIntervalMinutes: 15,
+    tier: "fast",
+    syncSource: "ckan-permits",
+    city: "Montréal",
+  },
+  "permits-laval": {
+    id: "permits-laval",
+    label: "Permis de construction (Laval)",
+    ckanId: "permis-de-construction",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/permis-de-construction",
+    preferredFormat: "CSV",
+    defaultLimit: 300,
+    productionLimit: 5000,
+    refreshIntervalMinutes: 15,
+    tier: "fast",
+    syncSource: "ckan-permits-laval",
+    city: "Laval",
+  },
+  "permits-longueuil": {
+    id: "permits-longueuil",
+    label: "Permis de construction (Longueuil)",
+    ckanId: "permis-de-construction-ville-de-longueuil",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/permis-de-construction-ville-de-longueuil",
+    preferredFormat: "CSV",
+    defaultLimit: 300,
+    productionLimit: 3000,
+    refreshIntervalMinutes: 15,
+    tier: "fast",
+    syncSource: "ckan-permits-longueuil",
+    city: "Longueuil",
+  },
+  "permits-quebec": {
+    id: "permits-quebec",
+    label: "Permis délivrés (Ville de Québec)",
+    ckanId: "permis-delivres-ville-de-quebec",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/permis-delivres-ville-de-quebec",
+    preferredFormat: "CSV",
+    defaultLimit: 400,
+    productionLimit: 8000,
+    refreshIntervalMinutes: 15,
+    tier: "fast",
+    syncSource: "ckan-permits-quebec",
+    city: "Québec",
+  },
+  "permits-gatineau": {
+    id: "permits-gatineau",
+    label: "Permis de construction (Gatineau)",
+    ckanId: "permis-de-construction-ville-de-gatineau",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/permis-de-construction-ville-de-gatineau",
+    preferredFormat: "CSV",
+    defaultLimit: 300,
+    productionLimit: 5000,
+    refreshIntervalMinutes: 15,
+    tier: "fast",
+    syncSource: "ckan-permits-gatineau",
+    city: "Gatineau",
+    bootstrapAllowlist: true,
+  },
+  "permits-levis": {
+    id: "permits-levis",
+    label: "Permis de construction (Lévis)",
+    ckanId: "permis-levis",
+    sourceUrl: "https://www.ville.levis.qc.ca/taxes-permis-reglements/autorisations-et-demandes-de-permis/",
+    preferredFormat: "CSV",
+    defaultLimit: 100,
+    productionLimit: 3000,
+    refreshIntervalMinutes: 60,
+    tier: "fast",
+    syncSource: "levis-permits-scaffold",
+    city: "Lévis",
+    bootstrapAllowlist: true,
+  },
+  "permit-stats": {
+    id: "permit-stats",
+    label: "Statistiques permis par arrondissement (Montréal)",
+    ckanId: "vmtl-permis-construction",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-permis-construction",
+    preferredFormat: "CSV",
+    defaultLimit: 200,
+    productionLimit: 500,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-permit-stats",
+  },
+  tenders: {
+    id: "tenders",
+    label: "SEAO — appels d'offres (OCDS)",
+    ckanId: "systeme-electronique-dappel-doffres-seao",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/systeme-electronique-dappel-doffres-seao",
+    preferredFormat: "JSON",
+    defaultLimit: 300,
+    productionLimit: 1000,
+    refreshIntervalMinutes: 15,
+    tier: "fast",
+    syncSource: "ckan-tenders-ocds",
+  },
+  suppliers: {
+    id: "suppliers",
+    label: "Fournisseurs municipaux (Montréal)",
+    ckanId: "vmtl-liste-des-fournisseurs",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-liste-des-fournisseurs",
+    preferredFormat: "CSV",
+    defaultLimit: 1000,
+    productionLimit: 3000,
+    refreshIntervalMinutes: 360,
+    tier: "daily",
+    syncSource: "ckan-suppliers",
+  },
+  registre: {
+    id: "registre",
+    label: "Registre des entreprises (Québec)",
+    ckanId: "registre-des-entreprises",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/registre-des-entreprises",
+    preferredFormat: ["CSV", "JSON", "ZIP"],
+    defaultLimit: 500,
+    productionLimit: 5000,
+    refreshIntervalMinutes: 360,
+    tier: "daily",
+    syncSource: "ckan-registre",
+  },
+  rbq: {
+    id: "rbq",
+    label: "Licences actives RBQ (Québec entier)",
+    ckanId: "licencesactives",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/licencesactives",
+    preferredFormat: ["CSV", "JSON"],
+    defaultLimit: 2000,
+    productionLimit: 25000,
+    refreshIntervalMinutes: 360,
+    tier: "daily",
+    syncSource: "ckan-rbq-licencesactives",
+  },
+  transactions: {
+    id: "transactions",
+    label: "Transactions immobilières 2024",
+    ckanId: "vmtl-liste-des-transactions-immobilieres-2024",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-liste-des-transactions-immobilieres-2024",
+    preferredFormat: "CSV",
+    defaultLimit: 800,
+    productionLimit: 5000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-transactions",
+  },
+  "transactions-2023": {
+    id: "transactions-2023",
+    label: "Transactions immobilières 2023",
+    ckanId: "vmtl-liste-des-transactions-immobilieres-2023",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-liste-des-transactions-immobilieres-2023",
+    preferredFormat: "CSV",
+    defaultLimit: 800,
+    productionLimit: 5000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-transactions-2023",
+  },
+  assessment: {
+    id: "assessment",
+    label: "Unités d'évaluation foncière",
+    ckanId: "vmtl-unites-evaluation-fonciere",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-unites-evaluation-fonciere",
+    preferredFormat: "CSV",
+    defaultLimit: 1500,
+    productionLimit: 5000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-assessment",
+  },
+  contamination: {
+    id: "contamination",
+    label: "Terrains contaminés (Montréal)",
+    ckanId: "vmtl-liste-des-terrains-contamines",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-liste-des-terrains-contamines",
+    preferredFormat: "JSON",
+    defaultLimit: 500,
+    productionLimit: 1000,
+    refreshIntervalMinutes: 360,
+    tier: "daily",
+    syncSource: "ckan-contamination-mtl",
+    city: "Montréal",
+  },
+  commercial: {
+    id: "commercial",
+    label: "Locaux commerciaux vacants",
+    ckanId: "vmtl-locaux-commerciaux",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-locaux-commerciaux",
+    preferredFormat: "CSV",
+    defaultLimit: 500,
+    productionLimit: 1500,
+    refreshIntervalMinutes: 360,
+    tier: "daily",
+    syncSource: "ckan-commercial",
+  },
+  taxes: {
+    id: "taxes",
+    label: "Taxes municipales",
+    ckanId: "vmtl-taxes-municipales",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-taxes-municipales",
+    preferredFormat: "CSV",
+    defaultLimit: 1000,
+    productionLimit: 3000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-taxes",
+  },
+  awards: {
+    id: "awards",
+    label: "SEAO — historique des attributions",
+    ckanId: "systeme-electronique-dappel-doffres-seao",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/systeme-electronique-dappel-doffres-seao",
+    preferredFormat: "JSON",
+    defaultLimit: 400,
+    productionLimit: 1500,
+    refreshIntervalMinutes: 360,
+    tier: "daily",
+    syncSource: "ckan-awards-ocds",
+  },
+  zoning: {
+    id: "zoning",
+    label: "Schéma d'affectation / densité (PUM legacy — caduque)",
+    ckanId: "vmtl-schema-affectation-densite",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-schema-affectation-densite",
+    preferredFormat: ["GeoJSON", "JSON"],
+    defaultLimit: 200,
+    productionLimit: 500,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-zoning-legacy",
+  },
+  "pum2050-zoning": {
+    id: "pum2050-zoning",
+    label: "PUM 2050 — intensification et affectation du sol",
+    ckanId: "niveaux-intensification-urbaine-densite-affectation-sol-pum-2050",
+    sourceUrl:
+      "https://donnees.montreal.ca/dataset/niveaux-intensification-urbaine-densite-affectation-sol-pum-2050",
+    preferredFormat: ["GeoJSON", "JSON"],
+    defaultLimit: 2000,
+    productionLimit: 8000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "montreal-pum2050-zoning",
+    city: "Montréal",
+    ckanHost: "montreal",
+  },
+  heritage: {
+    id: "heritage",
+    label: "Édifices patrimoniaux (Montréal)",
+    ckanId: "vmtl-les-edifices-patrimoniaux-de-montreal",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-les-edifices-patrimoniaux-de-montreal",
+    preferredFormat: "CSV",
+    defaultLimit: 500,
+    productionLimit: 3000,
+    refreshIntervalMinutes: 360,
+    tier: "daily",
+    syncSource: "ckan-heritage",
+  },
+  "heritage-eip": {
+    id: "heritage-eip",
+    label: "Énoncés d'intérêt patrimonial (Montréal)",
+    ckanId: "vmtl-immeubles-faisant-l-objet-d-un-enonce-d-interet-patrimonial",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-immeubles-faisant-l-objet-d-un-enonce-d-interet-patrimonial",
+    preferredFormat: "CSV",
+    defaultLimit: 300,
+    productionLimit: 1500,
+    refreshIntervalMinutes: 360,
+    tier: "daily",
+    syncSource: "ckan-heritage-eip",
+  },
+  contracts: {
+    id: "contracts",
+    label: "Contrats municipaux (Montréal)",
+    ckanId: "vmtl-contrats-octroyes-par-les-fonctionnaires-ville-centrale",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-contrats-octroyes-par-les-fonctionnaires-ville-centrale",
+    preferredFormat: "CSV",
+    defaultLimit: 1000,
+    productionLimit: 10000,
+    refreshIntervalMinutes: 360,
+    tier: "daily",
+    syncSource: "ckan-contracts",
+  },
+  roadworks: {
+    id: "roadworks",
+    label: "Entraves et travaux en cours (Montréal)",
+    ckanId: "vmtl-info-travaux",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-info-travaux",
+    preferredFormat: "CSV",
+    defaultLimit: 500,
+    productionLimit: 3000,
+    refreshIntervalMinutes: 15,
+    tier: "fast",
+    syncSource: "ckan-roadworks",
+    city: "Montréal",
+  },
+  "contamination-gtc": {
+    id: "contamination-gtc",
+    label: "Répertoire des terrains contaminés (GTC — provincial)",
+    ckanId: "repertoire-des-terrains-contamines-gtc",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/repertoire-des-terrains-contamines-gtc",
+    preferredFormat: ["GeoJSON", "JSON", "GPKG"],
+    defaultLimit: 1000,
+    productionLimit: 5000,
+    refreshIntervalMinutes: 360,
+    tier: "daily",
+    syncSource: "ckan-contamination-gtc",
+    directResourceUrl:
+      "https://www.servicesgeo.enviroweb.gouv.qc.ca/donnees/rest/services/Public/Themes_publics/MapServer/12",
+  },
+  "heritage-lpc": {
+    id: "heritage-lpc",
+    label: "Sites et immeubles protégés LPC (Montréal)",
+    ckanId: "sites-immeubles-proteges-lpc",
+    sourceUrl: "https://donnees.montreal.ca/dataset/sites-immeubles-proteges-lpc",
+    preferredFormat: ["GeoJSON", "JSON"],
+    defaultLimit: 500,
+    productionLimit: 2000,
+    refreshIntervalMinutes: 360,
+    tier: "daily",
+    syncSource: "montreal-heritage-lpc",
+    city: "Montréal",
+    ckanHost: "montreal",
+  },
+  "pum2050-heritage": {
+    id: "pum2050-heritage",
+    label: "Patrimoine et paysages (PUM 2050)",
+    ckanId: "patrimoine-et-paysages-plan-d-urbanisme-et-de-mobilite-2050",
+    sourceUrl:
+      "https://donnees.montreal.ca/dataset/patrimoine-et-paysages-plan-d-urbanisme-et-de-mobilite-2050",
+    preferredFormat: ["GeoJSON", "CSV", "JSON"],
+    defaultLimit: 500,
+    productionLimit: 2000,
+    refreshIntervalMinutes: 360,
+    tier: "daily",
+    syncSource: "montreal-pum2050-heritage",
+    city: "Montréal",
+    ckanHost: "montreal",
+  },
+  "permit-delays": {
+    id: "permit-delays",
+    label: "Délais harmonisés de délivrance de permis (Montréal)",
+    ckanId: "vmtl-mesure-harmonisee-delais-delivrance-permis",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-mesure-harmonisee-delais-delivrance-permis",
+    preferredFormat: "CSV",
+    defaultLimit: 200,
+    productionLimit: 500,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-permit-delays",
+    city: "Montréal",
+  },
+  "transactions-2025": {
+    id: "transactions-2025",
+    label: "Transactions immobilières 2025",
+    ckanId: "vmtl-liste-des-transactions-immobilieres-2025",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-liste-des-transactions-immobilieres-2025",
+    preferredFormat: "CSV",
+    defaultLimit: 800,
+    productionLimit: 5000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-transactions-2025",
+    city: "Montréal",
+    bootstrapAllowlist: true,
+  },
+  "projects-sherbrooke": {
+    id: "projects-sherbrooke",
+    label: "Projets résidentiels (Sherbrooke)",
+    ckanId: "84e35108c6ff4f9f97d3b98c1aadf262_0",
+    sourceUrl:
+      "https://donneesouvertes-sherbrooke.opendata.arcgis.com/datasets/84e35108c6ff4f9f97d3b98c1aadf262_0",
+    preferredFormat: "GeoJSON",
+    defaultLimit: 200,
+    productionLimit: 1000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "arcgis-sherbrooke-projects",
+    city: "Sherbrooke",
+    arcGisLayerUrl:
+      "https://services3.arcgis.com/qsNXG7LzoUbR4c1C/arcgis/rest/services/ProjetResidentiel/FeatureServer/0",
+  },
+  "projects-brossard": {
+    id: "projects-brossard",
+    label: "Projets de construction (Brossard)",
+    ckanId: "permis-brossard",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/?q=brossard+permis",
+    preferredFormat: "CSV",
+    defaultLimit: 100,
+    productionLimit: 2000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "brossard-projects-scaffold",
+    city: "Brossard",
+    bootstrapAllowlist: true,
+  },
+  "zoning-trois-rivieres": {
+    id: "zoning-trois-rivieres",
+    label: "Zonage municipal (Trois-Rivières)",
+    ckanId: "zonage-v3r",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/zonage-v3r",
+    preferredFormat: ["GeoJSON", "CSV"],
+    defaultLimit: 500,
+    productionLimit: 3000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-zoning-v3r",
+    city: "Trois-Rivières",
+  },
+  "roadworks-saguenay": {
+    id: "roadworks-saguenay",
+    label: "Chantiers 511 (Saguenay)",
+    ckanId: "chantiers-511",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/chantiers-511",
+    preferredFormat: ["CSV", "GeoJSON"],
+    defaultLimit: 300,
+    productionLimit: 1500,
+    refreshIntervalMinutes: 60,
+    tier: "weekly",
+    syncSource: "ckan-roadworks-saguenay",
+    city: "Saguenay",
+  },
+  "contracts-boroughs": {
+    id: "contracts-boroughs",
+    label: "Contrats municipaux — arrondissements (Montréal)",
+    ckanId: "vmtl-contrats-octroyes-par-les-fonctionnaires-des-arrondissements",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/vmtl-contrats-octroyes-par-les-fonctionnaires-des-arrondissements",
+    preferredFormat: "CSV",
+    defaultLimit: 500,
+    productionLimit: 8000,
+    refreshIntervalMinutes: 360,
+    tier: "daily",
+    syncSource: "ckan-contracts-boroughs",
+    city: "Montréal",
+    bootstrapAllowlist: true,
+  },
+  "toronto-permits": {
+    id: "toronto-permits",
+    label: "Building permits (Toronto — EXPAND_ONTARIO)",
+    ckanId: "building-permits-active",
+    sourceUrl: "https://open.toronto.ca/dataset/building-permits-active/",
+    preferredFormat: "CSV",
+    defaultLimit: 100,
+    productionLimit: 5000,
+    refreshIntervalMinutes: 60,
+    tier: "fast",
+    syncSource: "toronto-permits-scaffold",
+    city: "Toronto",
+    bootstrapAllowlist: true,
+  },
+};
+
+export const ALL_DATASET_IDS = Object.keys(DATASETS) as DatasetId[];
+
+export const TIER_DATASETS: Record<SyncTier | "all", DatasetId[]> = {
+  fast: [
+    "permits",
+    "permits-laval",
+    "permits-longueuil",
+    "permits-quebec",
+    "permits-gatineau",
+    "permits-levis",
+    "tenders",
+    "roadworks",
+  ],
+  daily: [
+    "suppliers",
+    "commercial",
+    "contamination",
+    "contamination-gtc",
+    "registre",
+    "awards",
+    "rbq",
+    "heritage",
+    "heritage-eip",
+    "heritage-lpc",
+    "pum2050-heritage",
+    "contracts",
+    "contracts-boroughs",
+  ],
+  weekly: [
+    "assessment",
+    "taxes",
+    "transactions",
+    "transactions-2023",
+    "transactions-2025",
+    "zoning",
+    "pum2050-zoning",
+    "permit-stats",
+    "permit-delays",
+    "projects-sherbrooke",
+    "projects-brossard",
+    "zoning-trois-rivieres",
+    "roadworks-saguenay",
+    "toronto-permits",
+  ],
+  all: ALL_DATASET_IDS,
+};
+
+/** Cities with permit, project, or roadwork signal in the registry. */
+export const COVERAGE_CITIES = [
+  "Montréal",
+  "Laval",
+  "Longueuil",
+  "Québec",
+  "Gatineau",
+  "Lévis",
+  "Sherbrooke",
+  "Trois-Rivières",
+  "Saguenay",
+  "Brossard",
+] as const;
+
+export function getBootstrapAllowlist(): DatasetId[] {
+  return ALL_DATASET_IDS.filter((id) => DATASETS[id].bootstrapAllowlist);
+}
+
+export function getDatasetCount(): number {
+  return getActiveDatasetIds().length;
+}
+
+/** Datasets enabled for sync and marketing (excludes legacy caduque + optional Ontario). */
+export function getActiveDatasetIds(): DatasetId[] {
+  return ALL_DATASET_IDS.filter((id) => {
+    if (id === "toronto-permits" && process.env.EXPAND_ONTARIO !== "true") {
+      return false;
+    }
+    if (id === "zoning") {
+      return false;
+    }
+    return true;
+  });
+}
+
+export function getSyncLimit(datasetId: DatasetId): number {
+  const cfg = DATASETS[datasetId];
+  return process.env.NODE_ENV === "production"
+    ? cfg.productionLimit
+    : cfg.defaultLimit;
+}
+
+export function getDatasetIdsForTier(tier: string): DatasetId[] {
+  const active = new Set(getActiveDatasetIds());
+  if (tier === "all") return getActiveDatasetIds();
+  if (tier in TIER_DATASETS) {
+    return TIER_DATASETS[tier as SyncTier].filter((id) => active.has(id));
+  }
+  return [];
+}
+
+/** Bilingual search aliases for PartenairesCA */
+export const SEARCH_ALIASES: Record<string, string[]> = {
+  camions: ["trucks", "camion", "transport"],
+  trucks: ["camions", "camion"],
+  acier: ["steel", "métal"],
+  steel: ["acier", "métal"],
+  plomberie: ["plumbing"],
+  plumbing: ["plomberie"],
+  électricité: ["electrical", "electricite"],
+  electrical: ["électricité", "electricite"],
+};
+
+export function expandSearchTerms(query: string): string[] {
+  const q = query.toLowerCase().trim();
+  const terms = [q];
+  for (const [key, aliases] of Object.entries(SEARCH_ALIASES)) {
+    if (q.includes(key) || aliases.some((a) => q.includes(a))) {
+      terms.push(key, ...aliases);
+    }
+  }
+  return [...new Set(terms)];
+}

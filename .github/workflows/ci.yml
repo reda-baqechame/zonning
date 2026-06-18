@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        env:
+          DATABASE_URL: file:./ci.db
+          SYNC_ENABLED: "false"
+          CRON_SECRET: ci-test-secret
+          SESSION_SECRET: ci-test-session
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+        run: npm run build
+
+      - name: Migrate (SQLite CI)
+        env:
+          DATABASE_URL: file:./ci.db
+        run: npx prisma migrate deploy
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: zonning
+          POSTGRES_PASSWORD: zonning
+          POSTGRES_DB: zonning_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Schema push (Postgres compatibility)
+        env:
+          DATABASE_URL: postgresql://zonning:zonning@localhost:5432/zonning_test
+          SKIP_POSTGIS: "1"
+        run: npx tsx scripts/setup-postgres.ts
+
+      - name: Production build path (Postgres)
+        env:
+          DATABASE_URL: postgresql://zonning:zonning@localhost:5432/zonning_test
+          SYNC_ENABLED: "false"
+          CRON_SECRET: ci-test-secret
+          SESSION_SECRET: ci-test-session
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          UPSTASH_REDIS_REST_URL: https://ci-placeholder.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: ci-placeholder
+        run: npm run vercel-build
+
+      - name: Test
+        env:
+          DATABASE_URL: postgresql://zonning:zonning@localhost:5432/zonning_test
+          SYNC_ENABLED: "false"
+        run: npm run test

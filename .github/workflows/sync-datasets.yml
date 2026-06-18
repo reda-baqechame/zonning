@@ -1,0 +1,115 @@
+name: Sync datasets
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+    - cron: "0 */4 * * *"
+    - cron: "0 8 * * 0"
+    - cron: "0 3 * * *"
+    - cron: "0 */6 * * *"
+    - cron: "0 12 * * *"
+    - cron: "0 6 * * *"
+    - cron: "0 13 * * 4"
+  workflow_dispatch:
+
+jobs:
+  sync-live-scheduler:
+    if: github.event.schedule == '*/15 * * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Live watch — permits, SEAO, roadworks
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/sync?mode=live"
+
+      - name: Scheduler batch — stale/changed datasets
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/sync?mode=scheduler"
+
+      - name: Health check
+        run: |
+          curl -fsS "${{ secrets.APP_URL }}/api/health"
+          curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/sync/health"
+
+  sync-daily-tier:
+    if: github.event.schedule == '0 */4 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Daily-tier datasets
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/sync?tier=daily"
+
+  sync-weekly-tier:
+    if: github.event.schedule == '0 8 * * 0' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Weekly-tier datasets
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/sync?tier=weekly"
+
+  sync-bootstrap:
+    if: github.event.schedule == '0 */6 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bootstrap never-synced datasets
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/sync?mode=bootstrap&rounds=4"
+
+  sync-alerts:
+    if: github.event.schedule == '0 12 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Daily alert emails
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/alerts"
+
+  sync-gtm-stats:
+    if: github.event.schedule == '0 6 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: GTM stats cron
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/stats"
+
+  sync-thursday:
+    if: github.event.schedule == '0 13 * * 4' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Thursday SEAO close alerts
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/thursday"
+
+  sync-nightly-all:
+    if: github.event.schedule == '0 3 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chunked full sync (4 batches)
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/sync?tier=all"
+
+      - name: Verify deploy (full)
+        uses: actions/checkout@v4
+        env:
+          NEXT_PUBLIC_APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          npm ci
+          npm run verify:deploy

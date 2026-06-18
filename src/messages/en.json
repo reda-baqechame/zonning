@@ -1,0 +1,239 @@
+{
+  "meta": {
+    "title": "ZONNING — Quebec Revenue Pipeline",
+    "description": "RBQ-qualified projects, SEAO public tenders, and CASL compliance for Quebec construction SMEs."
+  },
+  "nav": {
+    "feed": "Feed",
+    "verdict": "PERMIS.AI",
+    "settings": "Settings",
+    "chantierRadar": "ChantierRadar",
+    "marchesQc": "MarchésQC",
+    "partenairesCa": "PartenairesCA",
+    "compliance": "Compliance",
+    "pricing": "Pricing",
+    "validation": "Validation",
+    "dashboard": "Dashboard",
+    "login": "Log in",
+    "register": "Sign up",
+    "logout": "Log out"
+  },
+  "hero": {
+    "badge": "Built with Cursor · 33 datasets",
+    "title": "Start your week in ZONNING",
+    "subtitle": "Unified permit + SEAO feed. Free PERMIS.AI verdict on any Quebec address. RBQ, CASL, and AMP in one place.",
+    "cta": "Open my feed",
+    "ctaDemo": "Free verdict",
+    "ctaVerdict": "PERMIS.AI — check an address"
+  },
+  "features": {
+    "chantier": {
+      "title": "ChantierRadar",
+      "desc": "Montreal construction permits with RBQ-Fit score — only projects your license covers."
+    },
+    "marches": {
+      "title": "MarchésQC",
+      "desc": "Filtered SEAO tenders with bid deadline countdown."
+    },
+    "partenaires": {
+      "title": "PartenairesCA",
+      "desc": "Find certified Canadian suppliers and subcontractors — domestic tariff pivot."
+    },
+    "compliance": {
+      "title": "Compliance Vault",
+      "desc": "CASL PDF certificate for every contact from verifiable public sources."
+    }
+  },
+  "pricing": {
+    "title": "Transparent pricing",
+    "subtitle": "No mandatory demo. Self-serve signup.",
+    "essentiel": "Essentiel",
+    "pro": "Pro",
+    "equipe": "Équipe",
+    "concierge": "Concierge",
+    "perMonth": "/mo",
+    "oneTime": "one-time",
+    "subscribe": "Subscribe",
+    "contact": "Book onboarding"
+  },
+  "chantier": {
+    "title": "ChantierRadar",
+    "filters": "Filters",
+    "borough": "Borough",
+    "minCost": "Min. cost",
+    "permitType": "Permit type",
+    "rbqFit": "RBQ-Fit Score",
+    "eligible": "Eligible",
+    "noGtc": "No GTC sites",
+    "permitDelays": "Harmonized delays",
+    "devProjects": "Residential projects",
+    "viewProject": "View project",
+    "notEligible": "Not eligible",
+    "createAlert": "Create alert",
+    "noPermits": "No permits found",
+    "days": "Period",
+    "daysLabel": "days"
+  },
+  "marches": {
+    "title": "MarchésQC",
+    "closesIn": "Closes in",
+    "days": "days",
+    "urgent": "Urgent",
+    "thursdayClose": "Thursday closing",
+    "matchScore": "Match score",
+    "similarAwards": "Similar SEAO awards",
+    "amendments": "Amendments",
+    "viewSource": "View on SEAO",
+    "createAlert": "SEAO alert",
+    "search": "Search",
+    "searchPlaceholder": "Title, organization...",
+    "category": "Category",
+    "allCategories": "All",
+    "region": "Region",
+    "applyFilters": "Apply",
+    "noTenders": "No open tenders found"
+  },
+  "partenaires": {
+    "title": "PartenairesCA",
+    "subtitle": "Quebec business registry + municipal suppliers",
+    "tabRegistre": "Business registry",
+    "tabSuppliers": "Municipal suppliers",
+    "searchBtn": "Search",
+    "noResults": "No results",
+    "search": "Search companies",
+    "sector": "Sector",
+    "certification": "Certification",
+    "region": "Region",
+    "seaoAwards": "Linked SEAO awards"
+  },
+  "compliance": {
+    "title": "Compliance Vault",
+    "subtitle": "CASL proof for contacts from public registries",
+    "download": "Download PDF certificate",
+    "createFromPermit": "Create from this permit",
+    "lawfulBasis": "Conspicuous publication — public registry"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "company": "Company",
+    "rbqClass": "RBQ subclass",
+    "rbqNumber": "RBQ license no.",
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "noAccount": "No account?",
+    "hasAccount": "Already have an account?"
+  },
+  "validation": {
+    "title": "Customer discovery",
+    "subtitle": "Track 15 market validation interviews",
+    "add": "Add interview",
+    "goCriteria": "GO criteria: 8+/15 with urgency 4+",
+    "total": "Interviews logged"
+  },
+  "dashboard": {
+    "welcome": "Welcome",
+    "plan": "Plan",
+    "permitsWeek": "Permits this week",
+    "tendersOpen": "Open tenders",
+    "alerts": "Active alerts",
+    "dataFreshness": "Data freshness",
+    "lastSync": "Last sync",
+    "never": "Never synced",
+    "syncErrors": "sync error(s)"
+  },
+  "sync": {
+    "live": "Live",
+    "pending": "Sync pending"
+  },
+  "beta": {
+    "title": "Montreal beta program",
+    "desc": "Join the first 10 SMEs — concierge onboarding included for the first 3 Pro signups."
+  },
+  "feed": {
+    "title": "Command Center",
+    "settings": "Settings",
+    "allTrades": "All trades",
+    "allRegions": "All regions",
+    "loading": "Loading feed…",
+    "noPermits": "No recent permits for your profile.",
+    "map": "Map",
+    "source": "Source",
+    "closesIn": "Closes in",
+    "thursday": "Thursday SEAO",
+    "match": "Match",
+    "ampRequired": "AMP required",
+    "verdictHint": "Quick PERMIS.AI check — shareable with clients.",
+    "addressPlaceholder": "Civic address",
+    "boroughPlaceholder": "Borough (optional)",
+    "runVerdict": "Get verdict",
+    "shareLink": "Shareable link",
+    "tab": {
+      "permits": "Permits",
+      "tenders": "Contracts",
+      "verdict": "Check address"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Territory, RBQ, AMP, and alerts",
+    "company": "Company",
+    "name": "Name",
+    "companyName": "Company name",
+    "rbqNumber": "RBQ number",
+    "rbqVerified": "License verified in registry",
+    "trades": "Trades",
+    "regions": "Regions",
+    "amp": "AMP authorization (public tenders)",
+    "smsAlerts": "SMS alerts (Thursday SEAO)",
+    "save": "Save",
+    "saveAndFeed": "Save → Feed",
+    "saved": "Saved",
+    "currentPlan": "Current plan",
+    "manageSubscription": "Manage subscription"
+  },
+  "verdict": {
+    "title": "PERMIS.AI Verdict",
+    "subtitle": "Development potential from Quebec public data — free and shareable.",
+    "addressPlaceholder": "1234 Example St, Montreal",
+    "boroughPlaceholder": "Borough",
+    "cta": "Analyze address",
+    "footer": "PERMIS.AI analysis · Powered by ZONNING"
+  },
+  "cursorCase": {
+    "title": "Built with Cursor",
+    "desc": "One founder, 21 government datasets, 15-min auto-sync, dual brand ZONNING + PERMIS.AI — shipped in weeks, not months."
+  },
+  "legal": {
+    "termsTitle": "Terms of Service",
+    "termsUpdated": "Last updated: June 2026",
+    "terms1Title": "Service",
+    "terms1Body": "ZONNING and PERMIS.AI aggregate Quebec public data (permits, SEAO, RBQ, business registry). RBQ-Fit, pipeline scores, and PERMIS.AI verdicts are decision-support tools — not legal advice.",
+    "terms2Title": "Public data",
+    "terms2Body": "Information comes from open government sources (Données Québec, municipalities). ZONNING does not guarantee completeness or absolute freshness; always verify with the official source before bidding or outreach.",
+    "terms3Title": "CASL compliance",
+    "terms3Body": "Compliance Vault documents lawful basis from verifiable public registries. You remain responsible for CASL compliance and sector rules (RBQ, AMP).",
+    "terms4Title": "Subscriptions",
+    "terms4Body": "Essentiel, Pro, and Équipe plans are billed monthly via Stripe. Concierge is a one-time purchase. Cancel anytime via the Stripe portal.",
+    "privacyTitle": "Privacy Policy",
+    "privacyUpdated": "Last updated: June 2026",
+    "privacy1Title": "Data we collect",
+    "privacy1Body": "We collect email, company profile (RBQ, trades, regions), sync logs, and module usage. Public PERMIS.AI verdicts store the address and analysis inputs.",
+    "privacy2Title": "How we use it",
+    "privacy2Body": "Your data powers feed personalization, alerts, and billing. We do not sell contact lists. Équipe API keys are SHA-256 hashed.",
+    "privacy3Title": "Hosting",
+    "privacy3Body": "Data hosted in Canada or via compliant providers (Vercel, Supabase). Alert emails via Resend.",
+    "privacy4Title": "Your rights",
+    "privacy4Body": "Contact us to access, correct, or delete your account. CASL compliance records may be retained for audit purposes.",
+    "termsLink": "Terms of Service",
+    "privacyLink": "Privacy Policy",
+    "footerTerms": "Terms",
+    "footerPrivacy": "Privacy"
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "description": "Try again or contact support if the problem persists.",
+    "retry": "Try again"
+  }
+}

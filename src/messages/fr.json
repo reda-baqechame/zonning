@@ -1,0 +1,239 @@
+{
+  "meta": {
+    "title": "ZONNING — Pipeline de revenus pour le Québec",
+    "description": "Projets qualifiés RBQ, marchés publics SEAO et conformité CASL pour les entreprises de construction québécoises."
+  },
+  "nav": {
+    "feed": "Fil",
+    "verdict": "PERMIS.AI",
+    "settings": "Réglages",
+    "chantierRadar": "ChantierRadar",
+    "marchesQc": "MarchésQC",
+    "partenairesCa": "PartenairesCA",
+    "compliance": "Conformité",
+    "pricing": "Tarifs",
+    "validation": "Validation",
+    "dashboard": "Tableau de bord",
+    "login": "Connexion",
+    "register": "Inscription",
+    "logout": "Déconnexion"
+  },
+  "hero": {
+    "badge": "Construit avec Cursor · 33 jeux de données",
+    "title": "Commencez votre semaine dans ZONNING",
+    "subtitle": "Fil unifié permis + contrats SEAO. Verdict PERMIS.AI gratuit sur toute adresse québécoise. RBQ, CASL et AMP en un seul endroit.",
+    "cta": "Ouvrir mon fil",
+    "ctaDemo": "Verdict gratuit",
+    "ctaVerdict": "PERMIS.AI — vérifier une adresse"
+  },
+  "features": {
+    "chantier": {
+      "title": "ChantierRadar",
+      "desc": "Permis de construction à Montréal avec score RBQ-Fit — seulement les mandats que votre licence couvre."
+    },
+    "marches": {
+      "title": "MarchésQC",
+      "desc": "Appels d'offres SEAO filtrés avec compte à rebours des échéances de soumission."
+    },
+    "partenaires": {
+      "title": "PartenairesCA",
+      "desc": "Trouvez fournisseurs et sous-traitants canadiens certifiés — pivot tarifaire domestique."
+    },
+    "compliance": {
+      "title": "Compliance Vault",
+      "desc": "Certificat CASL PDF pour chaque contact issu de sources publiques vérifiables."
+    }
+  },
+  "pricing": {
+    "title": "Tarifs transparents",
+    "subtitle": "Pas de démo obligatoire. Inscription en libre-service.",
+    "essentiel": "Essentiel",
+    "pro": "Pro",
+    "equipe": "Équipe",
+    "concierge": "Concierge",
+    "perMonth": "/mois",
+    "oneTime": "paiement unique",
+    "subscribe": "S'abonner",
+    "contact": "Réserver l'onboarding"
+  },
+  "chantier": {
+    "title": "ChantierRadar",
+    "filters": "Filtres",
+    "borough": "Arrondissement",
+    "minCost": "Coût min.",
+    "permitType": "Type de permis",
+    "rbqFit": "Score RBQ-Fit",
+    "eligible": "Éligible",
+    "noGtc": "Sans GTC",
+    "permitDelays": "Délais harmonisés",
+    "devProjects": "Projets résidentiels",
+    "viewProject": "Voir le projet",
+    "notEligible": "Non éligible",
+    "createAlert": "Créer une alerte",
+    "noPermits": "Aucun permis trouvé",
+    "days": "Période",
+    "daysLabel": "jours"
+  },
+  "marches": {
+    "title": "MarchésQC",
+    "closesIn": "Clôture dans",
+    "days": "jours",
+    "urgent": "Urgent",
+    "thursdayClose": "Clôture jeudi",
+    "matchScore": "Pertinence",
+    "similarAwards": "Attributions similaires (SEAO)",
+    "amendments": "Avenants",
+    "viewSource": "Voir sur SEAO",
+    "createAlert": "Alerte SEAO",
+    "search": "Recherche",
+    "searchPlaceholder": "Titre, organisme...",
+    "category": "Catégorie",
+    "allCategories": "Toutes",
+    "region": "Région",
+    "applyFilters": "Appliquer",
+    "noTenders": "Aucun appel d'offres ouvert"
+  },
+  "partenaires": {
+    "title": "PartenairesCA",
+    "subtitle": "Registre des entreprises + fournisseurs municipaux — pivot tarifaire domestique",
+    "tabRegistre": "Registre des entreprises",
+    "tabSuppliers": "Fournisseurs municipaux",
+    "searchBtn": "Rechercher",
+    "noResults": "Aucun résultat",
+    "search": "Rechercher une entreprise",
+    "sector": "Secteur",
+    "certification": "Certification",
+    "region": "Région",
+    "seaoAwards": "Attributions SEAO liées"
+  },
+  "compliance": {
+    "title": "Compliance Vault",
+    "subtitle": "Preuve CASL pour contacts issus de registres publics",
+    "download": "Télécharger le certificat PDF",
+    "createFromPermit": "Créer depuis ce permis",
+    "lawfulBasis": "Publication ostensible — registre public"
+  },
+  "auth": {
+    "email": "Courriel",
+    "password": "Mot de passe",
+    "name": "Nom",
+    "company": "Entreprise",
+    "rbqClass": "Sous-classe RBQ",
+    "rbqNumber": "No licence RBQ",
+    "signIn": "Se connecter",
+    "signUp": "Créer un compte",
+    "noAccount": "Pas de compte?",
+    "hasAccount": "Déjà un compte?"
+  },
+  "validation": {
+    "title": "Découverte client",
+    "subtitle": "Suivi des 15 entrevues de validation marché",
+    "add": "Ajouter une entrevue",
+    "goCriteria": "Critère GO: 8+/15 avec urgence 4+",
+    "total": "Entrevues enregistrées"
+  },
+  "dashboard": {
+    "welcome": "Bienvenue",
+    "plan": "Forfait",
+    "permitsWeek": "Permis cette semaine",
+    "tendersOpen": "Appels d'offres ouverts",
+    "alerts": "Alertes actives",
+    "dataFreshness": "Fraîcheur des données",
+    "lastSync": "Dernière sync",
+    "never": "Jamais synchronisé",
+    "syncErrors": "erreur(s) de sync"
+  },
+  "sync": {
+    "live": "Live",
+    "pending": "Sync en attente"
+  },
+  "beta": {
+    "title": "Programme bêta Montréal",
+    "desc": "Rejoignez les 10 premières PME — onboarding concierge offert pour les 3 premiers inscrits Pro."
+  },
+  "feed": {
+    "title": "Centre de commande",
+    "settings": "Réglages",
+    "allTrades": "Tous les métiers",
+    "allRegions": "Tout le territoire",
+    "loading": "Chargement du fil…",
+    "noPermits": "Aucun permis récent pour votre profil.",
+    "map": "Carte",
+    "source": "Source",
+    "closesIn": "Clôture dans",
+    "thursday": "Jeudi SEAO",
+    "match": "Match",
+    "ampRequired": "AMP requis",
+    "verdictHint": "Vérification rapide PERMIS.AI — partageable avec vos clients.",
+    "addressPlaceholder": "Adresse civique",
+    "boroughPlaceholder": "Arrondissement (optionnel)",
+    "runVerdict": "Obtenir le verdict",
+    "shareLink": "Lien partageable",
+    "tab": {
+      "permits": "Permis",
+      "tenders": "Contrats",
+      "verdict": "Vérifier adresse"
+    }
+  },
+  "settings": {
+    "title": "Réglages",
+    "subtitle": "Territoire, RBQ, AMP et alertes",
+    "company": "Entreprise",
+    "name": "Nom",
+    "companyName": "Raison sociale",
+    "rbqNumber": "Numéro RBQ",
+    "rbqVerified": "Licence vérifiée au registre",
+    "trades": "Métiers",
+    "regions": "Régions",
+    "amp": "Autorisation AMP (marchés publics)",
+    "smsAlerts": "Alertes SMS (jeudi SEAO)",
+    "save": "Enregistrer",
+    "saveAndFeed": "Enregistrer → Fil",
+    "saved": "Enregistré",
+    "currentPlan": "Forfait actuel",
+    "manageSubscription": "Gérer l'abonnement"
+  },
+  "verdict": {
+    "title": "Verdict PERMIS.AI",
+    "subtitle": "Potentiel de développement selon données publiques québécoises — gratuit et partageable.",
+    "addressPlaceholder": "1234 rue Example, Montréal",
+    "boroughPlaceholder": "Arrondissement",
+    "cta": "Analyser l'adresse",
+    "footer": "Analyse PERMIS.AI · Propulsé par ZONNING"
+  },
+  "cursorCase": {
+    "title": "Construit avec Cursor",
+    "desc": "Un fondateur, 21 jeux de données gouvernementaux, sync auto 15 min, dual brand ZONNING + PERMIS.AI — livré en semaines, pas en mois."
+  },
+  "legal": {
+    "termsTitle": "Conditions d'utilisation",
+    "termsUpdated": "Dernière mise à jour : juin 2026",
+    "terms1Title": "Service",
+    "terms1Body": "ZONNING et PERMIS.AI agrègent des données publiques québécoises (permis, SEAO, RBQ, registre). Les analyses RBQ-Fit, scores pipeline et verdicts PERMIS.AI sont des outils d'aide à la décision — non des avis juridiques.",
+    "terms2Title": "Données publiques",
+    "terms2Body": "Les informations proviennent de sources gouvernementales ouvertes (Données Québec, municipalités). ZONNING ne garantit pas l'exhaustivité ni la fraîcheur absolue; consultez toujours la source officielle avant une soumission ou une prospection.",
+    "terms3Title": "Conformité CASL",
+    "terms3Body": "Le Compliance Vault documente une base légale fondée sur des registres publics vérifiables. L'utilisateur demeure responsable de sa conformité à la LCAP et aux règles sectorielles (RBQ, AMP).",
+    "terms4Title": "Abonnements",
+    "terms4Body": "Les forfaits Essentiel, Pro et Équipe sont facturés mensuellement via Stripe. Le Concierge est un achat unique. Annulation en tout temps depuis le portail Stripe.",
+    "privacyTitle": "Politique de confidentialité",
+    "privacyUpdated": "Dernière mise à jour : juin 2026",
+    "privacy1Title": "Données collectées",
+    "privacy1Body": "Nous collectons email, profil entreprise (RBQ, métiers, régions), journaux de sync et usage des modules. Les verdicts PERMIS.AI publics stockent l'adresse et les entrées d'analyse.",
+    "privacy2Title": "Utilisation",
+    "privacy2Body": "Vos données servent à personnaliser le fil, les alertes et la facturation. Nous ne vendons pas vos listes de contacts. Les clés API Équipe sont hachées (SHA-256).",
+    "privacy3Title": "Hébergement",
+    "privacy3Body": "Données hébergées au Canada ou via fournisseurs conformes (Vercel, Supabase). Les courriels d'alerte passent par Resend.",
+    "privacy4Title": "Vos droits",
+    "privacy4Body": "Contactez-nous pour accéder, corriger ou supprimer votre compte. Les données de conformité CASL peuvent être conservées pour fins d'audit.",
+    "termsLink": "Conditions d'utilisation",
+    "privacyLink": "Politique de confidentialité",
+    "footerTerms": "Conditions",
+    "footerPrivacy": "Confidentialité"
+  },
+  "errors": {
+    "title": "Une erreur est survenue",
+    "description": "Réessayez ou contactez le support si le problème persiste.",
+    "retry": "Réessayer"
+  }
+}

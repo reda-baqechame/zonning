@@ -1,0 +1,39 @@
+{
+  "buildCommand": "npm run vercel-build",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/sync?mode=live",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/sync?mode=scheduler",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/sync?tier=daily",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/sync?tier=weekly",
+      "schedule": "0 8 * * 0"
+    },
+    {
+      "path": "/api/cron/sync?mode=bootstrap&rounds=4",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/alerts",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/stats",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/thursday",
+      "schedule": "0 13 * * 4"
+    }
+  ]
+}
