@@ -178,6 +178,28 @@ export async function fetchCityPermits(
     }
   }
 
+  if (datasetId === "permits-longueuil") {
+    try {
+      return await fetchCityPermitsFromCkan(datasetId, limit, options);
+    } catch (e) {
+      const directUrl = process.env.LONGUEUIL_PERMITS_URL;
+      if (directUrl) {
+        const cap = limit ?? getSyncLimit(datasetId);
+        const text = await fetchText(directUrl, 25_000_000);
+        if (text) {
+          const { rows } = parseCsvText(text, cap * 2);
+          const parsed = parsePermitRows(datasetId, rows, cap, options);
+          if (parsed.length > 0) return parsed;
+        }
+      }
+      const msg = e instanceof Error ? e.message : "fetch failed";
+      console.warn(
+        `[permits-longueuil] ${msg} — no public CKAN yet; set LONGUEUIL_PERMITS_URL when available`
+      );
+      return [];
+    }
+  }
+
   return fetchCityPermitsFromCkan(datasetId, limit, options);
 }
 

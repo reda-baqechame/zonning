@@ -19,6 +19,7 @@
     "verify:deploy": "npx tsx scripts/verify-deploy.ts",
     "postinstall": "prisma generate",
     "bootstrap:prod": "npx tsx scripts/bootstrap-prod.ts",
+    "force-sync": "npx tsx scripts/force-sync-datasets.ts",
     "db:postgis": "npx tsx scripts/apply-postgis.ts",
     "setup:postgres": "npx tsx scripts/setup-postgres.ts",
     "generate-secrets": "npx tsx scripts/generate-secrets.ts",

@@ -46,6 +46,10 @@ function parseRegistreRows(rows: Record<string, string>[], cap: number): Registr
   return results;
 }
 
+function isBinaryBulkExport(url: string): boolean {
+  return /\.(zip|pdf)(\?|$)/i.test(url) || url.includes("registreentreprises.gouv.qc.ca");
+}
+
 export async function fetchRegistre(limit?: number): Promise<RegistreRecord[]> {
   const cap = limit ?? getSyncLimit("registre");
   const resourceUrl = await fetchCkanResourceUrl(
@@ -53,18 +57,39 @@ export async function fetchRegistre(limit?: number): Promise<RegistreRecord[]> {
     DATASETS.registre.preferredFormat
   );
 
-  if (resourceUrl && !resourceUrl.endsWith(".zip") && !resourceUrl.endsWith(".pdf")) {
+  if (resourceUrl && !isBinaryBulkExport(resourceUrl)) {
     const text = await fetchText(resourceUrl, 20_000_000);
-    if (!text) {
-      throw new Error("Failed to fetch Registre CSV from CKAN");
+    if (text) {
+      const { rows } = parseCsvText(text, cap);
+      const results = parseRegistreRows(rows, cap);
+      if (results.length > 0) return results;
     }
-    const { rows } = parseCsvText(text, cap);
-    const results = parseRegistreRows(rows, cap);
-    if (results.length > 0) return results;
   }
 
-  const mirrorResults = await fetchRegistreFromMirror(cap);
-  return mirrorResults;
+  const overrideUrl = process.env.REGISTRE_CSV_URL;
+  if (overrideUrl) {
+    const text = await fetchText(overrideUrl, 20_000_000);
+    if (text) {
+      const { rows } = parseCsvText(text, cap);
+      const results = parseRegistreRows(rows, cap);
+      if (results.length > 0) return results;
+    }
+  }
+
+  try {
+    const mirrorResults = await fetchRegistreFromMirror(cap);
+    if (mirrorResults.length > 0) return mirrorResults;
+  } catch (e) {
+    console.warn("[registre]", e instanceof Error ? e.message : e);
+  }
+
+  if (resourceUrl && isBinaryBulkExport(resourceUrl)) {
+    console.warn(
+      "[registre] Official export is ZIP-only on registreentreprises.gouv.qc.ca — set REGISTRE_CSV_URL for a direct CSV mirror"
+    );
+  }
+
+  return [];
 }
 
 async function fetchRegistreFromMirror(cap: number): Promise<RegistreRecord[]> {
