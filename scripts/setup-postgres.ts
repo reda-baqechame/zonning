@@ -4,7 +4,9 @@ import { ensureDbProvider, isPostgresUrl } from "./ensure-db-provider";
 import { loadProdEnv } from "./load-prod-env";
 import { resolveDatabaseUrl, resolveDirectDatabaseUrl } from "../src/lib/env-resolve";
 
-loadProdEnv();
+if (process.env.CI !== "true") {
+  loadProdEnv();
+}
 
 /**
  * One-shot Postgres setup: schema push + PostGIS spatial indexes.

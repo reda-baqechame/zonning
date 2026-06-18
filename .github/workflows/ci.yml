@@ -14,8 +14,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
+
+      - name: Native build tools (better-sqlite3)
+        run: sudo apt-get update && sudo apt-get install -y python3 make g++
 
       - name: Install dependencies
         run: npm ci
@@ -39,6 +42,7 @@ jobs:
           CRON_SECRET: ci-test-secret
           SESSION_SECRET: ci-test-session
           NEXT_PUBLIC_APP_URL: http://localhost:3000
+          ADMIN_EMAILS: ci@zonning.test
         run: npm run build
 
       - name: Migrate (SQLite CI)
@@ -68,8 +72,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
+
+      - name: Native build tools (better-sqlite3)
+        run: sudo apt-get update && sudo apt-get install -y python3 make g++
 
       - name: Install dependencies
         run: npm ci
@@ -90,6 +97,7 @@ jobs:
           CRON_SECRET: ci-test-secret
           SESSION_SECRET: ci-test-session
           NEXT_PUBLIC_APP_URL: http://localhost:3000
+          ADMIN_EMAILS: ci@zonning.test
           UPSTASH_REDIS_REST_URL: https://ci-placeholder.upstash.io
           UPSTASH_REDIS_REST_TOKEN: ci-placeholder
         run: npm run vercel-build
