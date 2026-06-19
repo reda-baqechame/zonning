@@ -15,7 +15,9 @@ import {
   Button,
   useToast,
   FadeIn,
+  EmptyState,
 } from "@/components/ui";
+import { FileSearch } from "lucide-react";
 
 type Tender = {
   id: string;
@@ -237,7 +239,11 @@ export default function MarchesQcClient() {
         {loading ? (
           <p className="text-slate-400">{c("loading")}</p>
         ) : tenders.length === 0 ? (
-          <p className="text-slate-400">{t("noTenders")}</p>
+          <EmptyState
+            icon={<FileSearch className="h-8 w-8" />}
+            title={t("noTenders")}
+            description={t("noTendersHint")}
+          />
         ) : (
           tenders.map((tender) => (
             <div key={tender.id} className="space-y-2">

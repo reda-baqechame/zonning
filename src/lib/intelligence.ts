@@ -8,6 +8,31 @@ import {
   findNearestZoningPoint,
 } from "@/lib/spatial";
 
+/**
+ * True when an intelligence payload carries at least one substantive layer.
+ * Used by API routes/pages to render a "no data yet for this address" empty
+ * state instead of a blank panel — the address simply isn't in our ingested
+ * datasets (or live sync hasn't reached it yet), which is meaningful signal,
+ * not an error.
+ */
+export function hasIntelligenceData(intel: PropertyIntelligence): boolean {
+  return Boolean(
+    intel.assessment ||
+      intel.recentTransaction ||
+      intel.propertyTax ||
+      intel.zoning ||
+      (intel.heritage && intel.heritage.nearby) ||
+      (intel.contamination && intel.contamination.nearby) ||
+      (intel.developmentProjects && intel.developmentProjects.nearby) ||
+      (intel.roadworks && intel.roadworks.nearby) ||
+      (intel.commercialVacancyNearby ?? 0) > 0 ||
+      intel.marketHeat ||
+      intel.permitDelays ||
+      intel.municipalContracts ||
+      intel.municipalInspection,
+  );
+}
+
 export type SiteIntelligenceLayers = {
   pum2050?: boolean;
   gtc?: boolean;

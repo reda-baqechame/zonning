@@ -15,6 +15,8 @@
     "equipe": "Team",
     "pricing": "Pricing",
     "coverage": "Coverage",
+    "intelligence": "Intelligence",
+    "paiementPublic": "Public payments",
     "validation": "Validation",
     "dashboard": "Dashboard",
     "login": "Log in",
@@ -112,6 +114,7 @@
     "region": "Region",
     "applyFilters": "Apply",
     "noTenders": "No open tenders found",
+    "noTendersHint": "Adjust your filters or try again after the next SEAO sync.",
     "thursdayBanner": "Thursday deadlines — SEAO bids this week",
     "alertSuccess": "MarchésQC alert created",
     "standingOffers": "Standing offers (SEAO)",
@@ -436,7 +439,11 @@
     "borough": "Borough",
     "boroughOptional": "Optional",
     "search": "Analyze",
-    "loading": "Analyzing…"
+    "loading": "Analyzing…",
+    "examples": "Examples",
+    "recentSearches": "Recent searches",
+    "noDataTitle": "No data for this address",
+    "noDataDescription": "This address isn't covered by our ingested datasets yet. Try again after the next sync, or test one of the example addresses."
   },
   "intel": {
     "title": "Site intelligence",
