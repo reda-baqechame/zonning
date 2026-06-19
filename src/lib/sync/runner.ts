@@ -340,6 +340,17 @@ async function upsertPermitRecords(
     /* geocode optional */
   }
 
+  if (processed > 0) {
+    // Live data has landed — drop the demo-fallback flag so the UI stops
+    // showing the demo banner.
+    try {
+      const { clearDemoFallbackMarker } = await import("./demo-fallback");
+      void clearDemoFallbackMarker();
+    } catch {
+      /* fallback marker optional */
+    }
+  }
+
   return processed;
 }
 

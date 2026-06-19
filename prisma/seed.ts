@@ -1,64 +1,98 @@
 import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { getRequiredRbqClasses } from "../src/lib/rbq";
+import { ALL_DATASET_IDS, DATASETS } from "../src/lib/datasets/registry";
+import { Rng, hashSeed } from "./seed-data/rng";
+import {
+  generatePermits,
+  generateTenders,
+  generateAwards,
+  generateAmendments,
+  generateRbqLicenses,
+  generateRbqInfractions,
+  generateAmpAuthorizations,
+  generateCompanies,
+  generateSuppliers,
+} from "./seed-data/generators";
+import { generateIntelligence } from "./seed-data/intelligence";
 
 const url = process.env.DATABASE_URL ?? "file:./dev.db";
 const adapter = new PrismaBetterSqlite3({ url });
 const prisma = new PrismaClient({ adapter });
 
-const MONTREAL_BOROUGHS = [
-  "Ville-Marie",
-  "Le Plateau-Mont-Royal",
-  "Rosemont–La Petite-Patrie",
-  "Mercier–Hochelaga-Maisonneuve",
-  "Villeray–Saint-Michel–Parc-Extension",
-  "Ahuntsic-Cartierville",
-  "Laval",
-  "Longueuil",
-];
+const PASSWORD = "demo1234";
 
-const PERMIT_TYPES = [
-  "Rénovation commerciale",
-  "Construction résidentielle",
-  "Électrique",
-  "Plomberie",
-  "Chauffage et climatisation",
-  "Maçonnerie",
-  "Béton",
-  "Démolition",
-];
+/** Monday 00:00 of the current week (UTC) — for usage counters. */
+function weekStart(): Date {
+  const d = new Date();
+  const day = (d.getUTCDay() + 6) % 7; // Mon=0
+  d.setUTCDate(d.getUTCDate() - day);
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
+}
 
-async function main() {
+async function wipe() {
+  // Children → parents to respect FK constraints.
+  await prisma.webhookDelivery.deleteMany();
+  await prisma.orgWebhook.deleteMany();
+  await prisma.apiKey.deleteMany();
+  await prisma.savedLead.deleteMany();
+  await prisma.publicContractPayment.deleteMany();
   await prisma.complianceRecord.deleteMany();
   await prisma.alertSubscription.deleteMany();
   await prisma.validationInterview.deleteMany();
   await prisma.conciergeRequest.deleteMany();
-  await prisma.digestSubscriber.deleteMany();
-  await prisma.publicContractPayment.deleteMany();
   await prisma.usageCounter.deleteMany();
+  await prisma.emailLog.deleteMany();
   await prisma.orgMember.deleteMany();
-  await prisma.apiKey.deleteMany();
   await prisma.organization.deleteMany();
+  await prisma.digestSubscriber.deleteMany();
+  await prisma.user.deleteMany();
+
+  await prisma.datasetQualityCheck.deleteMany();
+  await prisma.syncState.deleteMany();
+  await prisma.syncLog.deleteMany();
+
+  await prisma.permit.deleteMany();
+  await prisma.tender.deleteMany();
+  await prisma.tenderAward.deleteMany();
+  await prisma.seaoAmendment.deleteMany();
+  await prisma.company.deleteMany();
+  await prisma.municipalSupplier.deleteMany();
   await prisma.rbqLicense.deleteMany();
+  await prisma.rbqInfraction.deleteMany();
+  await prisma.ampAuthorization.deleteMany();
+  await prisma.propertyUnit.deleteMany();
+  await prisma.propertyTransaction.deleteMany();
   await prisma.propertyTax.deleteMany();
   await prisma.commercialVacancy.deleteMany();
   await prisma.contaminatedSite.deleteMany();
-  await prisma.propertyTransaction.deleteMany();
-  await prisma.propertyUnit.deleteMany();
-  await prisma.municipalSupplier.deleteMany();
-  await prisma.permit.deleteMany();
-  await prisma.tender.deleteMany();
-  await prisma.company.deleteMany();
-  await prisma.user.deleteMany();
+  await prisma.zoningPoint.deleteMany();
+  await prisma.boroughZoning.deleteMany();
+  await prisma.heritageSite.deleteMany();
+  await prisma.developmentProject.deleteMany();
+  await prisma.roadWork.deleteMany();
+  await prisma.municipalContract.deleteMany();
+  await prisma.boroughPermitDelay.deleteMany();
+  await prisma.boroughPermitStat.deleteMany();
+  await prisma.municipalInspection.deleteMany();
+  await prisma.verdictReport.deleteMany();
+}
 
-  const bcrypt = await import("bcryptjs");
-  const passwordHash = await bcrypt.hash("demo1234", 12);
+async function seedUsers(passwordHash: string) {
+  const base = {
+    passwordHash,
+    onboardingComplete: true,
+    trades: JSON.stringify(["électrique", "commercial"]),
+    regions: JSON.stringify(["Montréal", "Laval"]),
+    minProjectCost: 50_000,
+    maxProjectCost: 3_000_000,
+  };
 
-  await prisma.user.create({
+  const demo = await prisma.user.create({
     data: {
+      ...base,
       email: "demo@zonning.ca",
-      passwordHash,
       name: "Jean Dupont",
       companyName: "Dupont Électrique Inc.",
       rbqLicenseClass: "4.1",
@@ -66,226 +100,221 @@ async function main() {
       rbqVerified: true,
       rbqVerifiedAt: new Date(),
       ampAuthorized: true,
-      trades: JSON.stringify(["électrique", "commercial"]),
-      regions: JSON.stringify(["Montréal", "Laval"]),
+      phone: "514-555-0123",
+      phoneVerified: true,
+      alertSmsEnabled: true,
       plan: "PRO",
-      onboardingComplete: true,
     },
   });
 
-  await prisma.rbqLicense.createMany({
+  await prisma.user.create({
+    data: { ...base, email: "free@zonning.ca", name: "Marie Free", companyName: "Atelier Marie", plan: "FREE", rbqLicenseClass: "1.1.1" },
+  });
+  await prisma.user.create({
+    data: { ...base, email: "essentiel@zonning.ca", name: "Luc Essentiel", companyName: "Toitures Cardinal Ltée", plan: "ESSENTIEL", rbqLicenseClass: "7", rbqLicenseNumber: "5004-1444-01", rbqVerified: true, rbqVerifiedAt: new Date() },
+  });
+  await prisma.user.create({
+    data: { ...base, email: "pro@zonning.ca", name: "Sophie Pro", companyName: "Électro-Sud Montréal", plan: "PRO", rbqLicenseClass: "4.1", rbqLicenseNumber: "5008-1222-01", rbqVerified: true, rbqVerifiedAt: new Date(), ampAuthorized: true },
+  });
+  const equipe = await prisma.user.create({
+    data: { ...base, email: "equipe@zonning.ca", name: "Pierre Équipe", companyName: "Groupe Mécanique Saint-Laurent", plan: "EQUIPE", rbqLicenseClass: "1.3", rbqLicenseNumber: "5001-1111-01", rbqVerified: true, rbqVerifiedAt: new Date(), ampAuthorized: true },
+  });
+  await prisma.user.create({
+    data: { ...base, email: "admin@zonning.ca", name: "Admin ZONNING", companyName: "ZONNING", plan: "PRO" },
+  });
+
+  return { demo, equipe };
+}
+
+async function main() {
+  console.log("Seeding ZONNING demo dataset (deterministic)…");
+  await wipe();
+
+  const bcrypt = await import("bcryptjs");
+  const passwordHash = await bcrypt.hash(PASSWORD, 12);
+
+  // --- Users + org -----------------------------------------------------------
+  const { demo, equipe } = await seedUsers(passwordHash);
+
+  const org = await prisma.organization.create({
+    data: { name: "Groupe Mécanique Saint-Laurent", plan: "EQUIPE", ownerId: equipe.id },
+  });
+  await prisma.orgMember.createMany({
     data: [
-      {
-        licenseNumber: "1234-5678-01",
-        holderName: "Dupont Électrique Inc.",
-        subclass: "4.1",
-        status: "active",
-        sourceUrl: "https://www.rbq.gouv.qc.ca/",
-      },
-      {
-        licenseNumber: "5678-1234-01",
-        holderName: "ThermoClimat Laval",
-        subclass: "6.1",
-        status: "active",
-        sourceUrl: "https://www.rbq.gouv.qc.ca/",
-      },
-      {
-        licenseNumber: "9876-5432-01",
-        holderName: "Électro Québec",
-        subclass: "4.1",
-        status: "active",
-        sourceUrl: "https://www.rbq.gouv.qc.ca/",
-      },
+      { orgId: org.id, userId: equipe.id, role: "owner" },
+      { orgId: org.id, userId: demo.id, role: "member" },
     ],
   });
 
-  const permits = MONTREAL_BOROUGHS.flatMap((borough, bi) =>
-    PERMIT_TYPES.map((permitType, pi) => {
-      const estimatedCost = 50000 + bi * 12000 + pi * 8500;
-      const required = getRequiredRbqClasses(permitType);
-      return {
-        externalId: `seed-permit-${bi}-${pi}`,
-        permitNumber: `PM-${2026}-${1000 + bi * 10 + pi}`,
-        permitType,
-        workType: `Travaux ${permitType.toLowerCase()}`,
-        borough,
-        matricule: `MTR-${100000 + bi * 100 + pi}`,
-        address: `${100 + bi * 50 + pi} rue Saint-${borough.split("-")[0]}`,
-        latitude: 45.5 + bi * 0.01 + pi * 0.002,
-        longitude: -73.57 - bi * 0.01,
-        estimatedCost,
-        issueDate: new Date(Date.now() - pi * 86400000 * 3),
-        applicantName: `Entreprise ${borough.split("-")[0]} ${pi + 1}`,
-        applicantContact: `contact${bi}${pi}@example.ca`,
-        requiredRbqClasses: JSON.stringify(required),
-        sourceUrl:
-          "https://www.donneesquebec.ca/recherche/dataset/vmtl-permis-construction",
-      };
-    })
-  );
+  // --- Core datasets ---------------------------------------------------------
+  const intel = generateIntelligence();
+  const permits = [...generatePermits(), ...intel.permits];
+  const tenders = generateTenders();
+  const awards = generateAwards();
+  const amendments = generateAmendments();
+  const rbqLicenses = generateRbqLicenses();
+  const infractions = generateRbqInfractions(rbqLicenses);
+  const ampAuths = generateAmpAuthorizations(rbqLicenses);
+  const companies = generateCompanies();
+  const suppliers = generateSuppliers();
 
-  await prisma.permit.createMany({ data: permits });
+  await prisma.permit.createMany({ data: permits as never });
+  await prisma.tender.createMany({ data: tenders as never });
+  await prisma.tenderAward.createMany({ data: awards as never });
+  await prisma.seaoAmendment.createMany({ data: amendments as never });
+  await prisma.rbqLicense.createMany({ data: rbqLicenses as never });
+  await prisma.rbqInfraction.createMany({ data: infractions as never });
+  await prisma.ampAuthorization.createMany({ data: ampAuths as never });
+  await prisma.company.createMany({ data: companies as never });
+  await prisma.municipalSupplier.createMany({ data: suppliers as never });
 
-  const now = Date.now();
-  const tenders = Array.from({ length: 24 }, (_, i) => {
-    const daysToClose = 5 + (i % 25);
-    const closesAt = new Date(now + daysToClose * 86400000);
-    const publishedAt = new Date(now - (30 - daysToClose) * 86400000);
-    return {
-      externalId: `seed-tender-${i}`,
-      title: [
-        "Réfection toiture école primaire",
-        "Installation électrique CIUSSS",
-        "Fourniture matériaux construction MTQ",
-        "Entretien HVAC bâtiment municipal",
-        "Rénovation plomberie centre sportif",
-      ][i % 5],
-      organization: ["Ville de Montréal", "MTQ", "CIUSSS Centre-Sud", "Hydro-Québec"][
-        i % 4
-      ],
-      category: ["Construction", "Services", "Biens"][i % 3],
-      region: MONTREAL_BOROUGHS[i % MONTREAL_BOROUGHS.length],
-      estimatedValue: 80000 + i * 45000,
-      publishedAt,
-      closesAt,
-      summary:
-        "Appel d'offres public publié sur le SEAO. Soumission requise avant la date de clôture.",
-      sourceUrl:
-        "https://www.donneesquebec.ca/recherche/dataset/systeme-electronique-dappel-doffres-seao",
-      status: daysToClose <= 14 ? "active" : "active",
-    };
+  // --- Intelligence layers ---------------------------------------------------
+  await prisma.propertyUnit.createMany({ data: intel.propertyUnits as never });
+  await prisma.propertyTransaction.createMany({ data: intel.transactions as never });
+  await prisma.propertyTax.createMany({ data: intel.taxes as never });
+  await prisma.commercialVacancy.createMany({ data: intel.vacancies as never });
+  await prisma.contaminatedSite.createMany({ data: intel.contamination as never });
+  await prisma.zoningPoint.createMany({ data: intel.zoningPoints as never });
+  await prisma.boroughZoning.createMany({ data: intel.boroughZoning as never });
+  await prisma.heritageSite.createMany({ data: intel.heritage as never });
+  await prisma.developmentProject.createMany({ data: intel.devProjects as never });
+  await prisma.roadWork.createMany({ data: intel.roadworks as never });
+  await prisma.municipalContract.createMany({ data: intel.contracts as never });
+  await prisma.boroughPermitDelay.createMany({ data: intel.delays as never });
+  await prisma.boroughPermitStat.createMany({ data: intel.stats as never });
+  await prisma.municipalInspection.createMany({ data: intel.inspections as never });
+
+  // --- Engagement ------------------------------------------------------------
+  await prisma.alertSubscription.createMany({
+    data: [
+      { userId: demo.id, module: "permits", filters: JSON.stringify({ city: "Montréal", minCost: 100000 }), emailEnabled: true, smsEnabled: true },
+      { userId: demo.id, module: "tenders", filters: JSON.stringify({ category: "Travaux de construction" }), emailEnabled: true },
+      { userId: equipe.id, module: "permits", filters: JSON.stringify({ city: "Laval" }), emailEnabled: true },
+    ],
   });
 
-  await prisma.tender.createMany({ data: tenders });
-
-  const companies = [
-    {
-      name: "Acier Québec Fabrication",
-      neq: "1170000001",
-      city: "Montréal",
-      region: "Montréal",
-      sector: "Fabrication métallique",
-      certifications: JSON.stringify(["ISO 9001", "COR"]),
-      capabilities: JSON.stringify(["acier", "soudure", "CNC"]),
-      rbqNumber: "5678-1234-01",
-      sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/registre-des-entreprises",
-      email: "info@acierquebec.ca",
-    },
-    {
-      name: "ThermoClimat Laval",
-      neq: "1170000002",
-      city: "Laval",
-      region: "Laval",
-      sector: "HVAC",
-      certifications: JSON.stringify(["RBQ 6.1", "COR"]),
-      capabilities: JSON.stringify(["thermopompe", "commercial", "industriel"]),
-      rbqNumber: "5678-1234-02",
-      sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/registre-des-entreprises",
-      email: "ventes@thermoclimat.ca",
-    },
-    {
-      name: "Béton Laurentides",
-      neq: "1170000003",
-      city: "Saint-Jérôme",
-      region: "Laurentides",
-      sector: "Béton",
-      certifications: JSON.stringify(["RBQ 10.1"]),
-      capabilities: JSON.stringify(["béton", "fondations", "commercial"]),
-      rbqNumber: "5678-1234-03",
-      sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/registre-des-entreprises",
-      email: "commandes@betonlaurentides.ca",
-    },
-    {
-      name: "Électro-Sud Montréal",
-      neq: "1170000004",
-      city: "Montréal",
-      region: "Montréal",
-      sector: "Électricité",
-      certifications: JSON.stringify(["RBQ 4.1", "CCQ"]),
-      capabilities: JSON.stringify(["électrique", "industriel", "institutionnel"]),
-      rbqNumber: "5678-1234-04",
-      sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/registre-des-entreprises",
-      email: "projets@electrosud.ca",
-    },
-    {
-      name: "Logistique Nord Camions",
-      neq: "1170000005",
-      city: "Québec",
-      region: "Capitale-Nationale",
-      sector: "Transport",
-      certifications: JSON.stringify(["COR", "ISO 14001"]),
-      capabilities: JSON.stringify(["camions", "reefer", "flatbed", "entrepôt"]),
-      sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/registre-des-entreprises",
-      email: "dispatch@logistiquenord.ca",
-    },
-  ];
-
-  await prisma.company.createMany({ data: companies });
-
-  const matricules = permits.slice(0, 12).map((p) => p.matricule!);
-  await prisma.propertyUnit.createMany({
-    data: matricules.map((m, i) => ({
-      externalId: m,
-      matricule: m,
-      address: permits[i].address,
-      borough: permits[i].borough,
-      landValue: 200000 + i * 15000,
-      buildingValue: 400000 + i * 25000,
-      totalValue: 600000 + i * 40000,
-      yearBuilt: 1980 + (i % 30),
-      units: 1 + (i % 4),
-      sourceUrl:
-        "https://www.donneesquebec.ca/recherche/dataset/vmtl-unites-evaluation-fonciere",
+  await prisma.complianceRecord.createMany({
+    data: Array.from({ length: 6 }, (_, i) => ({
+      userId: demo.id,
+      contactName: `Contact Public ${i + 1}`,
+      contactEmail: `contact${i}@example.ca`,
+      sourceType: "permit",
+      sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/vmtl-permis-construction",
+      sourceFetchedAt: new Date(Date.now() - i * 86_400_000),
+      lawfulBasis: "conspicuous_publication",
+      certificateIssuedAt: new Date(Date.now() - i * 86_400_000),
     })),
   });
 
-  await prisma.propertyTransaction.createMany({
-    data: matricules.slice(0, 6).map((m, i) => ({
-      externalId: `seed-txn-${i}`,
-      matricule: m,
-      address: permits[i].address,
-      borough: permits[i].borough,
-      salePrice: 550000 + i * 80000,
-      saleDate: new Date(Date.now() - i * 90 * 86400000),
-      buildingType: ["Unifamilial", "Duplex", "Commercial"][i % 3],
-      sourceUrl:
-        "https://www.donneesquebec.ca/recherche/dataset/vmtl-liste-des-transactions-immobilieres-2024",
+  await prisma.conciergeRequest.create({
+    data: {
+      userId: demo.id,
+      status: "completed",
+      opportunities: JSON.stringify(["seed-tender-1", "seed-tender-3", "seed-permit-Montréal-2"]),
+      notes: "Curated 3 high-fit opportunities for the week.",
+      completedAt: new Date(),
+    },
+  });
+
+  await prisma.digestSubscriber.createMany({
+    data: Array.from({ length: 8 }, (_, i) => ({
+      email: `digest${i}@example.ca`,
+      borough: i % 2 ? "Le Plateau-Mont-Royal" : "Ville-Marie",
+      trade: i % 2 ? "électrique" : "plomberie",
+      locale: i % 3 === 0 ? "en" : "fr",
+      active: true,
     })),
   });
 
-  await prisma.contaminatedSite.createMany({
+  await prisma.publicContractPayment.createMany({
+    data: Array.from({ length: 5 }, (_, i) => ({
+      userId: equipe.id,
+      title: `Contrat public ${i + 1} — Ville de Montréal`,
+      awardDate: new Date(Date.now() - (i + 2) * 30 * 86_400_000),
+      invoiceDate: new Date(Date.now() - (i + 1) * 20 * 86_400_000),
+      paymentDue: new Date(Date.now() + (i + 1) * 15 * 86_400_000),
+      amount: (i + 1) * 85_000,
+      tenderAwardId: `seed-award-${i}`,
+      notes: i === 0 ? "Retenue de garantie 10 %." : null,
+    })),
+  });
+
+  await prisma.validationInterview.createMany({
     data: [
-      {
-        externalId: "seed-contam-1",
-        address: "5000 rue Notre-Dame Est",
-        borough: "Mercier–Hochelaga-Maisonneuve",
-        latitude: 45.555,
-        longitude: -73.54,
-        status: "En surveillance",
-        description: "Sol contaminé — hydrocarbures",
-        sourceUrl:
-          "https://www.donneesquebec.ca/recherche/dataset/vmtl-liste-des-terrains-contamines",
-      },
+      { interviewerName: "Reda B.", companyName: "Boréal Construction", role: "Estimateur", q1Pipeline: "Bouche-à-oreille + SEAO", q2RbqPain: "Vérification manuelle", q3SeaoHours: "6h/semaine", q4WouldPay: "Oui", wouldPayAmount: 149, urgencyScore: 8 },
+      { interviewerName: "Reda B.", companyName: "Électro-Sud", role: "Propriétaire", q1Pipeline: "Références", q2RbqPain: "Sous-classes confuses", q3SeaoHours: "4h/semaine", q4WouldPay: "Oui", wouldPayAmount: 99, urgencyScore: 7 },
     ],
   });
 
-  await prisma.municipalSupplier.createMany({
+  await prisma.savedLead.createMany({
     data: [
-      {
-        externalId: "seed-supplier-1",
-        supplierNumber: "F-10001",
-        name: "Fournitures Industrielles Montréal",
-        neq: "1170000099",
-        borough: "Ville-Marie",
-        sourceUrl:
-          "https://www.donneesquebec.ca/recherche/dataset/vmtl-liste-des-fournisseurs",
-      },
+      { userId: demo.id, kind: "permit", itemId: "seed-permit-Montréal-0", notes: "Bon fit RBQ 4.1" },
+      { userId: demo.id, kind: "tender", itemId: "seed-tender-2", notes: "Clôture bientôt" },
+      { userId: demo.id, kind: "tender", itemId: "seed-tender-5" },
     ],
   });
 
-  console.log("Seed complete: demo@zonning.ca / demo1234");
+  const ws = weekStart();
+  await prisma.usageCounter.createMany({
+    data: [
+      { userId: demo.id, key: "verdict", count: 12, weekStart: ws },
+      { userId: demo.id, key: "export", count: 3, weekStart: ws },
+      { userId: equipe.id, key: "api", count: 240, weekStart: ws },
+    ],
+  });
+
+  // --- Sync health (green dashboard) -----------------------------------------
+  const now = new Date();
+  const rng = new Rng(hashSeed("sync"));
+  for (const id of ALL_DATASET_IDS) {
+    const records = rng.int(120, 14_500);
+    await prisma.syncState.create({
+      data: {
+        datasetId: id,
+        lastSuccessAt: now,
+        lastRunAt: now,
+        recordsProcessed: records,
+        status: "success",
+        sourceModifiedAt: new Date(now.getTime() - rng.int(1, 48) * 3_600_000),
+        qualityChecks: {
+          create: {
+            rowsIngested: records,
+            rowsInDb: records,
+            durationMs: rng.int(200, 9000),
+            status: "ok",
+            message: "Demo seed — ingestion nominale.",
+            sourceModifiedAt: new Date(now.getTime() - rng.int(1, 48) * 3_600_000),
+          },
+        },
+      },
+    });
+  }
+
+  await prisma.syncLog.createMany({
+    data: ALL_DATASET_IDS.slice(0, 24).map((id) => ({
+      source: DATASETS[id].syncSource ?? id,
+      status: "success",
+      recordsProcessed: rng.int(120, 14_500),
+      ranAt: new Date(now.getTime() - rng.int(1, 72) * 3_600_000),
+    })),
+  });
+
+  const counts = {
+    permits: permits.length,
+    tenders: tenders.length,
+    awards: awards.length,
+    companies: companies.length,
+    zoningPoints: intel.zoningPoints.length,
+    syncStates: ALL_DATASET_IDS.length,
+  };
+  console.log("Seed complete:", counts);
+  console.log("Logins (password: demo1234): demo@ / free@ / essentiel@ / pro@ / equipe@ / admin@ zonning.ca");
+  console.log("Showcase addresses live at /verdict — e.g. '1500 rue Wellington', '4200 boulevard Saint-Laurent'.");
 }
 
 main()
-  .catch(console.error)
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
   .finally(() => prisma.$disconnect());

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getIntelligenceByAddress,
   getIntelligenceByMatricule,
+  hasIntelligenceData,
 } from "@/lib/intelligence";
 import { ensureFreshForKey } from "@/lib/sync/auto";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
@@ -22,14 +23,29 @@ export async function GET(req: NextRequest) {
   if (matricule) {
     const intel = await getIntelligenceByMatricule(matricule);
     if (!intel) {
-      return NextResponse.json({ error: "Matricule not found" }, { status: 404 });
+      return NextResponse.json({
+        intelligence: null,
+        hasData: false,
+        message:
+          "Aucune donnée pour ce matricule. Il n'est pas encore dans nos jeux de données ingérés.",
+      });
     }
-    return NextResponse.json({ intelligence: intel });
+    return NextResponse.json({ intelligence: intel, hasData: hasIntelligenceData(intel) });
   }
 
   if (address) {
     const intel = await getIntelligenceByAddress(address, borough, city ?? undefined);
-    return NextResponse.json({ intelligence: intel });
+    const hasData = hasIntelligenceData(intel);
+    return NextResponse.json({
+      intelligence: intel,
+      hasData,
+      ...(hasData
+        ? {}
+        : {
+            message:
+              "Aucune donnée pour cette adresse pour l'instant. Elle n'est pas encore couverte par nos jeux de données — réessayez après la prochaine synchronisation.",
+          }),
+    });
   }
 
   return NextResponse.json(

@@ -47,7 +47,7 @@ export default function BuildLogPage() {
         "Pipeline Score + RBQ verification live",
         "SMS Twilio + alertes jeudi SEAO",
         "Équipe: orgs, API v1, export CRM",
-        "Concierge + paiement public + thermopompe funnel",
+        "Concierge + paiement public",
       ],
     },
     {

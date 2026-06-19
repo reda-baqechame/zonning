@@ -53,10 +53,12 @@ export function NavBar({
   const links = [
     ...(user ? [{ href: "/feed", label: t("feed") }] : []),
     { href: "/verdict", label: t("verdict") },
+    { href: "/intelligence", label: t("intelligence") },
     { href: "/chantier-radar", label: t("chantierRadar") },
     { href: "/marches-qc", label: t("marchesQc") },
     { href: "/coverage", label: t("coverage") },
     { href: "/partenaires-ca", label: t("partenairesCa") },
+    ...(user ? [{ href: "/paiement-public", label: t("paiementPublic") }] : []),
     ...(PRO_PLANS.has(plan) ? [{ href: "/compliance", label: t("compliance") }] : []),
     ...(ESSENTIEL_PLUS.has(plan) ? [{ href: "/export", label: t("export") }] : []),
     ...(plan === "EQUIPE" ? [{ href: "/equipe", label: t("equipe") }] : []),

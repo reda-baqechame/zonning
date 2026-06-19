@@ -1,4 +1,5 @@
 import { fetchWithRetry } from "@/lib/http/resilience";
+import { dataWarn } from "@/lib/datasets/log";
 
 const CKAN_BASES = {
   quebec: "https://www.donneesquebec.ca/recherche/api/3/action",
@@ -21,7 +22,10 @@ export async function fetchCkanPackage(
 ): Promise<{ resources: CkanResource[]; url: string } | null> {
   const base = CKAN_BASES[host];
   const res = await fetchWithRetry(`${base}/package_show?id=${datasetId}`);
-  if (!res.ok) return null;
+  if (!res.ok) {
+    dataWarn("fetchCkanPackage", { datasetId, host, status: res.status });
+    return null;
+  }
 
   const data = (await res.json()) as {
     result?: { resources?: CkanResource[]; url?: string };
@@ -78,7 +82,10 @@ export async function fetchCkanDatastoreTotal(
   const res = await fetchWithRetry(
     `${base}/datastore_search?resource_id=${resourceId}&limit=0`
   );
-  if (!res.ok) return null;
+  if (!res.ok) {
+    dataWarn("fetchCkanDatastoreTotal", { resourceId, host, status: res.status });
+    return null;
+  }
   const data = (await res.json()) as { result?: { total?: number } };
   const total = data.result?.total;
   return typeof total === "number" && total > 0 ? total : null;
@@ -110,7 +117,10 @@ export async function fetchLatestSeaoJsonUrl(): Promise<string | null> {
 
 export async function fetchText(url: string, maxBytes = 15_000_000): Promise<string | null> {
   const res = await fetchWithRetry(url, undefined, { timeoutMs: 120_000 });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    dataWarn("fetchText", { url, status: res.status });
+    return null;
+  }
 
   const buf = await res.arrayBuffer();
   const slice = buf.byteLength > maxBytes ? buf.slice(0, maxBytes) : buf;
@@ -119,7 +129,10 @@ export async function fetchText(url: string, maxBytes = 15_000_000): Promise<str
 
 export async function fetchJson<T>(url: string): Promise<T | null> {
   const res = await fetchWithRetry(url);
-  if (!res.ok) return null;
+  if (!res.ok) {
+    dataWarn("fetchJson", { url, status: res.status });
+    return null;
+  }
   return res.json() as Promise<T>;
 }
 
@@ -132,11 +145,18 @@ export async function fetchCkanDatastoreSearch(
   const base = CKAN_BASES[host];
   const url = `${base}/datastore_search?resource_id=${resourceId}&limit=${limit}&offset=${offset}`;
   const res = await fetchWithRetry(url);
-  if (!res.ok) return [];
+  if (!res.ok) {
+    dataWarn("fetchCkanDatastoreSearch", { resourceId, host, status: res.status });
+    return [];
+  }
   const data = (await res.json()) as {
     result?: { records?: Record<string, unknown>[] };
   };
-  return data.result?.records ?? [];
+  const records = data.result?.records ?? [];
+  if (records.length === 0) {
+    dataWarn("fetchCkanDatastoreSearch", { resourceId, host, reason: "empty result" });
+  }
+  return records;
 }
 
 export async function findResourceUrl(
