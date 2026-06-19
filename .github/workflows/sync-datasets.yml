@@ -1,6 +1,9 @@
 name: Sync datasets
 
 on:
+  push:
+    paths:
+      - ".github/workflows/sync-datasets.yml"
   schedule:
     - cron: "*/15 * * * *"
     - cron: "0 */4 * * *"
@@ -123,5 +126,5 @@ jobs:
           NEXT_PUBLIC_APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          npm ci
+          npm install --no-audit --no-fund
           npm run verify:deploy
