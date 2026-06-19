@@ -5,6 +5,7 @@ import { COVERAGE_CITIES } from "@/lib/datasets/registry";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { ensureQuebecRealtimeFresh } from "@/lib/sync/auto";
 import { buildSyncHealthSummary } from "@/lib/sync/health-summary";
+import { getDataModeStatus } from "@/lib/sync/demo-fallback";
 
 export async function GET(req: NextRequest) {
   const ip = clientIp(req);
@@ -12,9 +13,10 @@ export async function GET(req: NextRequest) {
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   ensureQuebecRealtimeFresh();
-  const [stats, health] = await Promise.all([
+  const [stats, health, dataMode] = await Promise.all([
     fetchMarketPulseStats(),
     buildSyncHealthSummary({ authorized: false }),
+    getDataModeStatus().catch(() => null),
   ]);
 
   const syncSummary = {
@@ -38,6 +40,8 @@ export async function GET(req: NextRequest) {
     ...stats,
     cities,
     syncSummary,
+    dataMode: dataMode?.mode,
+    demoFallbackActive: dataMode?.demoFallbackActive ?? false,
     updatedAt: stats.updatedAt,
   });
 }

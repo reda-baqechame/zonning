@@ -148,6 +148,9 @@
     "upgradeDesc": "Generate CASL PDF certificates for every contact from verifiable public registries.",
     "upgradeCta": "Upgrade to Pro"
   },
+  "demoMode": {
+    "banner": "Demo mode — sample data shown until the first live public-data sync completes."
+  },
   "footer": {
     "tagline": "ZONNING — Revenue pipeline and compliance for Quebec",
     "trust": "Public data · CASL compliance · {datasets} datasets · {cities} cities · RBQ registry",

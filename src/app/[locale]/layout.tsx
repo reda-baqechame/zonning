@@ -5,6 +5,7 @@ import { getMessages, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { NavBar } from "@/components/NavBar";
+import { DemoModeBanner } from "@/components/DemoModeBanner";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CookieConsent } from "@/components/CookieConsent";
 import { ToastProvider } from "@/components/ui";
@@ -46,6 +47,7 @@ export default async function LocaleLayout({
       <body className={`${ibmPlex.className} min-h-full bg-slate-950 text-slate-100 antialiased`}>
         <NextIntlClientProvider messages={messages}>
           <ToastProvider>
+            <DemoModeBanner />
             <NavBar user={user} />
             <main className="min-h-[calc(100vh-8rem)]">{children}</main>
             <SiteFooter />
