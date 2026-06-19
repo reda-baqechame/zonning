@@ -1,39 +1,40 @@
 "use client";
 
+import { PageHeader, Card, CardTitle, CardDescription, FadeIn } from "@/components/ui";
+
 export default function ExportClient() {
-  const download = (type: string) => {
-    window.location.href = `/api/export?type=${type}`;
+  const download = (type: string, eligibleOnly = false) => {
+    const params = new URLSearchParams({ type });
+    if (eligibleOnly) params.set("eligibleOnly", "true");
+    window.location.href = `/api/export?${params}`;
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-16">
-      <h1 className="text-3xl font-bold text-white">Export CRM</h1>
-      <p className="mt-3 text-slate-400">Téléchargez vos permis et appels d&apos;offres filtrés (Pro+).</p>
+    <FadeIn className="mx-auto max-w-2xl px-4 py-16">
+      <PageHeader
+        title="Export CRM"
+        subtitle="Téléchargez vos permis et appels d'offres filtrés (Essentiel+)."
+      />
       <div className="mt-8 flex flex-col gap-4">
-        <button
-          type="button"
-          onClick={() => download("permits")}
-          className="rounded-xl border border-slate-700 px-6 py-4 text-left hover:border-sky-500"
-        >
-          <span className="font-semibold text-white">Permis CSV</span>
-          <p className="text-sm text-slate-500">90 derniers jours + score RBQ-Fit</p>
+        <button type="button" onClick={() => download("permits")} className="text-left">
+          <Card hover>
+            <CardTitle>Permis CSV</CardTitle>
+            <CardDescription>90 derniers jours + score RBQ-Fit</CardDescription>
+          </Card>
         </button>
-        <button
-          type="button"
-          onClick={() => download("tenders")}
-          className="rounded-xl border border-slate-700 px-6 py-4 text-left hover:border-sky-500"
-        >
-          <span className="font-semibold text-white">Appels SEAO CSV</span>
-          <p className="text-sm text-slate-500">Marchés ouverts</p>
+        <button type="button" onClick={() => download("tenders")} className="text-left">
+          <Card hover>
+            <CardTitle>Appels SEAO CSV</CardTitle>
+            <CardDescription>Marchés ouverts</CardDescription>
+          </Card>
         </button>
-        <button
-          type="button"
-          onClick={() => (window.location.href = "/api/export?type=permits&eligibleOnly=true")}
-          className="rounded-xl border border-slate-700 px-6 py-4 text-left hover:border-sky-500"
-        >
-          <span className="font-semibold text-white">Permis éligibles RBQ seulement</span>
+        <button type="button" onClick={() => download("permits", true)} className="text-left">
+          <Card hover>
+            <CardTitle>Permis éligibles RBQ seulement</CardTitle>
+            <CardDescription>Filtre automatique sur l&apos;éligibilité RBQ-Fit</CardDescription>
+          </Card>
         </button>
       </div>
-    </div>
+    </FadeIn>
   );
 }

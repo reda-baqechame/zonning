@@ -135,6 +135,36 @@ export function collectEnvIssues(): EnvIssue[] {
         severity: "warn",
       });
     }
+    const scaffoldEnv: { key: string; label: string }[] = [
+      { key: "SHERBROOKE_PERMITS_URL", label: "permits-sherbrooke" },
+      { key: "V3R_PERMITS_URL", label: "permits-trois-rivieres" },
+      { key: "SAGUENAY_PERMITS_URL", label: "permits-saguenay" },
+      { key: "TERREBONNE_PERMITS_URL", label: "permits-terrebonne" },
+      { key: "REPENTIGNY_PERMITS_URL", label: "permits-repentigny" },
+      { key: "BROSSARD_PERMITS_URL", label: "permits-brossard" },
+      { key: "SJR_PERMITS_URL", label: "permits-saint-jean-richelieu" },
+      { key: "DRUMMONDVILLE_PERMITS_URL", label: "permits-drummondville" },
+      { key: "SAINT_JEROME_PERMITS_URL", label: "permits-saint-jerome" },
+      { key: "GRANBY_PERMITS_URL", label: "permits-granby" },
+      { key: "SAINT_HYACINTHE_PERMITS_URL", label: "permits-saint-hyacinthe" },
+      { key: "LONGUEUIL_PERMITS_URL", label: "permits-longueuil fallback" },
+      { key: "SHERBROOKE_ZONING_URL", label: "zoning-sherbrooke" },
+      { key: "QUEBEC_ZONING_URL", label: "zoning-quebec" },
+      { key: "LAVAL_ZONING_URL", label: "zoning-laval" },
+      { key: "LONGUEUIL_ZONING_URL", label: "zoning-longueuil" },
+      { key: "AMP_REGISTRY_URL", label: "amp-registry" },
+      { key: "RBQ_INFRACTIONS_URL", label: "rbq-infractions" },
+      { key: "MTL_INSPECTIONS_URL", label: "inspection-violations-mtl" },
+    ];
+    for (const { key, label } of scaffoldEnv) {
+      if (!process.env[key]) {
+        issues.push({
+          key,
+          message: `Recommended for ${label} — may stay empty until configured`,
+          severity: "info",
+        });
+      }
+    }
   }
 
   const integrations = getIntegrationStatus();

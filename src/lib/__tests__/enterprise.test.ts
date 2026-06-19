@@ -110,11 +110,11 @@ describe("admin emails", () => {
 });
 
 describe("dataset count", () => {
-  it("returns 33 active datasets without EXPAND_ONTARIO", async () => {
+  it("returns 52 active datasets without EXPAND_ONTARIO", async () => {
     const prev = process.env.EXPAND_ONTARIO;
     delete process.env.EXPAND_ONTARIO;
     const { getDatasetCount, getActiveDatasetIds } = await import("@/lib/datasets/registry");
-    expect(getDatasetCount()).toBe(33);
+    expect(getDatasetCount()).toBe(52);
     expect(getActiveDatasetIds()).not.toContain("zoning");
     expect(getActiveDatasetIds()).not.toContain("toronto-permits");
     process.env.EXPAND_ONTARIO = prev;

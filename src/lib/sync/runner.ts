@@ -317,11 +317,27 @@ async function upsertPermitRecords(
 
   if (newIds.length > 0) {
     try {
-      const { dispatchPermitCreatedEvents } = await import("@/lib/webhooks/dispatcher");
-      void dispatchPermitCreatedEvents(newIds.slice(0, 20));
+      const { dispatchPermitCreatedEvents, dispatchHighScoreLeadEvents } = await import(
+        "@/lib/webhooks/dispatcher"
+      );
+      void dispatchPermitCreatedEvents(newIds.slice(0, 50));
+      void dispatchHighScoreLeadEvents(newIds.slice(0, 50));
+      try {
+        const { schedulePermitIngestAlerts } = await import("@/lib/alerts/permit-ingest");
+        schedulePermitIngestAlerts(newIds);
+      } catch {
+        /* alerts optional */
+      }
     } catch {
       /* webhooks optional */
     }
+  }
+
+  try {
+    const { scheduleGeocodeAfterPermitIngest } = await import("./geocode-on-ingest");
+    scheduleGeocodeAfterPermitIngest(city);
+  } catch {
+    /* geocode optional */
   }
 
   return processed;
@@ -1388,8 +1404,17 @@ export async function syncProjectsBrossard(): Promise<SyncResult> {
 export async function syncPermitsLevis(): Promise<SyncResult> {
   const cfg = DATASETS["permits-levis"];
   return runSync("permits-levis", async () => {
-    const remote = await fetchLevisPermits();
+    const state = await prisma.syncState.findUnique({ where: { datasetId: "permits-levis" } });
+    const minIssueDate = state?.cursor ? new Date(state.cursor) : undefined;
+    const remote = await fetchLevisPermits(undefined, { minIssueDate });
     const processed = remote.length > 0 ? await upsertPermitRecords(remote, cfg.city) : 0;
+    const newest = remote.find((p) => p.issueDate);
+    if (newest?.issueDate) {
+      await prisma.syncState.update({
+        where: { datasetId: "permits-levis" },
+        data: { cursor: newest.issueDate.toISOString() },
+      });
+    }
     await persistSourceMetadata("permits-levis");
     const status = remote.length > 0 ? "success" : "empty";
     await logSync(cfg.syncSource, status, processed);
@@ -1464,6 +1489,313 @@ export async function syncContractsBoroughs(): Promise<SyncResult> {
       source: remote.length ? "live" : "empty",
     };
   });
+}
+
+async function syncEnvPermitDataset(
+  datasetId:
+    | "permits-sherbrooke"
+    | "permits-trois-rivieres"
+    | "permits-saguenay"
+    | "permits-terrebonne"
+    | "permits-repentigny"
+    | "permits-brossard"
+    | "permits-saint-jean-richelieu"
+    | "permits-drummondville"
+    | "permits-saint-jerome"
+    | "permits-granby"
+    | "permits-saint-hyacinthe",
+  fetcher: (opts?: { minIssueDate?: Date }) => Promise<Awaited<ReturnType<typeof fetchPermitsPaginated>>>
+): Promise<SyncResult> {
+  const cfg = DATASETS[datasetId];
+  return runSync(datasetId, async () => {
+    const state = await prisma.syncState.findUnique({ where: { datasetId } });
+    const minIssueDate = state?.cursor ? new Date(state.cursor) : undefined;
+    const remote = await fetcher({ minIssueDate });
+    const processed = remote.length > 0 ? await upsertPermitRecords(remote, cfg.city) : 0;
+
+    const newest = remote.find((p) => p.issueDate);
+    if (newest?.issueDate) {
+      await prisma.syncState.update({
+        where: { datasetId },
+        data: { cursor: newest.issueDate.toISOString() },
+      });
+    }
+
+    await persistSourceMetadata(datasetId);
+    await logSync(cfg.syncSource, remote.length > 0 ? "success" : "empty", processed);
+    return {
+      dataset: datasetId,
+      ok: true,
+      processed,
+      source: remote.length > 0 ? "live" : "empty",
+    };
+  });
+}
+
+export async function syncPermitsSherbrooke(): Promise<SyncResult> {
+  const { fetchSherbrookePermits } = await import("@/lib/datasets/fetchers/city-permits");
+  return syncEnvPermitDataset("permits-sherbrooke", (opts) => fetchSherbrookePermits(undefined, opts));
+}
+
+export async function syncPermitsTroisRivieres(): Promise<SyncResult> {
+  const { fetchTroisRivieresPermits } = await import("@/lib/datasets/fetchers/city-permits");
+  return syncEnvPermitDataset("permits-trois-rivieres", (opts) =>
+    fetchTroisRivieresPermits(undefined, opts)
+  );
+}
+
+export async function syncPermitsSaguenay(): Promise<SyncResult> {
+  const { fetchSaguenayPermits } = await import("@/lib/datasets/fetchers/city-permits");
+  return syncEnvPermitDataset("permits-saguenay", (opts) => fetchSaguenayPermits(undefined, opts));
+}
+
+export async function syncPermitsTerrebonne(): Promise<SyncResult> {
+  const { fetchEnvCityPermits } = await import("@/lib/datasets/fetchers/city-permits");
+  return syncEnvPermitDataset("permits-terrebonne", (opts) =>
+    fetchEnvCityPermits("permits-terrebonne", undefined, opts)
+  );
+}
+
+export async function syncPermitsRepentigny(): Promise<SyncResult> {
+  const { fetchEnvCityPermits } = await import("@/lib/datasets/fetchers/city-permits");
+  return syncEnvPermitDataset("permits-repentigny", (opts) =>
+    fetchEnvCityPermits("permits-repentigny", undefined, opts)
+  );
+}
+
+export async function syncPermitsBrossard(): Promise<SyncResult> {
+  const { fetchEnvCityPermits } = await import("@/lib/datasets/fetchers/city-permits");
+  return syncEnvPermitDataset("permits-brossard", (opts) =>
+    fetchEnvCityPermits("permits-brossard", undefined, opts)
+  );
+}
+
+export async function syncPermitsSaintJeanRichelieu(): Promise<SyncResult> {
+  const { fetchEnvCityPermits } = await import("@/lib/datasets/fetchers/city-permits");
+  return syncEnvPermitDataset("permits-saint-jean-richelieu", (opts) =>
+    fetchEnvCityPermits("permits-saint-jean-richelieu", undefined, opts)
+  );
+}
+
+export async function syncPermitsDrummondville(): Promise<SyncResult> {
+  const { fetchEnvCityPermits } = await import("@/lib/datasets/fetchers/city-permits");
+  return syncEnvPermitDataset("permits-drummondville", (opts) =>
+    fetchEnvCityPermits("permits-drummondville", undefined, opts)
+  );
+}
+
+export async function syncPermitsSaintJerome(): Promise<SyncResult> {
+  const { fetchEnvCityPermits } = await import("@/lib/datasets/fetchers/city-permits");
+  return syncEnvPermitDataset("permits-saint-jerome", (opts) =>
+    fetchEnvCityPermits("permits-saint-jerome", undefined, opts)
+  );
+}
+
+export async function syncPermitsGranby(): Promise<SyncResult> {
+  const { fetchEnvCityPermits } = await import("@/lib/datasets/fetchers/city-permits");
+  return syncEnvPermitDataset("permits-granby", (opts) =>
+    fetchEnvCityPermits("permits-granby", undefined, opts)
+  );
+}
+
+export async function syncPermitsSaintHyacinthe(): Promise<SyncResult> {
+  const { fetchEnvCityPermits } = await import("@/lib/datasets/fetchers/city-permits");
+  return syncEnvPermitDataset("permits-saint-hyacinthe", (opts) =>
+    fetchEnvCityPermits("permits-saint-hyacinthe", undefined, opts)
+  );
+}
+
+export async function syncZoningSherbrooke(): Promise<SyncResult> {
+  return runSync("zoning-sherbrooke", async () => {
+    const { fetchZoningSherbrooke } = await import("@/lib/datasets/fetchers/zoning-regional");
+    const remote = await fetchZoningSherbrooke();
+    const { processed } = await upsertZoningPointBatch(remote);
+    await persistSourceMetadata("zoning-sherbrooke");
+    await logSync(DATASETS["zoning-sherbrooke"].syncSource, remote.length ? "success" : "empty", processed);
+    return { dataset: "zoning-sherbrooke", ok: true, processed, source: remote.length ? "live" : "empty" };
+  });
+}
+
+export async function syncZoningQuebec(): Promise<SyncResult> {
+  return runSync("zoning-quebec", async () => {
+    const { fetchZoningQuebec } = await import("@/lib/datasets/fetchers/zoning-regional");
+    const remote = await fetchZoningQuebec();
+    const { processed } = await upsertZoningPointBatch(remote);
+    await persistSourceMetadata("zoning-quebec");
+    await logSync(DATASETS["zoning-quebec"].syncSource, remote.length ? "success" : "empty", processed);
+    return { dataset: "zoning-quebec", ok: true, processed, source: remote.length ? "live" : "empty" };
+  });
+}
+
+export async function syncZoningLaval(): Promise<SyncResult> {
+  return runSync("zoning-laval", async () => {
+    const { fetchZoningLaval } = await import("@/lib/datasets/fetchers/zoning-regional");
+    const remote = await fetchZoningLaval();
+    const { processed } = await upsertZoningPointBatch(remote);
+    await persistSourceMetadata("zoning-laval");
+    await logSync(DATASETS["zoning-laval"].syncSource, remote.length ? "success" : "empty", processed);
+    return { dataset: "zoning-laval", ok: true, processed, source: remote.length ? "live" : "empty" };
+  });
+}
+
+export async function syncZoningLongueuil(): Promise<SyncResult> {
+  return runSync("zoning-longueuil", async () => {
+    const { fetchZoningLongueuil } = await import("@/lib/datasets/fetchers/zoning-regional");
+    const remote = await fetchZoningLongueuil();
+    const { processed } = await upsertZoningPointBatch(remote);
+    await persistSourceMetadata("zoning-longueuil");
+    await logSync(
+      DATASETS["zoning-longueuil"].syncSource,
+      remote.length ? "success" : "empty",
+      processed
+    );
+    return {
+      dataset: "zoning-longueuil",
+      ok: true,
+      processed,
+      source: remote.length ? "live" : "empty",
+    };
+  });
+}
+
+async function syncRegulatoryScaffold(
+  datasetId: "amp-registry" | "rbq-infractions" | "inspection-violations-mtl"
+): Promise<SyncResult> {
+  const cfg = DATASETS[datasetId];
+  return runSync(datasetId, async () => {
+    const { fetchRegulatoryCsv } = await import("@/lib/datasets/fetchers/regulatory-scaffold");
+    let processed = 0;
+    const rows = await fetchRegulatoryCsv(datasetId);
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]!;
+      const { pick } = await import("@/lib/datasets/parser");
+      if (datasetId === "amp-registry") {
+        const licenseNumber = pick(row, "numero", "license", "licence") || `amp-${i}`;
+        await prisma.ampAuthorization.upsert({
+          where: { licenseNumber },
+          create: {
+            licenseNumber,
+            holderName: pick(row, "nom", "name") || undefined,
+            ampClass: pick(row, "classe", "class") || undefined,
+            status: pick(row, "statut", "status") || "active",
+            sourceUrl: cfg.sourceUrl,
+          },
+          update: {
+            holderName: pick(row, "nom", "name") || undefined,
+            ampClass: pick(row, "classe", "class") || undefined,
+            status: pick(row, "statut", "status") || "active",
+            sourceFetchedAt: new Date(),
+          },
+        });
+      } else if (datasetId === "rbq-infractions") {
+        const externalId = pick(row, "id", "numero") || `rbq-inf-${i}`;
+        await prisma.rbqInfraction.upsert({
+          where: { externalId },
+          create: {
+            externalId,
+            licenseNumber: pick(row, "licence", "license") || undefined,
+            holderName: pick(row, "nom", "name") || undefined,
+            description: pick(row, "description", "infraction") || undefined,
+            sourceUrl: cfg.sourceUrl,
+          },
+          update: {
+            licenseNumber: pick(row, "licence", "license") || undefined,
+            holderName: pick(row, "nom", "name") || undefined,
+            description: pick(row, "description", "infraction") || undefined,
+            sourceFetchedAt: new Date(),
+          },
+        });
+      } else {
+        const externalId = pick(row, "id", "numero") || `insp-${i}`;
+        await prisma.municipalInspection.upsert({
+          where: { externalId },
+          create: {
+            externalId,
+            city: cfg.city ?? "Montréal",
+            address: pick(row, "adresse", "address") || undefined,
+            violationType: pick(row, "type", "infraction") || undefined,
+            sourceUrl: cfg.sourceUrl,
+          },
+          update: {
+            address: pick(row, "adresse", "address") || undefined,
+            violationType: pick(row, "type", "infraction") || undefined,
+            sourceFetchedAt: new Date(),
+          },
+        });
+      }
+      processed++;
+    }
+    await persistSourceMetadata(datasetId);
+    await logSync(cfg.syncSource, processed ? "success" : "empty", processed);
+    return { dataset: datasetId, ok: true, processed, source: processed ? "live" : "empty" };
+  });
+}
+
+export async function syncAmpRegistry(): Promise<SyncResult> {
+  return syncRegulatoryScaffold("amp-registry");
+}
+
+export async function syncRbqInfractions(): Promise<SyncResult> {
+  return syncRegulatoryScaffold("rbq-infractions");
+}
+
+export async function syncSeaoStandingOffers(): Promise<SyncResult> {
+  const cfg = DATASETS["seao-standing-offers"];
+  return runSync("seao-standing-offers", async () => {
+    const { fetchSeaoStandingOffers } = await import(
+      "@/lib/datasets/fetchers/seao-standing-offers"
+    );
+    const remote = await fetchSeaoStandingOffers();
+    let processed = 0;
+    for (const t of remote) {
+      await prisma.tender.upsert({
+        where: { externalId: t.externalId },
+        create: {
+          externalId: t.externalId,
+          title: t.title,
+          organization: t.organization,
+          category: t.category,
+          region: t.region,
+          estimatedValue: t.estimatedValue,
+          publishedAt: t.publishedAt,
+          closesAt: t.closesAt,
+          summary: t.summary,
+          description: t.description,
+          requiresAmp: t.requiresAmp ?? false,
+          sourceUrl: t.sourceUrl,
+          unspsc: t.unspsc,
+          status: t.status ?? "standing",
+        },
+        update: {
+          title: t.title,
+          organization: t.organization,
+          category: t.category,
+          region: t.region,
+          estimatedValue: t.estimatedValue,
+          publishedAt: t.publishedAt,
+          closesAt: t.closesAt,
+          summary: t.summary,
+          description: t.description,
+          sourceUrl: t.sourceUrl,
+          unspsc: t.unspsc,
+          status: t.status ?? "standing",
+        },
+      });
+      processed++;
+    }
+    await persistSourceMetadata("seao-standing-offers");
+    await logSync(cfg.syncSource, processed ? "success" : "empty", processed);
+    return {
+      dataset: "seao-standing-offers",
+      ok: true,
+      processed,
+      source: processed ? "live" : "empty",
+    };
+  });
+}
+
+export async function syncInspectionViolationsMtl(): Promise<SyncResult> {
+  return syncRegulatoryScaffold("inspection-violations-mtl");
 }
 
 export async function syncTorontoPermitsScaffold(): Promise<SyncResult> {
@@ -1554,6 +1886,25 @@ const SYNC_FNS: Record<DatasetId, (limit?: number) => Promise<SyncResult>> = {
   "zoning-trois-rivieres": () => syncZoningTroisRivieres(),
   "roadworks-saguenay": () => syncRoadworksSaguenay(),
   "contracts-boroughs": () => syncContractsBoroughs(),
+  "permits-sherbrooke": () => syncPermitsSherbrooke(),
+  "permits-trois-rivieres": () => syncPermitsTroisRivieres(),
+  "permits-saguenay": () => syncPermitsSaguenay(),
+  "permits-terrebonne": () => syncPermitsTerrebonne(),
+  "permits-repentigny": () => syncPermitsRepentigny(),
+  "permits-brossard": () => syncPermitsBrossard(),
+  "permits-saint-jean-richelieu": () => syncPermitsSaintJeanRichelieu(),
+  "permits-drummondville": () => syncPermitsDrummondville(),
+  "permits-saint-jerome": () => syncPermitsSaintJerome(),
+  "permits-granby": () => syncPermitsGranby(),
+  "permits-saint-hyacinthe": () => syncPermitsSaintHyacinthe(),
+  "zoning-sherbrooke": () => syncZoningSherbrooke(),
+  "zoning-quebec": () => syncZoningQuebec(),
+  "zoning-laval": () => syncZoningLaval(),
+  "zoning-longueuil": () => syncZoningLongueuil(),
+  "amp-registry": () => syncAmpRegistry(),
+  "rbq-infractions": () => syncRbqInfractions(),
+  "seao-standing-offers": () => syncSeaoStandingOffers(),
+  "inspection-violations-mtl": () => syncInspectionViolationsMtl(),
   "toronto-permits": () => syncTorontoPermitsScaffold(),
 };
 

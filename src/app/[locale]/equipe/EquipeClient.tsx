@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
+import { Input, Button, useToast, Card, PageHeader, FadeIn } from "@/components/ui";
 
 type Member = {
   id: string;
@@ -25,9 +26,10 @@ type Webhook = {
   createdAt: string;
 };
 
-const WEBHOOK_EVENTS = ["permit.created", "tender.created"] as const;
+const WEBHOOK_EVENTS = ["permit.created", "tender.created", "lead.high_score"] as const;
 
 export default function EquipeClient() {
+  const { error: toastError, success } = useToast();
   const [org, setOrg] = useState<{ id: string; name: string } | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
@@ -70,7 +72,7 @@ export default function EquipeClient() {
     });
     const d = await res.json();
     if (!res.ok) {
-      alert(d.error);
+      toastError(d.error);
       return;
     }
     setInviteEmail("");
@@ -85,7 +87,7 @@ export default function EquipeClient() {
     });
     const d = await res.json();
     if (!res.ok) {
-      alert(d.error);
+      toastError(d.error);
       return;
     }
     setNewKey(d.key);
@@ -113,7 +115,7 @@ export default function EquipeClient() {
     });
     const d = await res.json();
     if (!res.ok) {
-      alert(d.error);
+      toastError(d.error);
       return;
     }
     setNewWebhookSecret(d.secret);
@@ -136,25 +138,30 @@ export default function EquipeClient() {
     );
   };
 
+  const copyKey = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    success("Clé copiée");
+  };
+
   if (error) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+      <FadeIn className="mx-auto max-w-2xl px-4 py-16 text-center">
         <p className="text-slate-400">{error}</p>
         <Link href="/pricing" className="mt-4 inline-block text-sky-400">
           Passer au plan Équipe →
         </Link>
-      </div>
+      </FadeIn>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-2xl font-bold text-white">Équipe ZONNING</h1>
-      <p className="mt-2 text-slate-400">
-        {org?.name ?? "Organisation"} · 5 sièges max · API v1 · Webhooks
-      </p>
+    <FadeIn className="mx-auto max-w-3xl px-4 py-10">
+      <PageHeader
+        title="Équipe ZONNING"
+        subtitle={`${org?.name ?? "Organisation"} · 5 sièges max · API v1 · Webhooks`}
+      />
 
-      <section className="mt-10 rounded-xl border border-slate-800 p-6">
+      <Card className="mt-10">
         <h2 className="font-semibold text-white">Membres ({members.length}/5)</h2>
         <ul className="mt-4 space-y-2">
           {members.map((m) => (
@@ -165,19 +172,17 @@ export default function EquipeClient() {
           ))}
         </ul>
         <div className="mt-4 flex gap-2">
-          <input
+          <Input
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
             placeholder="email@entreprise.ca"
-            className="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
+            className="flex-1"
           />
-          <button onClick={invite} className="rounded-lg bg-sky-500 px-4 py-2 text-sm">
-            Inviter
-          </button>
+          <Button onClick={invite}>Inviter</Button>
         </div>
-      </section>
+      </Card>
 
-      <section className="mt-8 rounded-xl border border-slate-800 p-6">
+      <Card className="mt-8">
         <h2 className="font-semibold text-white">Clés API</h2>
         <ul className="mt-4 space-y-2 text-sm text-slate-400">
           {apiKeys.map((k) => (
@@ -185,8 +190,11 @@ export default function EquipeClient() {
               <span>
                 {k.name} · <code className="text-sky-300">{k.keyPrefix}…</code>
               </span>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
+                className="text-red-400 hover:text-red-300"
                 onClick={() =>
                   fetch("/api/org", {
                     method: "POST",
@@ -194,31 +202,33 @@ export default function EquipeClient() {
                     body: JSON.stringify({ action: "revoke_api_key", keyId: k.id }),
                   }).then(load)
                 }
-                className="text-xs text-red-400 hover:text-red-300"
               >
                 Révoquer
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
         {newKey && (
-          <p className="mt-3 rounded bg-amber-950/50 p-3 text-xs text-amber-200">
-            Copiez cette clé maintenant: <code>{newKey}</code>
-          </p>
+          <div className="mt-3 flex items-center gap-2 rounded bg-amber-950/50 p-3 text-xs text-amber-200">
+            <code className="flex-1 break-all">{newKey}</code>
+            <Button type="button" size="sm" variant="secondary" onClick={() => copyKey(newKey)}>
+              Copier
+            </Button>
+          </div>
         )}
         <div className="mt-4 flex gap-2">
-          <input
+          <Input
             value={keyName}
             onChange={(e) => setKeyName(e.target.value)}
-            className="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
+            className="flex-1"
           />
-          <button onClick={createKey} className="rounded-lg bg-slate-700 px-4 py-2 text-sm">
+          <Button variant="secondary" onClick={createKey}>
             Créer clé
-          </button>
+          </Button>
         </div>
-      </section>
+      </Card>
 
-      <section className="mt-8 rounded-xl border border-slate-800 p-6">
+      <Card className="mt-8">
         <h2 className="font-semibold text-white">Webhooks</h2>
         <ul className="mt-4 space-y-2 text-sm text-slate-400">
           {webhooks.map((w) => (
@@ -230,46 +240,43 @@ export default function EquipeClient() {
                   <p className="mt-1 text-xs text-slate-600">Filtres: {w.filters}</p>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => deleteWebhook(w.id)}
-                className="shrink-0 text-xs text-red-400 hover:text-red-300"
-              >
+              <Button type="button" variant="ghost" size="sm" className="text-red-400" onClick={() => deleteWebhook(w.id)}>
                 Supprimer
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
         {newWebhookSecret && (
-          <p className="mt-3 rounded bg-amber-950/50 p-3 text-xs text-amber-200">
-            Secret webhook (une fois): <code>{newWebhookSecret}</code>
-          </p>
+          <div className="mt-3 flex items-center gap-2 rounded bg-amber-950/50 p-3 text-xs text-amber-200">
+            <span className="flex-1">
+              Secret webhook (une fois): <code>{newWebhookSecret}</code>
+            </span>
+            <Button type="button" size="sm" variant="secondary" onClick={() => copyKey(newWebhookSecret)}>
+              Copier
+            </Button>
+          </div>
         )}
         <div className="mt-4 space-y-3">
-          <input
+          <Input
             value={webhookUrl}
             onChange={(e) => setWebhookUrl(e.target.value)}
             placeholder="https://votre-crm.ca/webhooks/zonning"
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
           />
-          <input
+          <Input
             value={webhookBoroughs}
             onChange={(e) => setWebhookBoroughs(e.target.value)}
             placeholder="Arrondissements (ex: Ville-Marie, Plateau)"
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
           />
-          <input
+          <Input
             value={webhookCities}
             onChange={(e) => setWebhookCities(e.target.value)}
             placeholder="Villes (ex: Montréal, Laval)"
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
           />
-          <input
+          <Input
             value={webhookMinCost}
             onChange={(e) => setWebhookMinCost(e.target.value)}
             type="number"
             placeholder="Coût min. permis ($)"
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
           />
           <div className="flex flex-wrap gap-3 text-sm text-slate-400">
             {WEBHOOK_EVENTS.map((ev) => (
@@ -278,24 +285,25 @@ export default function EquipeClient() {
                   type="checkbox"
                   checked={webhookEvents.includes(ev)}
                   onChange={() => toggleEvent(ev)}
+                  className="rounded border-slate-600"
                 />
                 {ev}
               </label>
             ))}
           </div>
-          <button
+          <Button
             onClick={createWebhook}
             disabled={!webhookUrl || webhookEvents.length === 0}
-            className="rounded-lg bg-slate-700 px-4 py-2 text-sm disabled:opacity-50"
+            variant="secondary"
           >
             Créer webhook
-          </button>
+          </Button>
         </div>
-      </section>
+      </Card>
 
       <p className="mt-8 text-sm text-slate-500">
         Documentation API: <code className="text-sky-300">docs/API.md</code>
       </p>
-    </div>
+    </FadeIn>
   );
 }

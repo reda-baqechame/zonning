@@ -54,7 +54,7 @@ function main() {
 6. DATABASE_URL=postgresql://... npm run setup:postgres
 7. NEXT_PUBLIC_APP_URL=https://YOUR-APP.vercel.app CRON_SECRET=... npm run bootstrap:prod
 8. GitHub Secrets: APP_URL + CRON_SECRET
-9. npm run verify:deploy  → expect 12/12
+9. npm run verify:deploy  → expect all checks passed (see script output)
 
 Full guide: LAUNCH.md
 `);

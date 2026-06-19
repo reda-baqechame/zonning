@@ -11,25 +11,41 @@
     "marchesQc": "MarchésQC",
     "partenairesCa": "PartenairesCA",
     "compliance": "Compliance",
+    "export": "Export",
+    "equipe": "Team",
     "pricing": "Pricing",
+    "coverage": "Coverage",
     "validation": "Validation",
     "dashboard": "Dashboard",
     "login": "Log in",
     "register": "Sign up",
-    "logout": "Log out"
+    "logout": "Log out",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "hero": {
-    "badge": "Built with Cursor · 33 datasets",
+    "badge": "{datasets} datasets · {cities} cities",
     "title": "Start your week in ZONNING",
-    "subtitle": "Unified permit + SEAO feed. Free PERMIS.AI verdict on any Quebec address. RBQ, CASL, and AMP in one place.",
+    "subtitle": "Unified permit feed (Montreal, Laval, Longueuil + all Quebec) + SEAO tenders. Free PERMIS.AI verdict. RBQ, zoning, transactions, and CASL in one engine.",
     "cta": "Open my feed",
-    "ctaDemo": "Free verdict",
-    "ctaVerdict": "PERMIS.AI — check an address"
+    "ctaSecondary": "View pricing",
+    "ctaVerdict": "Try PERMIS.AI",
+    "coverageCta": "Quebec coverage",
+    "explore": "Explore",
+    "howItWorks": "How it works",
+    "step1Title": "Configure your RBQ profile",
+    "step1Desc": "Trades, regions, and license — your feed shows only what fits.",
+    "step2Title": "Receive matched opportunities",
+    "step2Desc": "Qualified permits, SEAO tenders, and Thursday alerts.",
+    "step3Title": "Outreach with compliance proof",
+    "step3Desc": "CASL certificates and verifiable public-source records.",
+    "whyTitle": "Why Quebec contractors choose ZONNING",
+    "digestCta": "Free weekly digest"
   },
   "features": {
     "chantier": {
       "title": "ChantierRadar",
-      "desc": "Montreal construction permits with RBQ-Fit score — only projects your license covers."
+      "desc": "Quebec construction permits — Montreal, Laval, Longueuil and 10 cities — live RBQ-Fit scoring."
     },
     "marches": {
       "title": "MarchésQC",
@@ -72,7 +88,11 @@
     "createAlert": "Create alert",
     "noPermits": "No permits found",
     "days": "Period",
-    "daysLabel": "days"
+    "daysLabel": "days",
+    "layerDevProjects": "Dev projects on map",
+    "layerGtc": "GTC layer",
+    "layerHeritage": "Heritage",
+    "resultSummary": "{count} results · {mappable}/{total} on map"
   },
   "marches": {
     "title": "MarchésQC",
@@ -91,7 +111,11 @@
     "allCategories": "All",
     "region": "Region",
     "applyFilters": "Apply",
-    "noTenders": "No open tenders found"
+    "noTenders": "No open tenders found",
+    "thursdayBanner": "Thursday deadlines — SEAO bids this week",
+    "alertSuccess": "MarchésQC alert created",
+    "standingOffers": "Standing offers (SEAO)",
+    "standingOffersDesc": "Active framework agreements indexed from public SEAO data."
   },
   "partenaires": {
     "title": "PartenairesCA",
@@ -111,7 +135,53 @@
     "subtitle": "CASL proof for contacts from public registries",
     "download": "Download PDF certificate",
     "createFromPermit": "Create from this permit",
-    "lawfulBasis": "Conspicuous publication — public registry"
+    "lawfulBasis": "Conspicuous publication — public registry",
+    "newCert": "New certificate",
+    "contactName": "Contact name",
+    "contactEmail": "Email",
+    "sourceUrl": "Public source URL",
+    "create": "Create record",
+    "upgradeTitle": "Compliance Vault — Pro plan required",
+    "upgradeDesc": "Generate CASL PDF certificates for every contact from verifiable public registries.",
+    "upgradeCta": "Upgrade to Pro"
+  },
+  "footer": {
+    "tagline": "ZONNING — Revenue pipeline and compliance for Quebec",
+    "trust": "Public data · CASL compliance · {datasets} datasets · {cities} cities · RBQ registry",
+    "buildLog": "Build log",
+    "dataHealth": "Data health",
+    "coverage": "Coverage",
+    "intelligence": "Intelligence",
+    "developers": "API",
+    "coverageApi": "Coverage API"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "retry": "Try again",
+    "save": "Save",
+    "cancel": "Cancel",
+    "success": "Success",
+    "alertCreated": "Alert created",
+    "demoHint": "Demo: demo@zonning.ca / demo1234"
+  },
+  "onboarding": {
+    "title": "Set up your profile",
+    "subtitle": "Step {step} of {total} — personalize your opportunity feed",
+    "rbqClass": "RBQ class",
+    "rbqNumber": "RBQ license number",
+    "trades": "Trades",
+    "regions": "Regions",
+    "phone": "Phone (SMS alerts)",
+    "phoneHint": "Optional — required for SMS alerts (Pro+ plan).",
+    "amp": "My company holds a public procurement authorization (AMP)",
+    "back": "Back",
+    "next": "Continue",
+    "finish": "Go to feed",
+    "stepProfile": "RBQ profile",
+    "stepTrades": "Trades & regions",
+    "stepPhone": "Phone",
+    "stepAmp": "Public tenders"
   },
   "auth": {
     "email": "Email",
@@ -126,8 +196,16 @@
     "hasAccount": "Already have an account?"
   },
   "validation": {
-    "title": "Customer discovery",
-    "subtitle": "Track 15 market validation interviews",
+    "title": "Request a demo",
+    "subtitle": "Tell us about your company — we'll reach out within 48 hours.",
+    "submit": "Send request",
+    "success": "Request sent — thank you!",
+    "name": "Your name",
+    "company": "Company",
+    "role": "Role",
+    "message": "Describe your current pipeline",
+    "adminTitle": "Customer discovery",
+    "adminSubtitle": "Market validation interview tracking",
     "add": "Add interview",
     "goCriteria": "GO criteria: 8+/15 with urgency 4+",
     "total": "Interviews logged"
@@ -148,7 +226,7 @@
     "pending": "Sync pending"
   },
   "beta": {
-    "title": "Montreal beta program",
+    "title": "Quebec beta program",
     "desc": "Join the first 10 SMEs — concierge onboarding included for the first 3 Pro signups."
   },
   "feed": {
@@ -158,6 +236,9 @@
     "allRegions": "All regions",
     "loading": "Loading feed…",
     "noPermits": "No recent permits for your profile.",
+    "noPermitsHint": "Adjust trades and regions in settings to see more results.",
+    "noTenders": "No open contracts for your profile.",
+    "subtitle": "Your qualified opportunities today — permits, SEAO, and PERMIS.AI.",
     "map": "Map",
     "source": "Source",
     "closesIn": "Closes in",
@@ -172,8 +253,33 @@
     "tab": {
       "permits": "Permits",
       "tenders": "Contracts",
-      "verdict": "Check address"
-    }
+      "verdict": "Check address",
+      "watchlist": "Watchlist"
+    },
+    "filterUrgent": "Urgent",
+    "filterRbq": "RBQ eligible",
+    "filterHighValue": "High value",
+    "filterRisks": "Risks",
+    "noWatchlist": "No saved leads — click the star to save."
+  },
+  "leadSignals": {
+    "strong_match": "Strong match",
+    "rbq_eligible": "RBQ eligible",
+    "high_value": "High value",
+    "urgent_close": "Closing soon",
+    "thursday_seao": "Thursday SEAO",
+    "amp_required": "AMP required",
+    "gtc_risk": "GTC risk",
+    "heritage_risk": "Heritage",
+    "density_upside": "Density upside",
+    "new_this_week": "New",
+    "award_linked": "SEAO award",
+    "rbq_infraction": "RBQ infraction",
+    "inspection_flag": "MTL inspection"
+  },
+  "map": {
+    "loading": "Loading map…",
+    "coverage": "{mappable}/{total} on map"
   },
   "settings": {
     "title": "Settings",
@@ -182,6 +288,7 @@
     "name": "Name",
     "companyName": "Company name",
     "rbqNumber": "RBQ number",
+    "rbqClass": "RBQ class",
     "rbqVerified": "License verified in registry",
     "trades": "Trades",
     "regions": "Regions",
@@ -191,12 +298,16 @@
     "saveAndFeed": "Save → Feed",
     "saved": "Saved",
     "currentPlan": "Current plan",
-    "manageSubscription": "Manage subscription"
+    "manageSubscription": "Manage subscription",
+    "integrations": "Integrations"
   },
   "verdict": {
     "title": "PERMIS.AI Verdict",
     "subtitle": "Development potential from Quebec public data — free and shareable.",
+    "addressLabel": "Civic address",
     "addressPlaceholder": "1234 Example St, Montreal",
+    "boroughLabel": "Borough",
+    "exampleAddress": "Try: 1234 Saint-Denis St, Montreal",
     "boroughPlaceholder": "Borough",
     "cta": "Analyze address",
     "footer": "PERMIS.AI analysis · Powered by ZONNING"
@@ -230,6 +341,132 @@
     "privacyLink": "Privacy Policy",
     "footerTerms": "Terms",
     "footerPrivacy": "Privacy"
+  },
+  "fomo": {
+    "live": "Live",
+    "pulseToday": "{count} new permits today",
+    "pulseWeek": "{count} permits this week",
+    "pulseHighValue": "{count} deals ≥ $500K",
+    "pulseThursday": "{count} SEAO close Thursday",
+    "pulseClosing": "{count} tenders closing within 7 days",
+    "pulseValue": "{value} in indexed projects",
+    "statToday": "permits today",
+    "statWeek": "permits this week",
+    "statHighValue": "high-value deals",
+    "statThursday": "Thursday SEAO",
+    "statTenders": "open tenders",
+    "statPipeline": "indexed value (7d)",
+    "statCompanies": "indexed companies",
+    "freshness": "Updated {time} · {datasets} datasets · {cities} cities",
+    "intelLayers": "{count} intelligence layers active",
+    "rbqRegistry": "{count} RBQ licenses indexed",
+    "missedTitle": "You're only seeing a fraction of the market",
+    "missedPermits": "{hidden} more permits this week ({total} total in pool)",
+    "missedHighValue": "{count} deals ≥ $500K hidden by your plan",
+    "missedValue": "{value} in hidden project value",
+    "missedUrgent": "{count} urgent tenders you can't see",
+    "missedHint": "{plan} plan — Pro subscribers see the full real-time feed",
+    "unlockCta": "Unlock the full feed",
+    "lockedHeading": "What Pro subscribers are viewing right now",
+    "lockedBody": "Address · score · RBQ-Fit locked",
+    "previewEyebrow": "While you're reading this",
+    "previewTitle": "Contractors are already qualifying these deals",
+    "previewSubtitle": "{permits} permits and {highValue} deals ≥ $500K this week — RBQ-Fit filtered",
+    "previewLocked": "Details locked",
+    "previewCta": "Join before they're gone",
+    "previewFootnote": "Over {value} in active indexed projects this week",
+    "previewFootnoteGeneric": "Quebec public data, continuously updated",
+    "topLead": "Top lead",
+    "pulseRgm": "GMA: {count} permits this week · {today} today"
+  },
+  "quebec": {
+    "engineEyebrow": "Quebec engine",
+    "engineTitle": "{cities} cities · live Quebec engine",
+    "engineMeta": "{datasets} datasets · {cities} cities · {records} indexed records",
+    "syncLive": "Auto-sync 5 min",
+    "permitsIndexed": "permits",
+    "weekCount": "{count} this week",
+    "rgmLive": "GMA {today} permits today · {city} +{count}",
+    "layerPermits": "Permits",
+    "layerTenders": "SEAO",
+    "layerRbq": "RBQ",
+    "layerZoning": "Zoning",
+    "layerTransactions": "Transactions",
+    "layerAssessment": "Assessment",
+    "layerHeritage": "Heritage",
+    "layerContracts": "Contracts",
+    "layerContamination": "Contamination",
+    "layerRoadworks": "Roadworks",
+    "layerAwards": "Awards",
+    "layerCompanies": "Companies",
+    "mapPercent": "{pct}% mapped"
+  },
+  "coverage": {
+    "title": "Quebec coverage — data trust",
+    "subtitle": "Public sources, automatic sync, 17 cities and 52 indexed datasets for construction and real estate.",
+    "datasets": "Active datasets",
+    "cities": "Coverage cities",
+    "rbqLicenses": "Active RBQ licenses",
+    "syncHealth": "Sync: {healthy} healthy · {stale} stale · {critical} critical",
+    "cityTable": "Permits by city",
+    "colCity": "City",
+    "colPermits": "Indexed permits",
+    "colMap": "Map",
+    "colWeek": "7 days",
+    "colSync": "Last sync",
+    "apiLink": "API documentation",
+    "intelLink": "Intelligence explorer"
+  },
+  "developers": {
+    "title": "Quebec construction API",
+    "subtitle": "Programmatic access to permits, SEAO, verdict and site intelligence (Équipe).",
+    "restTitle": "REST endpoints (API key)",
+    "restDesc": "Bearer authentication. Scopes: permits, tenders, verdict.",
+    "authNote": "API keys available on Équipe plan.",
+    "publicTitle": "Public endpoints (no key)",
+    "coverage": "{datasets} datasets · {cities} cities covered",
+    "coverageLink": "View live coverage"
+  },
+  "intelExplorer": {
+    "title": "Site intelligence explorer",
+    "subtitle": "All public layers for a Quebec address — zoning, GTC, heritage, transactions.",
+    "address": "Address",
+    "addressPlaceholder": "123 Example St",
+    "city": "City",
+    "borough": "Borough",
+    "boroughOptional": "Optional",
+    "search": "Analyze",
+    "loading": "Analyzing…"
+  },
+  "intel": {
+    "title": "Site intelligence",
+    "assessment": "Assessment",
+    "lastSale": "Last sale",
+    "taxRoll": "Tax roll",
+    "zoning": "Zoning",
+    "marketHeat": "Market heat",
+    "permitsBorough": "borough permits",
+    "contracts": "Contracts",
+    "contractMatches": "matches",
+    "roadworks": "Roadworks",
+    "nearby": "nearby",
+    "vacancy": "Vacant commercial",
+    "lockedPreview": "Data layers detected",
+    "layersDetected": "active signals",
+    "upgradeIntel": "Upgrade to Essentiel for full intelligence"
+  },
+  "digest": {
+    "title": "Free weekly digest",
+    "subtitle": "Get permits in your borough every week — no account required.",
+    "email": "Email",
+    "borough": "Borough",
+    "trade": "Trade",
+    "subscribe": "Subscribe",
+    "confirmed": "Subscription confirmed!",
+    "error": "Could not subscribe",
+    "statPermits": "permits / wk",
+    "statTenders": "open SEAO",
+    "statCompanies": "companies"
   },
   "errors": {
     "title": "Something went wrong",

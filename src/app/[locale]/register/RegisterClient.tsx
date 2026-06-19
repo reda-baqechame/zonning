@@ -4,9 +4,20 @@ import { useState } from "react";
 import { useRouter, Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { RBQ_LICENSE_CLASSES } from "@/lib/rbq";
+import {
+  Input,
+  Select,
+  FieldLabel,
+  FieldError,
+  Button,
+  Card,
+  FadeIn,
+  PageHeader,
+} from "@/components/ui";
 
 export default function RegisterClient() {
   const t = useTranslations("auth");
+  const c = useTranslations("common");
   const router = useRouter();
   const [form, setForm] = useState({
     email: "",
@@ -18,10 +29,12 @@ export default function RegisterClient() {
     acceptTerms: false,
   });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -36,87 +49,93 @@ export default function RegisterClient() {
       }),
     });
     const data = await res.json();
+    setLoading(false);
     if (!res.ok) {
-      setError(data.error ?? "Erreur");
+      setError(data.error ?? c("error"));
       return;
     }
     router.push("/onboarding");
   };
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16">
-      <h1 className="text-2xl font-bold text-white">{t("signUp")}</h1>
-      <form onSubmit={submit} className="mt-8 space-y-4">
-        {(["email", "password", "name", "company"] as const).map((field) => (
-          <div key={field}>
-            <label className="text-sm text-slate-400">
-              {t(field === "company" ? "company" : field)}
-            </label>
-            <input
-              required={field === "email" || field === "password"}
-              type={field === "password" ? "password" : field === "email" ? "email" : "text"}
-              value={form[field === "company" ? "companyName" : field]}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  [field === "company" ? "companyName" : field]: e.target.value,
-                })
-              }
-              className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
+    <FadeIn className="mx-auto max-w-md px-4 py-16">
+      <PageHeader title={t("signUp")} />
+      <Card>
+        <form onSubmit={submit} className="space-y-4">
+          {(["email", "password", "name", "company"] as const).map((field) => (
+            <div key={field}>
+              <FieldLabel htmlFor={field} required={field === "email" || field === "password"}>
+                {t(field === "company" ? "company" : field)}
+              </FieldLabel>
+              <Input
+                id={field}
+                required={field === "email" || field === "password"}
+                type={field === "password" ? "password" : field === "email" ? "email" : "text"}
+                value={form[field === "company" ? "companyName" : field]}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    [field === "company" ? "companyName" : field]: e.target.value,
+                  })
+                }
+              />
+            </div>
+          ))}
+          <div>
+            <FieldLabel htmlFor="rbqClass">{t("rbqClass")}</FieldLabel>
+            <Select
+              id="rbqClass"
+              value={form.rbqLicenseClass}
+              onChange={(e) => setForm({ ...form, rbqLicenseClass: e.target.value })}
+            >
+              <option value="">—</option>
+              {RBQ_LICENSE_CLASSES.map((cls) => (
+                <option key={cls.code} value={cls.code}>
+                  {cls.code} — {cls.labelFr}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <FieldLabel htmlFor="rbqNumber">{t("rbqNumber")}</FieldLabel>
+            <Input
+              id="rbqNumber"
+              value={form.rbqLicenseNumber}
+              onChange={(e) => setForm({ ...form, rbqLicenseNumber: e.target.value })}
             />
           </div>
-        ))}
-        <div>
-          <label className="text-sm text-slate-400">{t("rbqClass")}</label>
-          <select
-            value={form.rbqLicenseClass}
-            onChange={(e) => setForm({ ...form, rbqLicenseClass: e.target.value })}
-            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
-          >
-            <option value="">—</option>
-            {RBQ_LICENSE_CLASSES.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.code} — {c.labelFr}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-sm text-slate-400">{t("rbqNumber")}</label>
-          <input
-            value={form.rbqLicenseNumber}
-            onChange={(e) => setForm({ ...form, rbqLicenseNumber: e.target.value })}
-            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2"
-          />
-        </div>
-        <label className="flex items-start gap-2 text-sm text-slate-400">
-          <input
-            type="checkbox"
-            required
-            checked={form.acceptTerms}
-            onChange={(e) => setForm({ ...form, acceptTerms: e.target.checked })}
-            className="mt-1"
-          />
-          <span>
-            J&apos;accepte les{" "}
-            <Link href="/terms" className="text-sky-400 hover:underline">
-              conditions d&apos;utilisation
-            </Link>{" "}
-            et la{" "}
-            <Link href="/privacy" className="text-sky-400 hover:underline">
-              politique de confidentialité
-            </Link>
-            .
-          </span>
-        </label>
-        {error && <p className="text-sm text-red-400">{error}</p>}
-        <button
-          type="submit"
-          className="w-full rounded-lg bg-sky-500 py-2.5 font-semibold hover:bg-sky-400"
-        >
-          {t("signUp")}
-        </button>
-      </form>
-    </div>
+          <label className="flex items-start gap-2 text-sm text-slate-400">
+            <input
+              type="checkbox"
+              required
+              checked={form.acceptTerms}
+              onChange={(e) => setForm({ ...form, acceptTerms: e.target.checked })}
+              className="mt-1 accent-sky-500"
+            />
+            <span>
+              J&apos;accepte les{" "}
+              <Link href="/terms" className="text-sky-400 hover:underline">
+                conditions d&apos;utilisation
+              </Link>{" "}
+              et la{" "}
+              <Link href="/privacy" className="text-sky-400 hover:underline">
+                politique de confidentialité
+              </Link>
+              .
+            </span>
+          </label>
+          <FieldError message={error} />
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? c("loading") : t("signUp")}
+          </Button>
+        </form>
+      </Card>
+      <p className="mt-4 text-center text-sm text-slate-400">
+        {t("hasAccount")}{" "}
+        <Link href="/login" className="text-sky-400 hover:underline">
+          {t("signIn")}
+        </Link>
+      </p>
+    </FadeIn>
   );
 }

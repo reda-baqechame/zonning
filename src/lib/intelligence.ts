@@ -82,6 +82,14 @@ export type PropertyIntelligence = {
     nearby: boolean;
     count: number;
   };
+  rbqInfraction?: {
+    found: boolean;
+    description?: string | null;
+  };
+  municipalInspection?: {
+    found: boolean;
+    violationType?: string | null;
+  };
 };
 
 async function nearestZoningPoint(
@@ -359,6 +367,26 @@ export async function getIntelligenceForPermit(permit: {
         totalAmount: contracts.reduce((sum, c) => sum + (c.amount ?? 0), 0),
       };
     }
+
+    const infraction = await prisma.rbqInfraction.findFirst({
+      where: { holderName: { contains: needle.slice(0, 12) } },
+      orderBy: { sourceFetchedAt: "desc" },
+    });
+    if (infraction) {
+      intel.rbqInfraction = { found: true, description: infraction.description };
+    }
+  }
+
+  if (permit.city === "Montréal" && permit.address.length > 5) {
+    const inspection = await prisma.municipalInspection.findFirst({
+      where: { address: { contains: permit.address.slice(0, 14) } },
+    });
+    if (inspection) {
+      intel.municipalInspection = {
+        found: true,
+        violationType: inspection.violationType,
+      };
+    }
   }
 
   return intel;
@@ -389,12 +417,13 @@ export async function getIntelligenceByAddress(
   });
 
   const coords = await resolveCoordinatesForAddress(address, borough, city);
+  const resolvedCity = city ?? coords?.city ?? undefined;
 
   return getIntelligenceForPermit({
     matricule: unit?.matricule,
     address,
     borough: borough ?? unit?.borough,
-    city,
+    city: resolvedCity,
     latitude: coords?.latitude,
     longitude: coords?.longitude,
   });

@@ -14,7 +14,18 @@ export async function sendAlertEmails(): Promise<{
   sent: number;
   errors: string[];
 }> {
-  const since = subDays(new Date(), 1);
+  return sendAlertEmailsForWindow({ since: subDays(new Date(), 1) });
+}
+
+export async function sendAlertEmailsForWindow(options: {
+  since: Date;
+  permitIds?: string[];
+  live?: boolean;
+}): Promise<{
+  sent: number;
+  errors: string[];
+}> {
+  const since = options.since;
   let sent = 0;
   const errors: string[] = [];
 
@@ -23,9 +34,13 @@ export async function sendAlertEmails(): Promise<{
     include: { user: true },
   });
 
+  const permitWhere = options.permitIds?.length
+    ? { id: { in: options.permitIds.slice(0, 100) } }
+    : { createdAt: { gte: since } };
+
   const [newPermits, newTenders, gtcSites] = await Promise.all([
     prisma.permit.findMany({
-      where: { createdAt: { gte: since } },
+      where: permitWhere,
       orderBy: { issueDate: "desc" },
       take: 200,
     }),
@@ -107,18 +122,30 @@ export async function sendAlertEmails(): Promise<{
 
       if (matches.length === 0) continue;
 
-      const top = matches.slice(0, 10);
+      const top = matches.slice(0, 5);
       const html = `
         <h2>ChantierRadar — ${matches.length} nouveau(x) permis</h2>
         <ul>
           ${top
-            .map(
-              (p) =>
-                `<li><strong>${p.permitType}</strong> — ${p.address} (${p.city ?? "Montréal"})</li>`
-            )
+            .map((p) => {
+              const fit = computeVerifiedRbqFit(
+                user.rbqLicenseClass,
+                user.rbqLicenseNumber,
+                user.rbqVerified,
+                p.permitType,
+                p.workType
+              );
+              const flags = [
+                fit.eligible ? "RBQ éligible" : null,
+                (p.estimatedCost ?? 0) >= 500_000 ? "Gros projet" : null,
+              ]
+                .filter(Boolean)
+                .join(" · ");
+              return `<li><strong>${p.permitType}</strong> — ${p.address} (${p.city ?? "Montréal"})${flags ? ` <em>[${flags}]</em>` : ""}</li>`;
+            })
             .join("")}
         </ul>
-        <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/fr/chantier-radar">Voir sur ZONNING</a></p>
+        <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/fr/feed">Voir le fil ZONNING</a></p>
       `;
 
       const smsBody = `ZONNING: ${matches.length} permis — ${top[0]?.address?.slice(0, 40) ?? "voir app"}`;

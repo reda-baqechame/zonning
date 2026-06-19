@@ -8,6 +8,7 @@ import { syncDataset } from "@/lib/sync/runner";
 import {
   syncNextBatch,
   syncLiveWatch,
+  syncRgmWatch,
   alertIfCriticalStale,
 } from "@/lib/sync/scheduler";
 import { runBootstrapBatches } from "@/lib/sync/bootstrap";
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (mode === "live") {
-    const { results, changed, skipped } = await syncLiveWatch();
+    const { results, changed, skipped, synced } = await syncLiveWatch();
     const failed = results.filter((r) => !r.ok || r.error);
     const totalProcessed = results.reduce((sum, r) => sum + r.processed, 0);
     void runPostSyncAlerts();
@@ -53,6 +54,20 @@ export async function GET(req: NextRequest) {
       mode: "live",
       changed,
       skipped,
+      synced,
+      totalProcessed,
+      results,
+    });
+  }
+
+  if (mode === "rgm") {
+    const { results, synced } = await syncRgmWatch();
+    const failed = results.filter((r) => !r.ok || r.error);
+    const totalProcessed = results.reduce((sum, r) => sum + r.processed, 0);
+    return NextResponse.json({
+      ok: failed.length === 0,
+      mode: "rgm",
+      synced,
       totalProcessed,
       results,
     });

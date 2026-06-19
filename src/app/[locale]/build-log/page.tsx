@@ -72,10 +72,10 @@ export default function BuildLogPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16">
-      <p className="text-sm text-sky-400">Built with Cursor</p>
+      <p className="text-sm text-sky-400">ZONNING</p>
       <h1 className="mt-2 text-4xl font-bold text-white">Journal de construction ZONNING</h1>
       <p className="mt-4 text-slate-400">
-        Quebec&apos;s Revenue &amp; Compliance OS — construit en public avec Cursor.
+        Pipeline de revenus et conformité pour le Québec — construit en public.
       </p>
       <div className="mt-12 space-y-10">
         {entries.map((e) => (

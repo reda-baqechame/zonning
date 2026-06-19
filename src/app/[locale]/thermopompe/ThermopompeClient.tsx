@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { Link } from "@/i18n/navigation";
+import { Input, FieldLabel, Button, PageHeader, useToast, FadeIn } from "@/components/ui";
 
 export default function ThermopompeClient() {
+  const { success } = useToast();
   const [surface, setSurface] = useState(1500);
   const [email, setEmail] = useState("");
   const rebate = Math.round(surface * 0.8 * 12);
@@ -15,15 +17,15 @@ export default function ThermopompeClient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, trade: "chauffage", borough: "Laval" }),
     });
-    alert("Digest HVAC envoyé chaque semaine!");
+    success("Digest HVAC — inscription confirmée");
   };
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-16">
-      <h1 className="text-3xl font-bold text-white">Calculateur thermopompe QC</h1>
-      <p className="mt-3 text-slate-400">
-        Estimez vos rabais — puis recevez les permis HVAC de votre région via ZONNING.
-      </p>
+    <FadeIn className="mx-auto max-w-lg px-4 py-16">
+      <PageHeader
+        title="Calculateur thermopompe QC"
+        subtitle="Estimez vos rabais — puis recevez les permis HVAC de votre région via ZONNING."
+      />
       <label className="mt-8 block text-sm text-slate-400">Superficie (pi²)</label>
       <input
         type="range"
@@ -36,23 +38,20 @@ export default function ThermopompeClient() {
       <p className="mt-4 text-2xl font-bold text-emerald-300">
         Rabais estimé: ~{rebate.toLocaleString("fr-CA")} $ / an
       </p>
-      <input
+      <FieldLabel htmlFor="email">Courriel</FieldLabel>
+      <Input
+        id="email"
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Courriel pour digest permis HVAC"
-        className="mt-8 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3"
       />
-      <button
-        type="button"
-        onClick={capture}
-        className="mt-4 w-full rounded-xl bg-sky-500 py-3 font-semibold hover:bg-sky-400"
-      >
+      <Button type="button" onClick={capture} className="mt-4 w-full">
         Recevoir les permis chauffage
-      </button>
+      </Button>
       <Link href="/pricing" className="mt-6 block text-center text-sm text-sky-400">
         Passer à ChantierRadar Essentiel →
       </Link>
-    </div>
+    </FadeIn>
   );
 }

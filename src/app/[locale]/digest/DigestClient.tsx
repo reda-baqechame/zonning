@@ -1,12 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
+import { Input, FieldLabel, Button, PageHeader, FadeIn, useToast } from "@/components/ui";
 
 export default function DigestClient() {
+  const t = useTranslations("digest");
+  const { error: toastError } = useToast();
   const [email, setEmail] = useState("");
   const [borough, setBorough] = useState("");
   const [trade, setTrade] = useState("");
   const [done, setDone] = useState(false);
+  const [stats, setStats] = useState<{
+    permitsWeek: number;
+    tendersOpen: number;
+    companies: number;
+  } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/digest")
+      .then((r) => r.json())
+      .then((d) => setStats(d.digest ?? null))
+      .catch(() => {});
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,46 +32,67 @@ export default function DigestClient() {
       body: JSON.stringify({ email, borough, trade }),
     });
     if (res.ok) setDone(true);
+    else toastError(t("error"));
   };
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-20">
-      <h1 className="text-3xl font-bold text-white">Digest hebdomadaire gratuit</h1>
-      <p className="mt-3 text-slate-400">
-        Recevez les permis de votre arrondissement chaque semaine — sans compte.
-      </p>
+    <FadeIn className="mx-auto max-w-lg px-4 py-20">
+      <PageHeader title={t("title")} subtitle={t("subtitle")} />
+      {stats && (
+        <div className="mt-6 grid grid-cols-3 gap-3 text-center text-sm">
+          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+            <p className="text-xl font-bold text-sky-300">{stats.permitsWeek}</p>
+            <p className="text-slate-500">{t("statPermits")}</p>
+          </div>
+          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+            <p className="text-xl font-bold text-sky-300">{stats.tendersOpen}</p>
+            <p className="text-slate-500">{t("statTenders")}</p>
+          </div>
+          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+            <p className="text-xl font-bold text-sky-300">{stats.companies}</p>
+            <p className="text-slate-500">{t("statCompanies")}</p>
+          </div>
+        </div>
+      )}
       {done ? (
-        <p className="mt-8 text-emerald-400">Inscription confirmée!</p>
+        <p className="mt-8 text-emerald-400">{t("confirmed")}</p>
       ) : (
         <form onSubmit={submit} className="mt-8 space-y-4">
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Courriel"
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3"
-          />
-          <input
-            value={borough}
-            onChange={(e) => setBorough(e.target.value)}
-            placeholder="Arrondissement (ex. Ville-Marie)"
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3"
-          />
-          <input
-            value={trade}
-            onChange={(e) => setTrade(e.target.value)}
-            placeholder="Métier (ex. électricité)"
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3"
-          />
-          <button
-            type="submit"
-            className="w-full rounded-xl bg-sky-500 py-3 font-semibold hover:bg-sky-400"
-          >
-            S&apos;inscrire
-          </button>
+          <div>
+            <FieldLabel htmlFor="email" required>
+              {t("email")}
+            </FieldLabel>
+            <Input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div>
+            <FieldLabel htmlFor="borough">{t("borough")}</FieldLabel>
+            <Input
+              id="borough"
+              value={borough}
+              onChange={(e) => setBorough(e.target.value)}
+              placeholder="Ville-Marie"
+            />
+          </div>
+          <div>
+            <FieldLabel htmlFor="trade">{t("trade")}</FieldLabel>
+            <Input
+              id="trade"
+              value={trade}
+              onChange={(e) => setTrade(e.target.value)}
+              placeholder="électricité"
+            />
+          </div>
+          <Button type="submit" className="w-full">
+            {t("subscribe")}
+          </Button>
         </form>
       )}
-    </div>
+    </FadeIn>
   );
 }

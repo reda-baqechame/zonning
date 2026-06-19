@@ -103,6 +103,30 @@ export async function dispatchWebhookEvent(
   );
 }
 
+export async function dispatchHighScoreLeadEvents(permitIds: string[]): Promise<void> {
+  if (permitIds.length === 0) return;
+
+  const permits = await prisma.permit.findMany({
+    where: { id: { in: permitIds } },
+    take: 50,
+  });
+
+  for (const permit of permits) {
+    if ((permit.estimatedCost ?? 0) < 500_000) continue;
+    void dispatchWebhookEvent("lead.high_score", {
+      id: permit.id,
+      externalId: permit.externalId,
+      address: permit.address,
+      city: permit.city,
+      borough: permit.borough,
+      permitType: permit.permitType,
+      estimatedCost: permit.estimatedCost,
+      issueDate: permit.issueDate?.toISOString(),
+      scoreHint: "high_value",
+    });
+  }
+}
+
 export async function dispatchPermitCreatedEvents(permitIds: string[]): Promise<void> {
   if (permitIds.length === 0) return;
 

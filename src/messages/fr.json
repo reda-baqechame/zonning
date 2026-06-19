@@ -11,25 +11,41 @@
     "marchesQc": "MarchésQC",
     "partenairesCa": "PartenairesCA",
     "compliance": "Conformité",
+    "export": "Export",
+    "equipe": "Équipe",
     "pricing": "Tarifs",
+    "coverage": "Couverture",
     "validation": "Validation",
     "dashboard": "Tableau de bord",
     "login": "Connexion",
     "register": "Inscription",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu"
   },
   "hero": {
-    "badge": "Construit avec Cursor · 33 jeux de données",
+    "badge": "{datasets} jeux de données · {cities} villes",
     "title": "Commencez votre semaine dans ZONNING",
-    "subtitle": "Fil unifié permis + contrats SEAO. Verdict PERMIS.AI gratuit sur toute adresse québécoise. RBQ, CASL et AMP en un seul endroit.",
+    "subtitle": "Fil unifié permis (Montréal, Laval, Longueuil + tout le Québec) + contrats SEAO. Verdict PERMIS.AI gratuit. RBQ, zonage, transactions et CASL en un seul moteur.",
     "cta": "Ouvrir mon fil",
-    "ctaDemo": "Verdict gratuit",
-    "ctaVerdict": "PERMIS.AI — vérifier une adresse"
+    "ctaSecondary": "Voir les tarifs",
+    "ctaVerdict": "Essayer PERMIS.AI",
+    "coverageCta": "Couverture Québec",
+    "explore": "Explorer",
+    "howItWorks": "Comment ça marche",
+    "step1Title": "Configurez votre RBQ",
+    "step1Desc": "Métiers, régions et licence — le fil ne montre que ce qui vous concerne.",
+    "step2Title": "Recevez les opportunités",
+    "step2Desc": "Permis qualifiés, appels d'offres SEAO et alertes jeudi.",
+    "step3Title": "Prospectez en conformité",
+    "step3Desc": "Certificats CASL et preuves de source publique vérifiable.",
+    "whyTitle": "Pourquoi les entrepreneurs québécois choisissent ZONNING",
+    "digestCta": "Digest hebdomadaire gratuit"
   },
   "features": {
     "chantier": {
       "title": "ChantierRadar",
-      "desc": "Permis de construction à Montréal avec score RBQ-Fit — seulement les mandats que votre licence couvre."
+      "desc": "Permis de construction au Québec — Montréal, Laval, Longueuil et 10 villes — score RBQ-Fit en direct."
     },
     "marches": {
       "title": "MarchésQC",
@@ -72,7 +88,11 @@
     "createAlert": "Créer une alerte",
     "noPermits": "Aucun permis trouvé",
     "days": "Période",
-    "daysLabel": "jours"
+    "daysLabel": "jours",
+    "layerDevProjects": "Projets dev. sur la carte",
+    "layerGtc": "Couche GTC",
+    "layerHeritage": "Patrimoine",
+    "resultSummary": "{count} résultats · {mappable}/{total} sur la carte"
   },
   "marches": {
     "title": "MarchésQC",
@@ -91,7 +111,11 @@
     "allCategories": "Toutes",
     "region": "Région",
     "applyFilters": "Appliquer",
-    "noTenders": "Aucun appel d'offres ouvert"
+    "noTenders": "Aucun appel d'offres ouvert",
+    "thursdayBanner": "Échéances jeudi — soumissions SEAO cette semaine",
+    "alertSuccess": "Alerte MarchésQC créée",
+    "standingOffers": "Offres à commandes (SEAO)",
+    "standingOffersDesc": "Contrats-cadres actifs indexés depuis les données publiques SEAO."
   },
   "partenaires": {
     "title": "PartenairesCA",
@@ -111,7 +135,53 @@
     "subtitle": "Preuve CASL pour contacts issus de registres publics",
     "download": "Télécharger le certificat PDF",
     "createFromPermit": "Créer depuis ce permis",
-    "lawfulBasis": "Publication ostensible — registre public"
+    "lawfulBasis": "Publication ostensible — registre public",
+    "newCert": "Nouveau certificat",
+    "contactName": "Nom du contact",
+    "contactEmail": "Courriel",
+    "sourceUrl": "URL source publique",
+    "create": "Créer l'enregistrement",
+    "upgradeTitle": "Compliance Vault — plan Pro requis",
+    "upgradeDesc": "Générez des certificats CASL PDF pour chaque contact issu de registres publics vérifiables.",
+    "upgradeCta": "Passer au plan Pro"
+  },
+  "footer": {
+    "tagline": "ZONNING — Pipeline de revenus et conformité pour le Québec",
+    "trust": "Données publiques · Conformité CASL · {datasets} jeux · {cities} villes · Registre RBQ",
+    "buildLog": "Journal de construction",
+    "dataHealth": "Santé des données",
+    "coverage": "Couverture",
+    "intelligence": "Intelligence",
+    "developers": "API",
+    "coverageApi": "API couverture"
+  },
+  "common": {
+    "loading": "Chargement…",
+    "error": "Une erreur est survenue",
+    "retry": "Réessayer",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "success": "Opération réussie",
+    "alertCreated": "Alerte créée",
+    "demoHint": "Démo : demo@zonning.ca / demo1234"
+  },
+  "onboarding": {
+    "title": "Configuration de votre profil",
+    "subtitle": "Étape {step} sur {total} — personnalisez votre fil d'opportunités",
+    "rbqClass": "Classe RBQ",
+    "rbqNumber": "Numéro de licence RBQ",
+    "trades": "Métiers",
+    "regions": "Régions",
+    "phone": "Téléphone (alertes SMS)",
+    "phoneHint": "Optionnel — requis pour les alertes SMS (plan Pro+).",
+    "amp": "Mon entreprise détient une autorisation de mise en marché (AMP) pour les marchés publics",
+    "back": "Retour",
+    "next": "Continuer",
+    "finish": "Voir mon fil",
+    "stepProfile": "Profil RBQ",
+    "stepTrades": "Métiers et régions",
+    "stepPhone": "Téléphone",
+    "stepAmp": "Marchés publics"
   },
   "auth": {
     "email": "Courriel",
@@ -126,8 +196,16 @@
     "hasAccount": "Déjà un compte?"
   },
   "validation": {
-    "title": "Découverte client",
-    "subtitle": "Suivi des 15 entrevues de validation marché",
+    "title": "Demande de démo",
+    "subtitle": "Parlez-nous de votre entreprise — nous vous contactons sous 48 h.",
+    "submit": "Envoyer la demande",
+    "success": "Demande envoyée — merci!",
+    "name": "Votre nom",
+    "company": "Entreprise",
+    "role": "Rôle",
+    "message": "Décrivez votre pipeline actuel",
+    "adminTitle": "Découverte client",
+    "adminSubtitle": "Suivi des entrevues de validation marché",
     "add": "Ajouter une entrevue",
     "goCriteria": "Critère GO: 8+/15 avec urgence 4+",
     "total": "Entrevues enregistrées"
@@ -148,7 +226,7 @@
     "pending": "Sync en attente"
   },
   "beta": {
-    "title": "Programme bêta Montréal",
+    "title": "Programme bêta Québec",
     "desc": "Rejoignez les 10 premières PME — onboarding concierge offert pour les 3 premiers inscrits Pro."
   },
   "feed": {
@@ -158,6 +236,9 @@
     "allRegions": "Tout le territoire",
     "loading": "Chargement du fil…",
     "noPermits": "Aucun permis récent pour votre profil.",
+    "noPermitsHint": "Ajustez vos métiers et régions dans les réglages pour voir plus de résultats.",
+    "noTenders": "Aucun contrat ouvert pour votre profil.",
+    "subtitle": "Vos opportunités qualifiées du jour — permis, SEAO et verdict PERMIS.AI.",
     "map": "Carte",
     "source": "Source",
     "closesIn": "Clôture dans",
@@ -172,8 +253,33 @@
     "tab": {
       "permits": "Permis",
       "tenders": "Contrats",
-      "verdict": "Vérifier adresse"
-    }
+      "verdict": "Vérifier adresse",
+      "watchlist": "Suivis"
+    },
+    "filterUrgent": "Urgent",
+    "filterRbq": "RBQ éligible",
+    "filterHighValue": "Gros projets",
+    "filterRisks": "Risques",
+    "noWatchlist": "Aucun lead suivi — cliquez sur l'étoile pour enregistrer."
+  },
+  "leadSignals": {
+    "strong_match": "Match fort",
+    "rbq_eligible": "RBQ éligible",
+    "high_value": "Gros projet",
+    "urgent_close": "Clôture imminente",
+    "thursday_seao": "Jeudi SEAO",
+    "amp_required": "AMP requis",
+    "gtc_risk": "Risque GTC",
+    "heritage_risk": "Patrimoine",
+    "density_upside": "Potentiel densification",
+    "new_this_week": "Nouveau",
+    "award_linked": "Attribution SEAO",
+    "rbq_infraction": "Infraction RBQ",
+    "inspection_flag": "Inspection MTL"
+  },
+  "map": {
+    "loading": "Chargement de la carte…",
+    "coverage": "{mappable}/{total} sur la carte"
   },
   "settings": {
     "title": "Réglages",
@@ -182,6 +288,7 @@
     "name": "Nom",
     "companyName": "Raison sociale",
     "rbqNumber": "Numéro RBQ",
+    "rbqClass": "Classe RBQ",
     "rbqVerified": "Licence vérifiée au registre",
     "trades": "Métiers",
     "regions": "Régions",
@@ -191,12 +298,16 @@
     "saveAndFeed": "Enregistrer → Fil",
     "saved": "Enregistré",
     "currentPlan": "Forfait actuel",
-    "manageSubscription": "Gérer l'abonnement"
+    "manageSubscription": "Gérer l'abonnement",
+    "integrations": "Intégrations"
   },
   "verdict": {
     "title": "Verdict PERMIS.AI",
     "subtitle": "Potentiel de développement selon données publiques québécoises — gratuit et partageable.",
+    "addressLabel": "Adresse civique",
     "addressPlaceholder": "1234 rue Example, Montréal",
+    "boroughLabel": "Arrondissement",
+    "exampleAddress": "Essayer : 1234 rue Saint-Denis, Montréal",
     "boroughPlaceholder": "Arrondissement",
     "cta": "Analyser l'adresse",
     "footer": "Analyse PERMIS.AI · Propulsé par ZONNING"
@@ -230,6 +341,132 @@
     "privacyLink": "Politique de confidentialité",
     "footerTerms": "Conditions",
     "footerPrivacy": "Confidentialité"
+  },
+  "fomo": {
+    "live": "En direct",
+    "pulseToday": "{count} nouveaux permis aujourd'hui",
+    "pulseWeek": "{count} permis cette semaine",
+    "pulseHighValue": "{count} mandats ≥ 500 k$",
+    "pulseThursday": "{count} SEAO ferment jeudi",
+    "pulseClosing": "{count} appels ferment sous 7 jours",
+    "pulseValue": "{value} de chantiers indexés",
+    "statToday": "permis aujourd'hui",
+    "statWeek": "permis cette semaine",
+    "statHighValue": "mandats haute valeur",
+    "statThursday": "SEAO jeudi",
+    "statTenders": "appels ouverts",
+    "statPipeline": "valeur indexée (7j)",
+    "statCompanies": "entreprises indexées",
+    "freshness": "Mis à jour {time} · {datasets} jeux de données · {cities} villes",
+    "intelLayers": "{count} couches d'intelligence actives",
+    "rbqRegistry": "{count} licences RBQ indexées",
+    "missedTitle": "Vous ne voyez qu'une fraction du marché",
+    "missedPermits": "{hidden} permis supplémentaires cette semaine ({total} au total)",
+    "missedHighValue": "{count} mandats ≥ 500 k$ masqués par votre forfait",
+    "missedValue": "{value} de valeur cachée",
+    "missedUrgent": "{count} appels urgents que vous ne pouvez pas voir",
+    "missedHint": "Forfait {plan} — les entrepreneurs Pro voient tout le fil en temps réel",
+    "unlockCta": "Débloquer le fil complet",
+    "lockedHeading": "Ce que les abonnés Pro voient en ce moment",
+    "lockedBody": "Adresse · score · RBQ-Fit verrouillés",
+    "previewEyebrow": "Pendant que vous lisez ceci",
+    "previewTitle": "Des entrepreneurs qualifient déjà ces mandats",
+    "previewSubtitle": "{permits} permis et {highValue} mandats ≥ 500 k$ cette semaine — filtrés par RBQ-Fit",
+    "previewLocked": "Détail verrouillé",
+    "previewCta": "Rejoindre avant qu'ils disparaissent",
+    "previewFootnote": "Plus de {value} en chantiers actifs indexés cette semaine",
+    "previewFootnoteGeneric": "Données publiques québécoises, mises à jour en continu",
+    "topLead": "Top lead",
+    "pulseRgm": "RMM: {count} permis cette semaine · {today} aujourd'hui"
+  },
+  "quebec": {
+    "engineEyebrow": "Moteur Québec",
+    "engineTitle": "{cities} villes · moteur Québec en direct",
+    "engineMeta": "{datasets} jeux de données · {cities} villes · {records} enregistrements indexés",
+    "syncLive": "Sync auto 5 min",
+    "permitsIndexed": "permis",
+    "weekCount": "{count} cette semaine",
+    "rgmLive": "RMM {today} permis aujourd'hui · {city} +{count}",
+    "layerPermits": "Permis",
+    "layerTenders": "SEAO",
+    "layerRbq": "RBQ",
+    "layerZoning": "Zonage",
+    "layerTransactions": "Transactions",
+    "layerAssessment": "Évaluation",
+    "layerHeritage": "Patrimoine",
+    "layerContracts": "Contrats",
+    "layerContamination": "Contamination",
+    "layerRoadworks": "Travaux",
+    "layerAwards": "Attributions",
+    "layerCompanies": "Entreprises",
+    "mapPercent": "{pct}% cartographiés"
+  },
+  "coverage": {
+    "title": "Couverture Québec — transparence des données",
+    "subtitle": "Sources publiques, sync automatique, 17 villes et 52 jeux de données indexés pour la construction et l'immobilier.",
+    "datasets": "Jeux de données actifs",
+    "cities": "Villes couvertes",
+    "rbqLicenses": "Licences RBQ actives",
+    "syncHealth": "Sync: {healthy} saines · {stale} en retard · {critical} critiques",
+    "cityTable": "Permis par ville",
+    "colCity": "Ville",
+    "colPermits": "Permis indexés",
+    "colMap": "Carte",
+    "colWeek": "7 jours",
+    "colSync": "Dernière sync",
+    "apiLink": "Documentation API",
+    "intelLink": "Explorateur intelligence"
+  },
+  "developers": {
+    "title": "API Québec construction",
+    "subtitle": "Accès programmatique aux permis, SEAO, verdict et intelligence site (Équipe).",
+    "restTitle": "Endpoints REST (clé API)",
+    "restDesc": "Authentification Bearer. Scopes: permits, tenders, verdict.",
+    "authNote": "Clés API disponibles sur le forfait Équipe.",
+    "publicTitle": "Endpoints publics (sans clé)",
+    "coverage": "{datasets} datasets · {cities} villes couvertes",
+    "coverageLink": "Voir la couverture live"
+  },
+  "intelExplorer": {
+    "title": "Explorateur intelligence site",
+    "subtitle": "Toutes les couches publiques pour une adresse québécoise — zonage, GTC, patrimoine, transactions.",
+    "address": "Adresse",
+    "addressPlaceholder": "123 rue Example",
+    "city": "Ville",
+    "borough": "Arrondissement",
+    "boroughOptional": "Optionnel",
+    "search": "Analyser",
+    "loading": "Analyse…"
+  },
+  "intel": {
+    "title": "Intelligence site",
+    "assessment": "Évaluation",
+    "lastSale": "Dernière vente",
+    "taxRoll": "Taxes",
+    "zoning": "Zonage",
+    "marketHeat": "Chaleur marché",
+    "permitsBorough": "permis arr.",
+    "contracts": "Contrats",
+    "contractMatches": "correspondances",
+    "roadworks": "Travaux",
+    "nearby": "à proximité",
+    "vacancy": "Locaux vacants",
+    "lockedPreview": "Couches de données détectées",
+    "layersDetected": "signaux actifs",
+    "upgradeIntel": "Passez Essentiel pour voir l'intelligence complète"
+  },
+  "digest": {
+    "title": "Digest hebdomadaire gratuit",
+    "subtitle": "Recevez les permis de votre arrondissement chaque semaine — sans compte.",
+    "email": "Courriel",
+    "borough": "Arrondissement",
+    "trade": "Métier",
+    "subscribe": "S'inscrire",
+    "confirmed": "Inscription confirmée!",
+    "error": "Impossible de s'inscrire",
+    "statPermits": "permis / sem.",
+    "statTenders": "SEAO ouverts",
+    "statCompanies": "entreprises"
   },
   "errors": {
     "title": "Une erreur est survenue",

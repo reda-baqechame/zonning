@@ -2,14 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { computeVerifiedRbqFit } from "@/lib/rbq-verify";
-import { getIntelligenceForPermit } from "@/lib/intelligence";
 import { computePipelineScore } from "@/lib/pipeline-score";
-import { ensureFreshForKey } from "@/lib/sync/auto";
+import { ensureFreshForKey, ensureQuebecRealtimeFresh } from "@/lib/sync/auto";
 import { getPlanLimits } from "@/lib/plans";
 import { matchesEssentielProfile, parseJsonArray } from "@/lib/usage";
 import { haversineKm } from "@/lib/datasets/geo";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { subDays } from "date-fns";
+import {
+  batchCompetitionCounts,
+  createIntelligenceCache,
+  getCompetitionFromMap,
+} from "@/lib/scoring/batch";
+import { computeLeadSignals } from "@/lib/lead-signals";
 
 async function loadGtcSites() {
   return prisma.contaminatedSite.findMany({
@@ -39,6 +44,7 @@ export async function GET(req: NextRequest) {
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   ensureFreshForKey("permits");
+  ensureQuebecRealtimeFresh();
 
   const user = await getSessionUser();
   const limits = getPlanLimits(user?.plan);
@@ -70,43 +76,69 @@ export async function GET(req: NextRequest) {
     take: limits.maxPermits * 2,
   });
 
-  const enriched = await Promise.all(
-    permits.map(async (p) => {
-      const required = p.requiredRbqClasses
-        ? (JSON.parse(p.requiredRbqClasses) as string[])
-        : [];
-      const fit = computeVerifiedRbqFit(
-        user?.rbqLicenseClass,
-        user?.rbqLicenseNumber,
-        user?.rbqVerified ?? false,
-        p.permitType,
-        p.workType
-      );
-      const intelligence =
-        withIntel && limits.intelligenceFull
-          ? await getIntelligenceForPermit(p)
-          : undefined;
-      const pipeline = await computePipelineScore(
-        p,
-        {
-          rbqLicenseClass: user?.rbqLicenseClass,
-          rbqLicenseNumber: user?.rbqLicenseNumber,
-          rbqVerified: user?.rbqVerified,
-          minProjectCost: user?.minProjectCost,
-          maxProjectCost: user?.maxProjectCost,
-        },
-        intelligence
-      );
-      return {
-        ...p,
-        requiredRbqClasses: required,
-        rbqFit: fit,
-        intelligence,
-        pipelineScore: pipeline.score,
-        pipeline,
-      };
-    })
-  );
+  const enriched = await (async () => {
+    const competitionMap = await batchCompetitionCounts(permits);
+    const getIntel =
+      withIntel && limits.intelligenceFull ? createIntelligenceCache() : null;
+
+    return Promise.all(
+      permits.map(async (p) => {
+        const required = p.requiredRbqClasses
+          ? (JSON.parse(p.requiredRbqClasses) as string[])
+          : [];
+        const fit = computeVerifiedRbqFit(
+          user?.rbqLicenseClass,
+          user?.rbqLicenseNumber,
+          user?.rbqVerified ?? false,
+          p.permitType,
+          p.workType
+        );
+        const intelligence = getIntel ? await getIntel(p) : undefined;
+        const competitionCount = getCompetitionFromMap(competitionMap, p.permitType, p.borough);
+        const pipeline = await computePipelineScore(
+          p,
+          {
+            rbqLicenseClass: user?.rbqLicenseClass,
+            rbqLicenseNumber: user?.rbqLicenseNumber,
+            rbqVerified: user?.rbqVerified,
+            minProjectCost: user?.minProjectCost,
+            maxProjectCost: user?.maxProjectCost,
+          },
+          intelligence,
+          { competitionCount }
+        );
+        const signals = computeLeadSignals(
+          {
+            kind: "permit",
+            id: p.id,
+            score: pipeline.score,
+            permitType: p.permitType,
+            address: p.address,
+            borough: p.borough,
+            city: p.city,
+            estimatedCost: p.estimatedCost,
+            issueDate: p.issueDate,
+            rbqFit: fit,
+            pipeline,
+            intelligence,
+          },
+          {
+            minProjectCost: user?.minProjectCost,
+            rbqVerified: user?.rbqVerified,
+          }
+        );
+        return {
+          ...p,
+          requiredRbqClasses: required,
+          rbqFit: fit,
+          intelligence,
+          pipelineScore: pipeline.score,
+          pipeline,
+          signals,
+        };
+      })
+    );
+  })();
 
   let filtered = enriched.filter((p) =>
     matchesEssentielProfile(user?.plan, userTrades, userRegions, {
@@ -132,6 +164,9 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     permits: filtered.slice(0, limits.maxPermits),
     plan: user?.plan ?? "FREE",
+    complianceEntitled: getPlanLimits(user?.plan).complianceVault,
     limits: { maxPermits: limits.maxPermits },
+    mappable: filtered.filter((p) => p.latitude && p.longitude).length,
+    total: filtered.length,
   });
 }

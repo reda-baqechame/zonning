@@ -4,6 +4,14 @@
   "framework": "nextjs",
   "crons": [
     {
+      "path": "/api/cron/sync?mode=rgm",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/alerts?mode=live",
+      "schedule": "0 6 * * *"
+    },
+    {
       "path": "/api/cron/sync?mode=live",
       "schedule": "0 6 * * *"
     },

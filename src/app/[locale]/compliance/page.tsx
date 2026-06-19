@@ -1,5 +1,5 @@
 import ComplianceClient from "./ComplianceClient";
-import { requirePlan } from "@/lib/require-page";
+import { requireAuth, planHasComplianceVault } from "@/lib/require-page";
 
 export default async function CompliancePage({
   params,
@@ -7,6 +7,7 @@ export default async function CompliancePage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  await requirePlan(locale, "PRO");
-  return <ComplianceClient />;
+  const user = await requireAuth(locale);
+  if (!user) return null;
+  return <ComplianceClient entitled={planHasComplianceVault(user.plan)} />;
 }

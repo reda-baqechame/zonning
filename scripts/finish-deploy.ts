@@ -82,6 +82,9 @@ Save to Vercel env + .env.production.local, then re-run:
   console.log("\n— Bootstrap datasets …");
   process.env.NEXT_PUBLIC_APP_URL = APP_URL;
   run("npm run bootstrap:prod");
+
+  console.log("\n— Post-deploy verification …");
+  run("npm run verify:deploy", true);
 }
 
 main().catch((e) => {

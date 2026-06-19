@@ -2,6 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { PageHeader, useToast, FadeIn } from "@/components/ui";
 
 const plans = [
   {
@@ -51,6 +52,8 @@ const plans = [
 
 export default function PricingClient() {
   const t = useTranslations("pricing");
+  const c = useTranslations("common");
+  const { error: toastError, toast } = useToast();
   const router = useRouter();
   const locale = useLocale();
 
@@ -64,17 +67,14 @@ export default function PricingClient() {
     if (data.url) {
       globalThis.location.assign(data.url);
     } else if (data.demo) {
-      alert(data.message);
+      toast(data.message ?? c("success"), "info");
       router.push("/feed");
-    } else if (data.error) alert(data.error);
+    } else if (data.error) toastError(data.error);
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-16">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-white">{t("title")}</h1>
-        <p className="mt-3 text-slate-400">{t("subtitle")}</p>
-      </div>
+    <FadeIn className="mx-auto max-w-7xl px-4 py-16">
+      <PageHeader title={t("title")} subtitle={t("subtitle")} className="text-center [&_h1]:mx-auto [&_p]:mx-auto" />
 
       <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {plans.map((plan) => (
@@ -113,6 +113,6 @@ export default function PricingClient() {
           </div>
         ))}
       </div>
-    </div>
+    </FadeIn>
   );
 }

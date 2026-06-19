@@ -10,6 +10,7 @@ export type ResolvedCoordinates = {
   latitude: number;
   longitude: number;
   source: "permit" | "icherche" | "osm";
+  city?: string;
 };
 
 type IChercheFeature = {
@@ -41,7 +42,13 @@ async function geocodeWithICherche(
     const latitude = coords[1];
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
 
-    return { latitude, longitude, source: "icherche" };
+    const municipalite = feature?.properties?.municipalite;
+    return {
+      latitude,
+      longitude,
+      source: "icherche",
+      city: municipalite || undefined,
+    };
   } catch {
     return null;
   }
@@ -94,6 +101,7 @@ export async function resolveCoordinatesForAddress(
       latitude: permit.latitude,
       longitude: permit.longitude,
       source: "permit",
+      city: permit.city ?? undefined,
     };
   }
 

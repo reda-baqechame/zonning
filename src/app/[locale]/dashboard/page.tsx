@@ -57,7 +57,7 @@ export default async function DashboardPage({
   const t = await getTranslations({ locale, namespace: "dashboard" });
   const weekAgo = subDays(new Date(), 7);
 
-  const [permitsWeek, tendersOpen, alerts, syncStates, payingAccounts, permitDelays, staleness, qualityMap] =
+  const [permitsWeek, tendersOpen, alerts, syncStates, payingAccounts, permitDelays, staleness, qualityMap, cityCoverage] =
     await Promise.all([
     prisma.permit.count({ where: { issueDate: { gte: weekAgo } } }),
     prisma.tender.count({
@@ -74,6 +74,17 @@ export default async function DashboardPage({
     prisma.boroughPermitDelay.findMany({ orderBy: { borough: "asc" }, take: 20 }),
     getDatasetStaleness(),
     getLatestQualityByDataset(),
+    Promise.all(
+      COVERAGE_CITIES.map(async (city) => {
+        const [count, mappable] = await Promise.all([
+          prisma.permit.count({ where: { city } }),
+          prisma.permit.count({
+            where: { city, latitude: { not: null }, longitude: { not: null } },
+          }),
+        ]);
+        return { city, count, mappable };
+      })
+    ),
   ]);
 
   const syncSummary = {
@@ -119,6 +130,30 @@ export default async function DashboardPage({
           {isSyncAutomationEnabled() ? "activée" : "désactivée"}
         </p>
         <p className="mt-2 text-xs text-slate-500">{COVERAGE_CITIES.join(" · ")}</p>
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[480px] text-left text-xs text-slate-400">
+            <thead>
+              <tr className="border-b border-slate-800 text-slate-500">
+                <th className="py-2 pr-4">Ville</th>
+                <th className="py-2 pr-4">Permis</th>
+                <th className="py-2">Carte</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cityCoverage.map((row) => (
+                <tr key={row.city} className="border-b border-slate-800/60">
+                  <td className="py-2 pr-4 text-slate-300">{row.city}</td>
+                  <td className="py-2 pr-4">{row.count}</td>
+                  <td className="py-2">
+                    {row.count > 0
+                      ? `${Math.round((row.mappable / row.count) * 100)}%`
+                      : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/40 p-4">

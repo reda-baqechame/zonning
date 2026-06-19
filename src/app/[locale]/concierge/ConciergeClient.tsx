@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
+import { PageHeader, Card, EmptyState, FadeIn } from "@/components/ui";
 
 type Request = {
   status: string;
@@ -24,19 +25,21 @@ export default function ConciergeClient() {
     : [];
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-16">
-      <h1 className="text-3xl font-bold text-white">Concierge ZONNING</h1>
-      <p className="mt-3 text-slate-400">
-        Onboarding personnalisé + 50 opportunités qualifiées à la main.
-      </p>
+    <FadeIn className="mx-auto max-w-3xl px-4 py-16">
+      <PageHeader
+        title="Concierge ZONNING"
+        subtitle="Onboarding personnalisé + 50 opportunités qualifiées à la main."
+      />
 
       {!req ? (
-        <div className="mt-10 rounded-xl border border-slate-800 p-6">
-          <p className="text-slate-300">Aucune demande active.</p>
-          <Link href="/pricing" className="mt-4 inline-block text-sky-400 hover:text-sky-300">
-            Réserver le Concierge ($2,500) →
-          </Link>
-        </div>
+        <EmptyState
+          title="Aucune demande active"
+          action={
+            <Link href="/pricing" className="text-sky-400 hover:text-sky-300">
+              Réserver le Concierge ($2,500) →
+            </Link>
+          }
+        />
       ) : (
         <div className="mt-10 space-y-4">
           <p className="text-sm text-slate-500">
@@ -46,9 +49,9 @@ export default function ConciergeClient() {
           {opportunities.length > 0 && (
             <ul className="space-y-2">
               {opportunities.map((o, i) => (
-                <li key={i} className="rounded-lg border border-slate-800 p-3 text-sm">
+                <Card key={i} className="p-3 text-sm">
                   <span className="text-slate-500">{o.type}</span> — {o.title}
-                </li>
+                </Card>
               ))}
             </ul>
           )}
@@ -59,6 +62,6 @@ export default function ConciergeClient() {
           )}
         </div>
       )}
-    </div>
+    </FadeIn>
   );
 }

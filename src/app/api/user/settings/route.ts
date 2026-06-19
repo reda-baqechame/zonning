@@ -5,6 +5,7 @@ import { verifyAndUpdateUserRbq } from "@/lib/rbq-verify";
 import { z } from "zod";
 import { rateLimitAsync, rateLimitResponse, clientIp } from "@/lib/rate-limit";
 import { toPublicUser } from "@/lib/user-dto";
+import { getIntegrationStatus } from "@/lib/env";
 
 const schema = z.object({
   name: z.string().optional(),
@@ -27,7 +28,10 @@ export async function GET(req: NextRequest) {
     const ip = clientIp(req);
     const limited = await rateLimitAsync(`api:settings:${user.id}:${ip}`, 60, 60_000);
     if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
-    return NextResponse.json({ user: toPublicUser(user) });
+    return NextResponse.json({
+      user: toPublicUser(user),
+      integrations: getIntegrationStatus(),
+    });
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

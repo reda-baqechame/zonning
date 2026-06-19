@@ -149,7 +149,8 @@ export async function computePipelineScore(
     minProjectCost?: number | null;
     maxProjectCost?: number | null;
   },
-  intel?: PropertyIntelligence
+  intel?: PropertyIntelligence,
+  options?: { competitionCount?: number }
 ): Promise<PipelineScoreResult> {
   const rbq = computeVerifiedRbqFit(
     user.rbqLicenseClass,
@@ -159,10 +160,9 @@ export async function computePipelineScore(
     permit.workType
   );
 
-  const competitionCount = await getCompetitionDensity(
-    permit.permitType,
-    permit.borough
-  );
+  const competitionCount =
+    options?.competitionCount ??
+    (await getCompetitionDensity(permit.permitType, permit.borough));
 
   const rbqFit = rbq.score;
   const costFit = scoreCostFit(permit.estimatedCost, user.minProjectCost, user.maxProjectCost);

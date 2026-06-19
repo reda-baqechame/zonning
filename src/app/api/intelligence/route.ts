@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
   const matricule = clampQuery(searchParams.get("matricule"), 20);
   const address = clampQuery(searchParams.get("address"), 300);
   const borough = clampQuery(searchParams.get("borough"), 100);
+  const city = clampQuery(searchParams.get("city"), 100);
 
   if (matricule) {
     const intel = await getIntelligenceByMatricule(matricule);
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (address) {
-    const intel = await getIntelligenceByAddress(address, borough);
+    const intel = await getIntelligenceByAddress(address, borough, city ?? undefined);
     return NextResponse.json({ intelligence: intel });
   }
 

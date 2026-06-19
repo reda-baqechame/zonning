@@ -38,11 +38,17 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "${{ secrets.APP_URL }}/api/cron/sync?mode=scheduler"
 
-      - name: Health check
+      - name: RGM priority sync
         run: |
-          curl -fsS "${{ secrets.APP_URL }}/api/health"
-          curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "${{ secrets.APP_URL }}/api/sync/health"
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/sync?mode=rgm"
+
+      - name: Live user alerts (15 min window)
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/alerts?mode=live"
 
   sync-daily-tier:
     if: github.event_name != 'push' && (github.event.schedule == '0 */4 * * *' || github.event_name == 'workflow_dispatch')

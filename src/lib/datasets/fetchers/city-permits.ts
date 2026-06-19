@@ -219,6 +219,51 @@ export async function fetchLevisPermits(
   return parsePermitRows("permits-levis", rows, cap, options);
 }
 
+export async function fetchSherbrookePermits(
+  limit?: number,
+  options?: { minIssueDate?: Date }
+): Promise<PermitRecord[]> {
+  const { fetchEnvScaffoldPermits } = await import("./regulatory-scaffold");
+  const remote = await fetchEnvScaffoldPermits("permits-sherbrooke", options);
+  return remote.slice(0, limit ?? getSyncLimit("permits-sherbrooke")) as PermitRecord[];
+}
+
+export async function fetchTroisRivieresPermits(
+  limit?: number,
+  options?: { minIssueDate?: Date }
+): Promise<PermitRecord[]> {
+  const { fetchEnvScaffoldPermits } = await import("./regulatory-scaffold");
+  const remote = await fetchEnvScaffoldPermits("permits-trois-rivieres", options);
+  return remote.slice(0, limit ?? getSyncLimit("permits-trois-rivieres")) as PermitRecord[];
+}
+
+export async function fetchSaguenayPermits(
+  limit?: number,
+  options?: { minIssueDate?: Date }
+): Promise<PermitRecord[]> {
+  const { fetchEnvScaffoldPermits } = await import("./regulatory-scaffold");
+  const remote = await fetchEnvScaffoldPermits("permits-saguenay", options);
+  return remote.slice(0, limit ?? getSyncLimit("permits-saguenay")) as PermitRecord[];
+}
+
+export async function fetchEnvCityPermits(
+  datasetId:
+    | "permits-terrebonne"
+    | "permits-repentigny"
+    | "permits-brossard"
+    | "permits-saint-jean-richelieu"
+    | "permits-drummondville"
+    | "permits-saint-jerome"
+    | "permits-granby"
+    | "permits-saint-hyacinthe",
+  limit?: number,
+  options?: { minIssueDate?: Date }
+): Promise<PermitRecord[]> {
+  const { fetchEnvScaffoldPermits } = await import("./regulatory-scaffold");
+  const remote = await fetchEnvScaffoldPermits(datasetId, options);
+  return remote.slice(0, limit ?? getSyncLimit(datasetId)) as PermitRecord[];
+}
+
 export async function fetchCityPermitsPaginated(
   datasetId: CityPermitDatasetId,
   totalCap?: number,

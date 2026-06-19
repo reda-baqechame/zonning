@@ -48,8 +48,22 @@ model User {
   ownedOrganizations   Organization[]        @relation("OrgOwner")
   conciergeRequest     ConciergeRequest?
   publicContracts      PublicContractPayment[]
+  savedLeads           SavedLead[]
 
   lastDigestAt DateTime?
+}
+
+model SavedLead {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String
+  itemId    String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, kind, itemId])
+  @@index([userId])
 }
 
 model Organization {
@@ -666,4 +680,40 @@ model AuditLog {
   @@index([action])
   @@index([actorId])
   @@index([createdAt])
+}
+
+model RbqInfraction {
+  id              String    @id @default(cuid())
+  externalId      String    @unique
+  licenseNumber   String?
+  holderName      String?
+  description     String?
+  infractionDate  DateTime?
+  sourceUrl       String
+  sourceFetchedAt DateTime  @default(now())
+
+  @@index([licenseNumber])
+}
+
+model AmpAuthorization {
+  id              String   @id @default(cuid())
+  licenseNumber   String   @unique
+  holderName      String?
+  ampClass        String?
+  status          String?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+}
+
+model MunicipalInspection {
+  id              String    @id @default(cuid())
+  externalId      String    @unique
+  city            String
+  address         String?
+  violationType   String?
+  inspectedAt     DateTime?
+  sourceUrl       String
+  sourceFetchedAt DateTime  @default(now())
+
+  @@index([city])
 }

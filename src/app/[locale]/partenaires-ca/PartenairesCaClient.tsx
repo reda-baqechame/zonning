@@ -3,6 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import FreshnessBadge from "@/components/FreshnessBadge";
+import {
+  PageHeader,
+  Input,
+  Button,
+  Tabs,
+  EmptyState,
+  FadeIn,
+} from "@/components/ui";
 
 type Company = {
   id: string;
@@ -20,6 +28,12 @@ type Company = {
     awardAmount?: number | null;
     awardDate?: string | null;
   }[];
+  rbqLicense?: {
+    licenseNumber: string;
+    holderName?: string | null;
+    subclass?: string | null;
+    status?: string | null;
+  } | null;
 };
 
 type Supplier = {
@@ -65,35 +79,22 @@ export default function PartenairesCaClient() {
   const list = tab === "suppliers" ? suppliers : companies;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10">
-      <h1 className="text-3xl font-bold text-white">{t("title")}</h1>
-      <p className="mt-2 text-slate-400">{t("subtitle")}</p>
-      <div className="mt-2">
-        <FreshnessBadge datasetId={tab === "suppliers" ? "suppliers" : "registre"} />
-      </div>
+    <FadeIn className="mx-auto max-w-7xl px-4 py-10">
+      <PageHeader
+        title={t("title")}
+        subtitle={t("subtitle")}
+        action={<FreshnessBadge datasetId={tab === "suppliers" ? "suppliers" : "registre"} />}
+      />
 
-      <div className="mt-6 flex gap-2">
-        <button
-          onClick={() => setTab("registre")}
-          className={`rounded-lg px-4 py-2 text-sm ${
-            tab === "registre"
-              ? "bg-sky-500 text-white"
-              : "bg-slate-800 text-slate-300"
-          }`}
-        >
-          {t("tabRegistre")}
-        </button>
-        <button
-          onClick={() => setTab("suppliers")}
-          className={`rounded-lg px-4 py-2 text-sm ${
-            tab === "suppliers"
-              ? "bg-sky-500 text-white"
-              : "bg-slate-800 text-slate-300"
-          }`}
-        >
-          {t("tabSuppliers")}
-        </button>
-      </div>
+      <Tabs
+        className="mt-6"
+        tabs={[
+          { id: "registre", label: t("tabRegistre") },
+          { id: "suppliers", label: t("tabSuppliers") },
+        ]}
+        active={tab}
+        onChange={(id) => setTab(id as "registre" | "suppliers")}
+      />
 
       <div className="mt-4 flex flex-wrap gap-2">
         {CERT_CHIPS.map((chip) => (
@@ -111,30 +112,24 @@ export default function PartenairesCaClient() {
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-4">
-        <input
+        <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={t("search")}
-          className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
         />
-        <input
+        <Input
           value={sector}
           onChange={(e) => setSector(e.target.value)}
           placeholder={t("sector")}
-          className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
         />
-        <input
+        <Input
           value={region}
           onChange={(e) => setRegion(e.target.value)}
           placeholder={t("region")}
-          className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
         />
-        <button
-          onClick={load}
-          className="rounded-lg bg-slate-700 px-4 py-2 text-sm hover:bg-slate-600"
-        >
+        <Button onClick={load} variant="secondary">
           {t("searchBtn")}
-        </button>
+        </Button>
       </div>
 
       <div className="mt-8 grid gap-4 md:grid-cols-2">
@@ -156,6 +151,22 @@ export default function PartenairesCaClient() {
                 <p className="text-sm text-slate-400">
                   {c.sector} · {c.city}, {c.region}
                 </p>
+                {c.rbqLicense && (
+                  <p className="mt-1 text-xs text-emerald-400">
+                    RBQ {c.rbqLicense.licenseNumber}
+                    {c.rbqLicense.subclass ? ` · ${c.rbqLicense.subclass}` : ""}
+                  </p>
+                )}
+                {c.sourceUrl && (
+                  <a
+                    href={c.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 inline-block text-xs text-sky-400 hover:underline"
+                  >
+                    Registre →
+                  </a>
+                )}
                 <div className="mt-3 flex flex-wrap gap-1">
                   {certs.map((certName) => (
                     <span
@@ -201,10 +212,8 @@ export default function PartenairesCaClient() {
             </div>
           ))}
 
-        {list.length === 0 && (
-          <p className="text-slate-400">{t("noResults")}</p>
-        )}
+        {list.length === 0 && <EmptyState title={t("noResults")} />}
       </div>
-    </div>
+    </FadeIn>
   );
 }

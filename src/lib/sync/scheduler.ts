@@ -10,6 +10,8 @@ import {
   findDatasetsWithSourceChanges,
   findNeverSynced,
   findAllowlistedSourcesNowLive,
+  findStaleLiveDatasets,
+  findRgmDueForSync,
   getSyncBatchSize,
   LIVE_WATCH_IDS,
   sortByPriority,
@@ -151,22 +153,33 @@ export async function syncNextBatch(options?: {
   return { results, skipped };
 }
 
-/** Live cron: sync every fast-tier dataset whose CKAN source changed. */
+/** Live cron: sync fast-tier datasets when CKAN changed or refresh interval elapsed. */
 export async function syncLiveWatch(): Promise<{
   results: SyncResult[];
   changed: DatasetId[];
   skipped: DatasetId[];
+  synced: DatasetId[];
 }> {
-  const changed = await findDatasetsWithSourceChanges(LIVE_WATCH_IDS);
+  const [changed, stale, rgmDue, probed] = await Promise.all([
+    findDatasetsWithSourceChanges(LIVE_WATCH_IDS),
+    findStaleLiveDatasets(),
+    findRgmDueForSync(),
+    findAllowlistedSourcesNowLive(),
+  ]);
+
+  const toSync = sortByPriority([
+    ...new Set([...rgmDue, ...changed, ...stale, ...probed]),
+  ]).slice(0, getSyncBatchSize());
+
   const results: SyncResult[] = [];
   const skipped: DatasetId[] = [];
 
-  for (const datasetId of sortByPriority(changed)) {
+  for (const datasetId of toSync) {
     results.push(await syncDataset(datasetId));
   }
 
   for (const datasetId of LIVE_WATCH_IDS) {
-    if (changed.includes(datasetId)) continue;
+    if (toSync.includes(datasetId)) continue;
     const skip = await shouldSkipUnchangedSync(datasetId);
     if (skip) {
       skipped.push(datasetId);
@@ -174,7 +187,19 @@ export async function syncLiveWatch(): Promise<{
     }
   }
 
-  return { results, changed, skipped };
+  return { results, changed, skipped, synced: toSync };
+}
+
+export async function syncRgmWatch(): Promise<{
+  results: SyncResult[];
+  synced: DatasetId[];
+}> {
+  const due = await findRgmDueForSync();
+  const results: SyncResult[] = [];
+  for (const datasetId of due) {
+    results.push(await syncDataset(datasetId));
+  }
+  return { results, synced: due };
 }
 
 export async function alertIfCriticalStale(): Promise<void> {

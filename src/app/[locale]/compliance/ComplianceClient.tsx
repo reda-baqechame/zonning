@@ -2,6 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import {
+  PageHeader,
+  Input,
+  FieldLabel,
+  Button,
+  Card,
+  useToast,
+  FadeIn,
+} from "@/components/ui";
 
 type Record = {
   id: string;
@@ -13,8 +23,9 @@ type Record = {
   lawfulBasis: string;
 };
 
-export default function ComplianceClient() {
+export default function ComplianceClient({ entitled }: { entitled: boolean }) {
   const t = useTranslations("compliance");
+  const { success, error: toastError } = useToast();
   const [records, setRecords] = useState<Record[]>([]);
   const [form, setForm] = useState({
     contactName: "",
@@ -31,16 +42,22 @@ export default function ComplianceClient() {
       .catch(() => setRecords([]));
 
   useEffect(() => {
-    load();
-  }, []);
+    if (entitled) load();
+  }, [entitled]);
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch("/api/compliance", {
+    const res = await fetch("/api/compliance", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
+    if (!res.ok) {
+      const d = await res.json();
+      toastError(d.error ?? "Error");
+      return;
+    }
+    success(t("create"));
     load();
     setForm({ ...form, contactName: "", contactEmail: "", contactPhone: "" });
   };
@@ -49,42 +66,74 @@ export default function ComplianceClient() {
     window.open(`/api/compliance?id=${id}`, "_blank");
   };
 
-  return (
-    <div className="mx-auto max-w-4xl px-4 py-10">
-      <h1 className="text-3xl font-bold text-white">{t("title")}</h1>
-      <p className="mt-2 text-slate-400">{t("subtitle")}</p>
+  if (!entitled) {
+    return (
+      <FadeIn className="mx-auto max-w-4xl px-4 py-10">
+        <PageHeader title={t("title")} subtitle={t("subtitle")} />
+        <div className="relative mt-8 overflow-hidden rounded-xl border border-slate-800">
+          <div className="pointer-events-none select-none blur-sm">
+            <div className="space-y-4 bg-slate-900/40 p-6">
+              <div className="h-10 rounded-lg bg-slate-800" />
+              <div className="h-10 rounded-lg bg-slate-800" />
+              <div className="h-10 rounded-lg bg-slate-800" />
+              <div className="h-16 rounded-lg bg-slate-800/80" />
+            </div>
+            <div className="space-y-3 p-6">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-20 rounded-xl bg-slate-900/30" />
+              ))}
+            </div>
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/60 p-6">
+            <Card className="max-w-md text-center">
+              <h2 className="text-lg font-semibold text-white">{t("upgradeTitle")}</h2>
+              <p className="mt-2 text-sm text-slate-400">{t("upgradeDesc")}</p>
+              <Link href="/pricing" className="mt-4 inline-block">
+                <Button>{t("upgradeCta")}</Button>
+              </Link>
+            </Card>
+          </div>
+        </div>
+      </FadeIn>
+    );
+  }
 
-      <form
-        onSubmit={create}
-        className="mt-8 space-y-4 rounded-xl border border-slate-800 bg-slate-900/40 p-6"
-      >
-        <h2 className="font-semibold text-white">Nouveau certificat</h2>
-        <input
-          required
-          value={form.contactName}
-          onChange={(e) => setForm({ ...form, contactName: e.target.value })}
-          placeholder="Nom du contact"
-          className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-        />
-        <input
-          value={form.contactEmail}
-          onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
-          placeholder="Courriel"
-          className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-        />
-        <input
-          value={form.sourceUrl}
-          onChange={(e) => setForm({ ...form, sourceUrl: e.target.value })}
-          placeholder="URL source publique"
-          className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-        />
+  return (
+    <FadeIn className="mx-auto max-w-4xl px-4 py-10">
+      <PageHeader title={t("title")} subtitle={t("subtitle")} />
+
+      <form onSubmit={create} className="mt-8 space-y-4 rounded-xl border border-slate-800 bg-slate-900/40 p-6">
+        <h2 className="font-semibold text-white">{t("newCert")}</h2>
+        <div>
+          <FieldLabel htmlFor="contactName" required>
+            {t("contactName")}
+          </FieldLabel>
+          <Input
+            id="contactName"
+            required
+            value={form.contactName}
+            onChange={(e) => setForm({ ...form, contactName: e.target.value })}
+          />
+        </div>
+        <div>
+          <FieldLabel htmlFor="contactEmail">{t("contactEmail")}</FieldLabel>
+          <Input
+            id="contactEmail"
+            type="email"
+            value={form.contactEmail}
+            onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
+          />
+        </div>
+        <div>
+          <FieldLabel htmlFor="sourceUrl">{t("sourceUrl")}</FieldLabel>
+          <Input
+            id="sourceUrl"
+            value={form.sourceUrl}
+            onChange={(e) => setForm({ ...form, sourceUrl: e.target.value })}
+          />
+        </div>
         <p className="text-xs text-slate-500">{t("lawfulBasis")}</p>
-        <button
-          type="submit"
-          className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium hover:bg-sky-400"
-        >
-          Créer l&apos;enregistrement
-        </button>
+        <Button type="submit">{t("create")}</Button>
       </form>
 
       <div className="mt-8 space-y-3">
@@ -99,15 +148,12 @@ export default function ComplianceClient() {
                 {r.sourceType} · {new Date(r.sourceFetchedAt).toLocaleDateString("fr-CA")}
               </p>
             </div>
-            <button
-              onClick={() => downloadPdf(r.id)}
-              className="rounded-lg border border-sky-500/50 px-3 py-1.5 text-sm text-sky-300 hover:bg-sky-500/10"
-            >
+            <Button variant="secondary" size="sm" onClick={() => downloadPdf(r.id)}>
               {t("download")}
-            </button>
+            </Button>
           </div>
         ))}
       </div>
-    </div>
+    </FadeIn>
   );
 }

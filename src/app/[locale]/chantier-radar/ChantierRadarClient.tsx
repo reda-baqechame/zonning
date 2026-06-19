@@ -1,10 +1,28 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import PermitMapClient from "@/components/PermitMapClient";
 import FreshnessBadge from "@/components/FreshnessBadge";
+import MarketPulseBar from "@/components/MarketPulseBar";
+import QuebecCoverageBar from "@/components/QuebecCoverageBar";
+import { LeadCard } from "@/components/LeadCard";
+import { intelAccessForPlan } from "@/components/SiteIntelligencePanel";
+import type { PropertyIntelligence } from "@/lib/intelligence";
 import { COVERAGE_CITIES } from "@/lib/datasets/registry";
+import { createAlert } from "@/lib/alerts/create-alert";
+import type { LeadSignal } from "@/lib/lead-signals";
+import {
+  PageHeader,
+  Input,
+  Select,
+  FieldLabel,
+  Button,
+  SkeletonList,
+  EmptyState,
+  useToast,
+  FadeIn,
+} from "@/components/ui";
 
 type Permit = {
   id: string;
@@ -22,31 +40,36 @@ type Permit = {
   pipeline?: {
     competitionCount?: number;
     densityGapLabelFr?: string;
-  };
-  intelligence?: {
-    assessment?: { totalValue?: number | null; yearBuilt?: number | null; floors?: number | null };
-    recentTransaction?: { salePrice?: number | null };
-    contamination?: { nearby: boolean; count: number; gtcNearby?: boolean; gtcCount?: number };
-    propertyTax?: { amount?: number | null };
-    zoning?: { densityZone?: string | null; maxFloors?: number | null; source?: string };
-    heritage?: {
-      nearby: boolean;
-      count: number;
-      hasEip: boolean;
-      lpcProtected?: boolean;
-      pum2050Listed?: boolean;
-      nearestName?: string | null;
+    breakdown?: {
+      rbqFit: number;
+      costFit: number;
+      competition: number;
+      intelligence: number;
+      zoning: number;
     };
-    roadworks?: { nearby: boolean; count: number };
-    municipalContracts?: { supplierMatches: number; totalAmount: number };
-    marketHeat?: { permitCount: number; level: "hot" | "warm" | "cool" };
   };
+  signals?: LeadSignal[];
+  intelligence?: PropertyIntelligence;
 };
 
 export default function ChantierRadarClient() {
   const t = useTranslations("chantier");
-  const tc = useTranslations("compliance");
+  const c = useTranslations("common");
+  const locale = useLocale();
+  const { success, error: toastError } = useToast();
   const [permits, setPermits] = useState<Permit[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [complianceEntitled, setComplianceEntitled] = useState(false);
+  const [userPlan, setUserPlan] = useState("FREE");
+  const [showDevOnMap, setShowDevOnMap] = useState(true);
+  const [showGtcLayer, setShowGtcLayer] = useState(false);
+  const [showHeritageLayer, setShowHeritageLayer] = useState(false);
+  const [mapOverlays, setMapOverlays] = useState<
+    { id: string; lat: number; lng: number; kind: "gtc" | "heritage" | "zoning" }[]
+  >([]);
+  const [mappableCount, setMappableCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [borough, setBorough] = useState("");
   const [city, setCity] = useState("");
   const [minCost, setMinCost] = useState("");
@@ -66,6 +89,8 @@ export default function ChantierRadarClient() {
       address?: string | null;
       unitsPlanned?: number | null;
       projectUrl?: string | null;
+      latitude?: number | null;
+      longitude?: number | null;
     }[]
   >([]);
 
@@ -73,6 +98,7 @@ export default function ChantierRadarClient() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     const params = new URLSearchParams({ sort: "pipeline" });
     if (borough) params.set("borough", borough);
     if (city) params.set("city", city);
@@ -82,35 +108,48 @@ export default function ChantierRadarClient() {
     if (noGtc) params.set("noGtc", "true");
     if (days) params.set("days", days);
 
-    const [permitsRes, delaysRes, projectsRes] = await Promise.all([
-      fetch(`/api/permits?${params}`),
-      borough
-        ? fetch(`/api/permit-delays?borough=${encodeURIComponent(borough)}`)
-        : Promise.resolve(null),
-      showDevProjects
-        ? fetch(`/api/development-projects?city=${encodeURIComponent(city)}`)
-        : Promise.resolve(null),
-    ]);
+    try {
+      const [permitsRes, delaysRes, projectsRes] = await Promise.all([
+        fetch(`/api/permits?${params}`),
+        borough
+          ? fetch(`/api/permit-delays?borough=${encodeURIComponent(borough)}`)
+          : Promise.resolve(null),
+        showDevProjects
+          ? fetch(`/api/development-projects?city=${encodeURIComponent(city)}`)
+          : Promise.resolve(null),
+      ]);
 
-    const data = await permitsRes.json();
-    setPermits(data.permits ?? []);
+      const data = await permitsRes.json();
+      if (!permitsRes.ok) {
+        setLoadError(data.error ?? c("error"));
+        setPermits([]);
+        return;
+      }
+      setPermits(data.permits ?? []);
+      setComplianceEntitled(data.complianceEntitled ?? false);
+      setUserPlan(data.plan ?? "FREE");
+      setMappableCount(data.mappable ?? 0);
+      setTotalCount(data.total ?? data.permits?.length ?? 0);
 
-    if (delaysRes) {
-      const delaysData = await delaysRes.json();
-      setBoroughDelays(delaysData.delays ?? []);
-    } else {
-      setBoroughDelays([]);
+      if (delaysRes) {
+        const delaysData = await delaysRes.json();
+        setBoroughDelays(delaysData.delays ?? []);
+      } else {
+        setBoroughDelays([]);
+      }
+
+      if (projectsRes) {
+        const projectsData = await projectsRes.json();
+        setDevProjects(projectsData.projects ?? []);
+      } else {
+        setDevProjects([]);
+      }
+    } catch {
+      setLoadError(c("error"));
+    } finally {
+      setLoading(false);
     }
-
-    if (projectsRes) {
-      const projectsData = await projectsRes.json();
-      setDevProjects(projectsData.projects ?? []);
-    } else {
-      setDevProjects([]);
-    }
-
-    setLoading(false);
-  }, [borough, city, minCost, permitType, eligibleOnly, noGtc, days, showDevProjects]);
+  }, [borough, city, minCost, permitType, eligibleOnly, noGtc, days, showDevProjects, c]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -128,19 +167,58 @@ export default function ChantierRadarClient() {
       permitType: p.permitType,
       latitude: p.latitude!,
       longitude: p.longitude!,
+      pipelineScore: p.pipelineScore,
       rbqFit: p.rbqFit,
     }));
 
-  const createAlert = async () => {
-    await fetch("/api/alerts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        module: "chantier_radar",
-        filters: { borough, city, minCost, permitType, eligibleOnly, noGtc },
-      }),
+  const devMapPoints = devProjects
+    .filter((p) => p.latitude != null && p.longitude != null)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      latitude: p.latitude!,
+      longitude: p.longitude!,
+    }));
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      if (!showGtcLayer && !showHeritageLayer) {
+        if (!cancelled) setMapOverlays([]);
+        return;
+      }
+      const center = permits.find((p) => p.latitude && p.longitude);
+      if (!center?.latitude || !center.longitude) return;
+      const layers = [showGtcLayer && "gtc", showHeritageLayer && "heritage"]
+        .filter(Boolean)
+        .join(",");
+      try {
+        const res = await fetch(
+          `/api/map/overlays?lat=${center.latitude}&lng=${center.longitude}&layers=${layers}`
+        );
+        const d = await res.json();
+        if (!cancelled) setMapOverlays(d.points ?? []);
+      } catch {
+        if (!cancelled) setMapOverlays([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [showGtcLayer, showHeritageLayer, permits]);
+
+  const intelAccess = intelAccessForPlan(userPlan);
+
+  const handleCreateAlert = async () => {
+    const result = await createAlert({
+      module: "chantier_radar",
+      filters: { borough, city, minCost, permitType, eligibleOnly, noGtc },
     });
-    alert("Alerte créée!");
+    if (!result.ok) {
+      toastError(result.error);
+      return;
+    }
+    success(c("alertCreated"));
   };
 
   const createCompliance = async (p: Permit) => {
@@ -155,74 +233,71 @@ export default function ChantierRadarClient() {
     });
     const data = await res.json();
     if (!res.ok) {
-      alert(data.error ?? "Erreur");
+      toastError(data.error ?? c("error"));
       return;
     }
     window.open(`/api/compliance?id=${data.record.id}`, "_blank");
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10">
-      <h1 className="text-3xl font-bold text-white">{t("title")}</h1>
-      <div className="mt-2">
-        <FreshnessBadge datasetId="permits" />
+    <FadeIn className="mx-auto max-w-7xl px-4 py-10">
+      <MarketPulseBar compact />
+      <div className="mb-4">
+        <QuebecCoverageBar compact />
       </div>
+      <PageHeader
+        title={t("title")}
+        subtitle={t("filters")}
+        action={<FreshnessBadge datasetId="permits" />}
+      />
 
       <div className="mt-6 grid gap-4 rounded-xl border border-slate-800 bg-slate-900/50 p-4 md:grid-cols-2 lg:grid-cols-6">
         <div>
-          <label className="text-xs text-slate-400">{t("borough")}</label>
-          <input
+          <FieldLabel htmlFor="borough">{t("borough")}</FieldLabel>
+          <Input
+            id="borough"
             value={borough}
             onChange={(e) => setBorough(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
             placeholder="Ville-Marie"
           />
         </div>
         <div>
-          <label className="text-xs text-slate-400">Ville</label>
-          <select
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-          >
+          <FieldLabel htmlFor="city">Ville</FieldLabel>
+          <Select id="city" value={city} onChange={(e) => setCity(e.target.value)}>
             <option value="">Toutes</option>
             {COVERAGE_CITIES.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div>
-          <label className="text-xs text-slate-400">{t("permitType")}</label>
-          <input
+          <FieldLabel htmlFor="permitType">{t("permitType")}</FieldLabel>
+          <Input
+            id="permitType"
             value={permitType}
             onChange={(e) => setPermitType(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
             placeholder="Construction, Démolition..."
           />
         </div>
         <div>
-          <label className="text-xs text-slate-400">{t("minCost")}</label>
-          <input
+          <FieldLabel htmlFor="minCost">{t("minCost")}</FieldLabel>
+          <Input
+            id="minCost"
             value={minCost}
             onChange={(e) => setMinCost(e.target.value)}
             type="number"
-            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
             placeholder="100000"
           />
         </div>
         <div>
-          <label className="text-xs text-slate-400">{t("days")}</label>
-          <select
-            value={days}
-            onChange={(e) => setDays(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-          >
+          <FieldLabel htmlFor="days">{t("days")}</FieldLabel>
+          <Select id="days" value={days} onChange={(e) => setDays(e.target.value)}>
             <option value="30">30 {t("daysLabel")}</option>
             <option value="90">90 {t("daysLabel")}</option>
             <option value="180">180 {t("daysLabel")}</option>
-          </select>
+          </Select>
         </div>
         <div className="flex items-end">
           <label className="flex items-center gap-2 text-sm text-slate-300">
@@ -245,20 +320,29 @@ export default function ChantierRadarClient() {
           </label>
         </div>
         <div className="flex items-end gap-2 lg:col-span-2">
-          <button
-            onClick={load}
-            className="rounded-lg bg-slate-700 px-4 py-2 text-sm hover:bg-slate-600"
-          >
+          <Button variant="secondary" onClick={() => void load()}>
             {t("filters")}
-          </button>
-          <button
-            onClick={createAlert}
-            className="rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium hover:bg-sky-400"
-          >
-            {t("createAlert")}
-          </button>
+          </Button>
+          <Button onClick={() => void handleCreateAlert()}>{t("createAlert")}</Button>
         </div>
       </div>
+
+      {loadError && (
+        <div className="mt-4 rounded-lg border border-red-500/40 bg-red-950/30 p-4 text-sm text-red-200">
+          {loadError}
+          <Button variant="secondary" size="sm" className="mt-2" onClick={() => void load()}>
+            {c("retry")}
+          </Button>
+        </div>
+      )}
+
+      <p className="mt-2 text-sm text-slate-500">
+        {t("resultSummary", {
+          count: permits.length,
+          total: totalCount,
+          mappable: mappableCount,
+        })}
+      </p>
 
       {boroughDelays.length > 0 && (
         <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
@@ -303,119 +387,83 @@ export default function ChantierRadarClient() {
         </div>
       )}
 
-      <div className="mt-6 overflow-hidden rounded-xl border border-slate-800">
-        <PermitMapClient permits={mapPoints} />
+      <div className="mt-4 flex flex-wrap gap-3 text-xs">
+        <label className="flex items-center gap-1.5 text-slate-400">
+          <input
+            type="checkbox"
+            checked={showDevOnMap}
+            onChange={(e) => setShowDevOnMap(e.target.checked)}
+          />
+          {t("layerDevProjects")}
+        </label>
+        <label className="flex items-center gap-1.5 text-slate-400">
+          <input
+            type="checkbox"
+            checked={showGtcLayer}
+            onChange={(e) => setShowGtcLayer(e.target.checked)}
+          />
+          {t("layerGtc")}
+        </label>
+        <label className="flex items-center gap-1.5 text-slate-400">
+          <input
+            type="checkbox"
+            checked={showHeritageLayer}
+            onChange={(e) => setShowHeritageLayer(e.target.checked)}
+          />
+          {t("layerHeritage")}
+        </label>
       </div>
 
-      <div className="mt-6 space-y-3">
-        {loading ? (
-          <p className="text-slate-400">Chargement...</p>
-        ) : permits.length === 0 ? (
-          <p className="text-slate-400">{t("noPermits")}</p>
-        ) : (
-          permits.map((p) => (
-            <div
-              key={p.id}
-              className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 md:flex md:items-center md:justify-between"
-            >
-              <div>
-                <p className="font-semibold text-white">
-                  {p.permitType}
-                  {p.city && p.city !== "Montréal" && (
-                    <span className="ml-2 rounded bg-slate-700 px-2 py-0.5 text-xs">{p.city}</span>
-                  )}
-                </p>
-                <p className="text-sm text-slate-400">
-                  {p.address} · {p.borough}
-                </p>
-                {p.pipelineScore != null && (
-                  <p className="mt-1 text-sm text-sky-300">
-                    Pipeline Score: <strong>{p.pipelineScore}</strong>
-                    {p.pipeline?.competitionCount != null && (
-                      <span className="text-slate-500"> · {p.pipeline.competitionCount} concurrents (90j)</span>
-                    )}
-                  </p>
-                )}
-                {p.pipeline?.densityGapLabelFr && (
-                  <p className="text-xs text-indigo-300">{p.pipeline.densityGapLabelFr}</p>
-                )}
-                {p.intelligence && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {p.intelligence.assessment?.totalValue && (
-                      <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-xs text-violet-300">
-                        Éval. {p.intelligence.assessment.totalValue.toLocaleString("fr-CA")} $
-                      </span>
-                    )}
-                    {p.intelligence.contamination?.gtcNearby ? (
-                      <span className="rounded-full bg-red-600/30 px-2 py-0.5 text-xs text-red-200">
-                        GTC ({p.intelligence.contamination.gtcCount ?? 1})
-                      </span>
-                    ) : p.intelligence.contamination?.nearby ? (
-                      <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-xs text-red-300">
-                        Contamination ({p.intelligence.contamination.count})
-                      </span>
-                    ) : null}
-                    {p.intelligence.zoning?.densityZone && (
-                      <span className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-xs text-indigo-300">
-                        {p.intelligence.zoning.source === "regional" ? "Zonage" : "PUM 2050"}:{" "}
-                        {p.intelligence.zoning.densityZone}
-                      </span>
-                    )}
-                    {p.intelligence.heritage?.lpcProtected && (
-                      <span className="rounded-full bg-rose-500/20 px-2 py-0.5 text-xs text-rose-300">
-                        LPC protégé
-                      </span>
-                    )}
-                    {p.intelligence.heritage?.nearby && !p.intelligence.heritage.lpcProtected && (
-                      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-300">
-                        Patrimoine{p.intelligence.heritage.hasEip ? " (EIP)" : ""} ({p.intelligence.heritage.count})
-                      </span>
-                    )}
-                    {p.intelligence.roadworks?.nearby && (
-                      <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-xs text-orange-300">
-                        Travaux actifs ({p.intelligence.roadworks.count})
-                      </span>
-                    )}
-                    {p.intelligence.municipalContracts?.supplierMatches ? (
-                      <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs text-emerald-300">
-                        Fournisseur Ville ({p.intelligence.municipalContracts.supplierMatches})
-                      </span>
-                    ) : null}
-                    {p.intelligence.marketHeat?.level === "hot" && (
-                      <span className="rounded-full bg-rose-500/20 px-2 py-0.5 text-xs text-rose-300">
-                        Marché chaud · {p.intelligence.marketHeat.permitCount} permis
-                      </span>
-                    )}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => createCompliance(p)}
-                  className="mt-2 text-xs text-sky-400 hover:text-sky-300"
-                >
-                  {tc("createFromPermit")} →
-                </button>
-              </div>
-              <div className="mt-2 text-right md:mt-0">
-                {p.estimatedCost && (
-                  <p className="font-mono text-sky-300">
-                    {p.estimatedCost.toLocaleString("fr-CA")} $
-                  </p>
-                )}
-                <p
-                  className={`text-sm font-medium ${
-                    p.rbqFit.eligible ? "text-green-400" : "text-amber-400"
-                  }`}
-                >
-                  {t("rbqFit")}: {p.rbqFit.score}% —{" "}
-                  {p.rbqFit.eligible ? t("eligible") : t("notEligible")}
-                </p>
-                <p className="text-xs text-slate-500">{p.rbqFit.reasonFr}</p>
-              </div>
-            </div>
-          ))
-        )}
+      <div className="mt-6 grid gap-6 lg:grid-cols-5">
+        <div className="overflow-hidden rounded-xl border border-slate-800 lg:col-span-3">
+          <PermitMapClient
+            permits={mapPoints}
+            devProjects={showDevOnMap ? devMapPoints : []}
+            overlayPoints={mapOverlays}
+            selectedId={selectedId}
+            onSelect={(id) => setSelectedId(id || null)}
+            city={city || undefined}
+            loading={loading}
+            mappableCount={mappableCount}
+            totalCount={permits.length}
+          />
+        </div>
+
+        <div className="space-y-3 lg:col-span-2">
+          {loading ? (
+            <SkeletonList count={3} />
+          ) : permits.length === 0 ? (
+            <EmptyState title={t("noPermits")} />
+          ) : (
+            permits.map((p) => (
+              <LeadCard
+                key={p.id}
+                locale={locale}
+                selected={selectedId === p.id}
+                complianceEnabled={complianceEntitled}
+                onSelect={() => setSelectedId(p.id)}
+                onCompliance={() => createCompliance(p)}
+                item={{
+                  kind: "permit",
+                  id: p.id,
+                  score: p.pipelineScore ?? p.rbqFit.score,
+                  signals: p.signals ?? [],
+                  permitType: p.permitType,
+                  address: p.address,
+                  borough: p.borough,
+                  estimatedCost: p.estimatedCost,
+                  rbqFit: p.rbqFit,
+                  pipeline: p.pipeline,
+                  sourceUrl: p.sourceUrl,
+                  applicantName: p.applicantName,
+                }}
+                intelligence={p.intelligence}
+                intelAccess={intelAccess}
+              />
+            ))
+          )}
+        </div>
       </div>
-    </div>
+    </FadeIn>
   );
 }

@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { loadProdEnv } from "./load-prod-env";
-import { getBootstrapAllowlist, getActiveDatasetIds, COVERAGE_CITIES } from "../src/lib/datasets/registry";
+import { getBootstrapAllowlist, getActiveDatasetIds, COVERAGE_CITIES, getDatasetCount } from "../src/lib/datasets/registry";
 import { collectEnvIssues } from "../src/lib/env";
 
 loadProdEnv();
@@ -47,14 +47,25 @@ async function main() {
     { name: "sync health (auth)", run: async () => (await check("/api/sync/health")).ok },
     { name: "sync status (auth)", run: async () => (await check("/api/sync/status")).ok },
     {
-      name: "public stats (33 datasets, 10 cities)",
+      name: `public stats (${getDatasetCount()} datasets, ${COVERAGE_CITIES.length} cities)`,
       run: async () => {
         const { ok, json } = await check("/api/stats/public");
         if (!ok || !json) return false;
-        const countOk = json.datasetCount === 33;
-        const citiesOk = json.coverageCities === 10 && Array.isArray(json.cities);
-        console.log(`datasetCount=${json.datasetCount} (expect 33), cities=${json.coverageCities}`);
+        const expected = getDatasetCount();
+        const countOk = json.datasetCount === expected;
+        const citiesOk =
+          json.coverageCities === COVERAGE_CITIES.length && Array.isArray(json.cities);
+        console.log(`datasetCount=${json.datasetCount} (expect ${expected}), cities=${json.coverageCities}`);
         return countOk && citiesOk;
+      },
+    },
+    { name: "coverage public API", run: async () => (await check("/api/coverage/public")).ok },
+    { name: "digest preview", run: async () => (await check("/api/digest")).ok },
+    {
+      name: "map overlays",
+      run: async () => {
+        const { ok } = await check("/api/map/overlays?lat=45.5017&lng=-73.5673&layers=gtc");
+        return ok;
       },
     },
     { name: "verdict slug 404", run: async () => (await check("/api/verdict?slug=invalid", "GET", 404)).ok },
@@ -121,6 +132,15 @@ async function main() {
     {
       name: "cron alerts (auth)",
       run: async () => (secret ? (await check("/api/cron/alerts", "POST")).ok : true),
+    },
+    {
+      name: "cron alerts live (auth)",
+      run: async () =>
+        secret ? (await check("/api/cron/alerts?mode=live", "POST")).ok : true,
+    },
+    {
+      name: "cron rgm (auth)",
+      run: async () => (secret ? (await check("/api/cron/sync?mode=rgm", "POST")).ok : true),
     },
     {
       name: "cron thursday (auth)",

@@ -4,6 +4,17 @@ import { useState, useEffect } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { RBQ_LICENSE_CLASSES } from "@/lib/rbq";
+import { COVERAGE_CITIES } from "@/lib/datasets/registry";
+import {
+  PageHeader,
+  Input,
+  Select,
+  FieldLabel,
+  Button,
+  Badge,
+  useToast,
+  FadeIn,
+} from "@/components/ui";
 
 const TRADE_OPTIONS = [
   "plomberie",
@@ -20,14 +31,13 @@ const REGION_OPTIONS = [
   "Ville-Marie",
   "Rosemont",
   "Ahuntsic",
-  "Laval",
-  "Longueuil",
-  "Québec",
-  "Montréal",
+  ...COVERAGE_CITIES,
 ];
 
 export default function SettingsClient() {
   const t = useTranslations("settings");
+  const c = useTranslations("common");
+  const { success, error: toastError } = useToast();
   const router = useRouter();
   const [form, setForm] = useState({
     name: "",
@@ -47,6 +57,12 @@ export default function SettingsClient() {
   const [plan, setPlan] = useState("FREE");
   const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null);
   const [billingLoading, setBillingLoading] = useState(false);
+  const [integrations, setIntegrations] = useState<{
+    resend?: boolean;
+    twilio?: boolean;
+    stripe?: boolean;
+    stripeDemo?: boolean;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/user/settings")
@@ -54,6 +70,7 @@ export default function SettingsClient() {
       .then((d) => {
         const u = d.user;
         if (!u) return;
+        setIntegrations(d.integrations ?? null);
         setPlan(u.plan ?? "FREE");
         setStripeCustomerId(u.stripeCustomerId ?? null);
         setRbqVerified(u.rbqVerified ?? false);
@@ -96,12 +113,13 @@ export default function SettingsClient() {
     });
     if (!res.ok) {
       const d = await res.json();
-      alert(d.error ?? "Erreur");
+      toastError(d.error ?? c("error"));
       return;
     }
     const d = await res.json();
     setRbqVerified(d.user?.rbqVerified ?? false);
     setSaved(true);
+    success(t("saved"));
     if (onboarding) router.push("/feed");
   };
 
@@ -113,7 +131,7 @@ export default function SettingsClient() {
       if (data.url) {
         globalThis.location.assign(data.url);
       } else {
-        alert(data.error ?? "Erreur");
+        toastError(data.error ?? c("error"));
       }
     } finally {
       setBillingLoading(false);
@@ -121,64 +139,80 @@ export default function SettingsClient() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="text-2xl font-bold text-white">{t("title")}</h1>
-      <p className="mt-2 text-slate-400">{t("subtitle")}</p>
+    <FadeIn className="mx-auto max-w-2xl px-4 py-10">
+      <PageHeader title={t("title")} subtitle={t("subtitle")} />
 
       {stripeCustomerId && plan !== "FREE" && (
         <div className="mt-6 rounded-lg border border-slate-800 bg-slate-900/40 p-4">
           <p className="text-sm text-slate-300">
             {t("currentPlan")}: <span className="font-medium text-white">{plan}</span>
           </p>
-          <button
-            type="button"
-            onClick={openBillingPortal}
-            disabled={billingLoading}
-            className="mt-3 rounded-lg border border-sky-600 px-4 py-2 text-sm text-sky-300 hover:border-sky-400 disabled:opacity-50"
-          >
+          <Button type="button" onClick={openBillingPortal} disabled={billingLoading} variant="secondary">
             {billingLoading ? "…" : t("manageSubscription")}
-          </button>
+          </Button>
+        </div>
+      )}
+
+      {integrations && (
+        <div className="mt-6 rounded-lg border border-slate-800 bg-slate-900/40 p-4 text-sm text-slate-400">
+          <p className="font-medium text-slate-300">{t("integrations")}</p>
+          <ul className="mt-2 space-y-1">
+            <li>Courriel (Resend): {integrations.resend ? "✓" : "—"}</li>
+            <li>SMS (Twilio): {integrations.twilio ? "✓" : "—"}</li>
+            <li>Stripe: {integrations.stripe ? (integrations.stripeDemo ? "démo" : "✓") : "—"}</li>
+          </ul>
         </div>
       )}
 
       <div className="mt-8 space-y-6">
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-white">{t("company")}</h2>
-          <input
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder={t("name")}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-          />
-          <input
-            value={form.companyName}
-            onChange={(e) => setForm({ ...form, companyName: e.target.value })}
-            placeholder={t("companyName")}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-          />
+          <div>
+            <FieldLabel htmlFor="name">{t("name")}</FieldLabel>
+            <Input
+              id="name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+          </div>
+          <div>
+            <FieldLabel htmlFor="companyName">{t("companyName")}</FieldLabel>
+            <Input
+              id="companyName"
+              value={form.companyName}
+              onChange={(e) => setForm({ ...form, companyName: e.target.value })}
+            />
+          </div>
         </section>
 
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-white">RBQ</h2>
-          <select
-            value={form.rbqLicenseClass}
-            onChange={(e) => setForm({ ...form, rbqLicenseClass: e.target.value })}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-          >
-            <option value="">—</option>
-            {RBQ_LICENSE_CLASSES.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.code} — {c.labelFr}
-              </option>
-            ))}
-          </select>
-          <input
-            value={form.rbqLicenseNumber}
-            onChange={(e) => setForm({ ...form, rbqLicenseNumber: e.target.value })}
-            placeholder={t("rbqNumber")}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
-          />
-          {rbqVerified && <p className="text-sm text-emerald-400">{t("rbqVerified")}</p>}
+          <div>
+            <FieldLabel htmlFor="rbqClass">{t("rbqClass")}</FieldLabel>
+            <Select
+              id="rbqClass"
+              value={form.rbqLicenseClass}
+              onChange={(e) => setForm({ ...form, rbqLicenseClass: e.target.value })}
+            >
+              <option value="">—</option>
+              {RBQ_LICENSE_CLASSES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code} — {c.labelFr}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <FieldLabel htmlFor="rbqNumber">{t("rbqNumber")}</FieldLabel>
+            <Input
+              id="rbqNumber"
+              value={form.rbqLicenseNumber}
+              onChange={(e) => setForm({ ...form, rbqLicenseNumber: e.target.value })}
+            />
+          </div>
+          {rbqVerified && (
+            <Badge variant="success">{t("rbqVerified")}</Badge>
+          )}
         </section>
 
         <section>
@@ -237,21 +271,13 @@ export default function SettingsClient() {
         </section>
 
         <div className="flex gap-3">
-          <button
-            onClick={() => save(false)}
-            className="rounded-lg bg-sky-500 px-6 py-2 text-sm font-medium text-white hover:bg-sky-400"
-          >
-            {t("save")}
-          </button>
-          <button
-            onClick={() => save(true)}
-            className="rounded-lg border border-emerald-600 px-6 py-2 text-sm text-emerald-300 hover:border-emerald-400"
-          >
+          <Button onClick={() => save(false)}>{t("save")}</Button>
+          <Button variant="success" onClick={() => save(true)}>
             {t("saveAndFeed")}
-          </button>
+          </Button>
         </div>
         {saved && <p className="text-sm text-emerald-400">{t("saved")}</p>}
       </div>
-    </div>
+    </FadeIn>
   );
 }

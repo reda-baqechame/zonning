@@ -42,15 +42,15 @@ export function matchesEssentielProfile(
 ): boolean {
   if (plan !== "ESSENTIEL") return true;
 
-  const trade = userTrades[0]?.toLowerCase();
-  const region = userRegions[0]?.toLowerCase();
-  if (!trade && !region) return true;
+  const trades = userTrades.map((t) => t.toLowerCase()).filter(Boolean);
+  const regions = userRegions.map((r) => r.toLowerCase()).filter(Boolean);
+  if (trades.length === 0 && regions.length === 0) return true;
 
   const haystack = `${item.trade ?? ""} ${item.title ?? ""} ${item.region ?? ""} ${item.borough ?? ""}`.toLowerCase();
 
-  if (trade && !haystack.includes(trade)) return false;
-  if (region && !haystack.includes(region)) return false;
-  return true;
+  const tradeMatch = trades.length === 0 || trades.some((t) => haystack.includes(t));
+  const regionMatch = regions.length === 0 || regions.some((r) => haystack.includes(r));
+  return tradeMatch && regionMatch;
 }
 
 export async function canViewTenderMatch(plan: Plan | null | undefined, userId: string): Promise<boolean> {

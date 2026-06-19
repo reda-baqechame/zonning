@@ -12,6 +12,7 @@ import {
   parseJsonArray,
 } from "@/lib/usage";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
+import { computeLeadSignals } from "@/lib/lead-signals";
 
 function computeMatchScore(
   userTrades: string[],
@@ -57,13 +58,17 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q")?.trim();
   const ampOnly = searchParams.get("ampOnly") === "true";
 
-  const statusOpen = { OR: [{ status: null }, { status: { not: "closed" } }] };
+  const standingOnly = searchParams.get("standing") === "true";
+
+  const statusOpen = standingOnly
+    ? { status: "standing" }
+    : { OR: [{ status: null }, { status: { not: "closed" } }] };
 
   const tenders = await prisma.tender.findMany({
     where: {
       AND: [
         statusOpen,
-        { closesAt: { gte: new Date() } },
+        ...(standingOnly ? [] : [{ closesAt: { gte: new Date() } }]),
         ...(category ? [{ category }] : []),
         ...(region ? [{ region: { contains: region } }] : []),
         ...(ampOnly ? [{ requiresAmp: true }] : []),
@@ -105,12 +110,35 @@ export async function GET(req: NextRequest) {
           : Promise.resolve(0),
       ]);
 
+      const hasSimilarAwards = similarAwards.length > 0;
+      const signals = computeLeadSignals(
+        {
+          kind: "tender",
+          id: t.id,
+          score: matchScore,
+          title: t.title,
+          organization: t.organization,
+          closesAt: t.closesAt,
+          daysLeft,
+          isThursday,
+          urgent,
+          requiresAmp: t.requiresAmp,
+          matchScore,
+          plainSummary: t.aiSummary || t.summary || "",
+          sourceUrl: t.sourceUrl,
+          hasSimilarAwards,
+        },
+        { ampAuthorized: user?.ampAuthorized }
+      );
+
       return {
         ...t,
         daysLeft,
         isThursday,
         urgent,
         matchScore,
+        score: matchScore,
+        signals,
         similarAwards,
         amendmentCount,
         plainSummary:
@@ -147,7 +175,13 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     tenders: filtered,
+    categories: [
+      ...new Set(
+        tenders.map((t) => t.category).filter((c): c is string => Boolean(c))
+      ),
+    ].slice(0, 20),
     plan: user?.plan ?? "FREE",
+    complianceEntitled: getPlanLimits(user?.plan).complianceVault,
     limits: { maxTenders: limits.maxTenders },
   });
 }
