@@ -13,6 +13,15 @@ import {
 } from "@/lib/usage";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { computeLeadSignals } from "@/lib/lead-signals";
+import {
+  getIncumbentIntelligence,
+  type IncumbentIntelligence,
+} from "@/lib/tenders/incumbent";
+import {
+  computeWinProbability,
+  buildMatchReasons,
+  computeBidRecommendation,
+} from "@/lib/tenders/win-probability";
 
 function computeMatchScore(
   userTrades: string[],
@@ -24,23 +33,42 @@ function computeMatchScore(
     title: string;
     requiresAmp?: boolean;
   }
-): number {
+): { score: number; matchedTrades: string[]; matchedRegion: string | null } {
   let score = 50;
   const title = tender.title.toLowerCase();
   const region = (tender.region ?? "").toLowerCase();
+  const matchedTrades: string[] = [];
+  let matchedRegion: string | null = null;
 
   for (const trade of userTrades) {
-    if (title.includes(trade.toLowerCase())) score += 15;
+    if (title.includes(trade.toLowerCase())) {
+      score += 15;
+      matchedTrades.push(trade);
+    }
   }
   for (const r of userRegions) {
-    if (region.includes(r.toLowerCase())) score += 20;
+    if (region.includes(r.toLowerCase())) {
+      score += 20;
+      matchedRegion = matchedRegion ?? r;
+    }
   }
   if (tender.category === "Construction") score += 5;
   if (tender.requiresAmp) {
     score += userAmp ? 15 : -20;
   }
 
-  return Math.min(100, Math.max(0, score));
+  return { score: Math.min(100, Math.max(0, score)), matchedTrades, matchedRegion };
+}
+
+function valueFit(
+  estimatedValue: number | null | undefined,
+  min: number | null | undefined,
+  max: number | null | undefined,
+): "in_range" | "too_large" | "too_small" | "unknown" {
+  if (estimatedValue == null) return "unknown";
+  if (max && estimatedValue > max * 1.5) return "too_large";
+  if (min && estimatedValue < min * 0.5) return "too_small";
+  return "in_range";
 }
 
 export async function GET(req: NextRequest) {
@@ -91,24 +119,73 @@ export async function GET(req: NextRequest) {
 
   const userTrades = parseJsonArray(user?.trades);
   const userRegions = parseJsonArray(user?.regions);
+  const userCompany = (user?.companyName ?? "").toLowerCase();
+
+  // Memoize incumbent lookups per category/UNSPSC within this request.
+  const incumbentCache = new Map<string, Promise<IncumbentIntelligence>>();
+  const incumbentFor = (unspsc: string | null, category: string | null, region: string | null) => {
+    const key = `${unspsc ?? ""}|${category ?? ""}|${region ?? ""}`;
+    let p = incumbentCache.get(key);
+    if (!p) {
+      p = getIncumbentIntelligence(unspsc, category, region);
+      incumbentCache.set(key, p);
+    }
+    return p;
+  };
 
   const enriched = await Promise.all(
     tenders.map(async (t) => {
       const daysLeft = t.closesAt ? differenceInDays(t.closesAt, new Date()) : null;
       const isThursday = t.closesAt ? getDay(t.closesAt) === 4 : false;
       const urgent = daysLeft !== null && daysLeft <= 7;
-      const matchScore = computeMatchScore(
+      const match = computeMatchScore(
         userTrades,
         userRegions,
         user?.ampAuthorized ?? false,
         t
       );
-      const [similarAwards, amendmentCount] = await Promise.all([
+      const matchScore = match.score;
+      const [similarAwards, amendmentCount, incumbent] = await Promise.all([
         limits.maxTenders > 5 ? getSimilarAwards(t.unspsc, t.category, 3) : Promise.resolve([]),
         t.externalId
           ? prisma.seaoAmendment.count({ where: { tenderExternalId: t.externalId } })
           : Promise.resolve(0),
+        incumbentFor(t.unspsc, t.category, t.region),
       ]);
+
+      const isUserIncumbent =
+        userCompany.length > 2 &&
+        incumbent.topIncumbents.some((i) => i.name.toLowerCase().includes(userCompany));
+      const fit = valueFit(t.estimatedValue, user?.minProjectCost, user?.maxProjectCost);
+
+      const win = computeWinProbability({
+        matchScore,
+        ampRequired: t.requiresAmp,
+        ampAuthorized: user?.ampAuthorized ?? false,
+        estimatedValue: t.estimatedValue,
+        userMinCost: user?.minProjectCost,
+        userMaxCost: user?.maxProjectCost,
+        distinctWinners: incumbent.distinctWinners,
+        incumbentDominance: incumbent.dominance,
+        isUserIncumbent,
+      });
+
+      const matchReasons = buildMatchReasons({
+        matchedTrades: match.matchedTrades,
+        matchedRegion: match.matchedRegion,
+        ampRequired: t.requiresAmp,
+        ampAuthorized: user?.ampAuthorized ?? false,
+        valueFit: fit,
+        distinctWinners: incumbent.distinctWinners,
+        isUserIncumbent,
+        topIncumbentName: incumbent.topIncumbents[0]?.name ?? null,
+      });
+
+      const bidRecommendation = computeBidRecommendation(win, {
+        matchScore,
+        ampRequired: t.requiresAmp,
+        ampAuthorized: user?.ampAuthorized ?? false,
+      });
 
       const hasSimilarAwards = similarAwards.length > 0;
       const signals = computeLeadSignals(
@@ -138,6 +215,16 @@ export async function GET(req: NextRequest) {
         urgent,
         matchScore,
         score: matchScore,
+        winProbability: win.winProbability,
+        expectedValue: win.expectedValue,
+        winConfidence: win.confidence,
+        matchReasons,
+        bidRecommendation,
+        incumbent: {
+          distinctWinners: incumbent.distinctWinners,
+          dominance: incumbent.dominance,
+          topIncumbents: incumbent.topIncumbents,
+        },
         signals,
         similarAwards,
         amendmentCount,

@@ -47,6 +47,22 @@ type Tender = {
     contractStatus?: string | null;
   }[];
   amendmentCount?: number;
+  winProbability?: number;
+  expectedValue?: number | null;
+  winConfidence?: "low" | "medium" | "high";
+  matchReasons?: { fr: string; en: string; positive: boolean }[];
+  bidRecommendation?: {
+    decision: "bid" | "consider" | "monitor" | "no-bid";
+    labelFr: string;
+    labelEn: string;
+    rationaleFr: string;
+    rationaleEn: string;
+  };
+  incumbent?: {
+    distinctWinners: number;
+    dominance: number;
+    topIncumbents: { name: string; wins: number; avgAmount: number | null; avgOverrunPct: number | null }[];
+  };
 };
 
 const DEFAULT_CATEGORIES = ["Construction", "Services", "Fournitures", "Services professionnels"];
@@ -280,6 +296,73 @@ export default function MarchesQcClient() {
                   />
                 }
               />
+              {tender.winProbability != null && (
+                <div className="grid gap-3 rounded-lg border border-slate-700/50 bg-slate-950/50 p-3 sm:grid-cols-2">
+                  <div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-slate-400">{t("winProbability")}</span>
+                      <span className="font-semibold text-sky-300">{tender.winProbability}%</span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-800">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-400"
+                        style={{ width: `${tender.winProbability}%` }}
+                      />
+                    </div>
+                    {tender.expectedValue != null && (
+                      <p className="mt-1.5 text-xs text-slate-500">
+                        {t("expectedValue")}: {tender.expectedValue.toLocaleString(locale === "fr" ? "fr-CA" : "en-CA")} $
+                      </p>
+                    )}
+                    {tender.bidRecommendation && (
+                      <span
+                        className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          tender.bidRecommendation.decision === "bid"
+                            ? "bg-emerald-500/15 text-emerald-300"
+                            : tender.bidRecommendation.decision === "consider"
+                              ? "bg-sky-500/15 text-sky-300"
+                              : tender.bidRecommendation.decision === "no-bid"
+                                ? "bg-red-500/15 text-red-300"
+                                : "bg-slate-700/40 text-slate-300"
+                        }`}
+                        title={locale === "fr" ? tender.bidRecommendation.rationaleFr : tender.bidRecommendation.rationaleEn}
+                      >
+                        {locale === "fr" ? tender.bidRecommendation.labelFr : tender.bidRecommendation.labelEn}
+                      </span>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {tender.matchReasons && tender.matchReasons.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-slate-400">{t("whyFits")}</p>
+                        <ul className="mt-1 space-y-0.5 text-xs">
+                          {tender.matchReasons.slice(0, 4).map((r, i) => (
+                            <li key={i} className={r.positive ? "text-emerald-300/90" : "text-amber-300/80"}>
+                              {r.positive ? "✓" : "•"} {locale === "fr" ? r.fr : r.en}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {tender.incumbent && tender.incumbent.topIncumbents.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-slate-400">
+                          {t("incumbents")} · {tender.incumbent.distinctWinners}
+                        </p>
+                        <ul className="mt-1 space-y-0.5 text-xs text-slate-500">
+                          {tender.incumbent.topIncumbents.slice(0, 2).map((inc, i) => (
+                            <li key={i}>
+                              {inc.name} — {inc.wins}× {inc.avgOverrunPct != null && inc.avgOverrunPct > 0
+                                ? `(+${inc.avgOverrunPct}% ${t("overrun")})`
+                                : ""}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               {tender.similarAwards && tender.similarAwards.length > 0 && (
                 <div className="rounded-lg border border-slate-700/50 bg-slate-950/50 p-3">
                   <p className="text-xs font-medium text-slate-400">{t("similarAwards")}</p>
