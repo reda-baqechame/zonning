@@ -2,6 +2,11 @@
   "name": "zonning",
   "version": "0.1.0",
   "private": true,
+  "overrides": {
+    "@emnapi/core": "1.11.1",
+    "@emnapi/runtime": "1.11.1",
+    "@swc/helpers": "0.5.23"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
