@@ -94,6 +94,71 @@ export function parseCsvTextLarge(
   return parseCsvText(text, limit);
 }
 
+/** Parse the newest rows from an ascending CSV without retaining every record. */
+export function parseCsvTextTail(
+  text: string,
+  limit = 500,
+): { headers: string[]; rows: Record<string, string>[] } {
+  if (limit <= 0) return { headers: [], rows: [] };
+
+  let header = "";
+  let current = "";
+  let inQuotes = false;
+  let dataCount = 0;
+  const tail: string[] = [];
+
+  const commitRecord = () => {
+    if (!current.trim()) {
+      current = "";
+      return;
+    }
+    if (!header) {
+      header = current;
+    } else if (tail.length < limit) {
+      tail.push(current);
+      dataCount++;
+    } else {
+      tail[dataCount % limit] = current;
+      dataCount++;
+    }
+    current = "";
+  };
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      current += ch;
+      if (inQuotes && text[i + 1] === '"') {
+        current += text[++i];
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if ((ch === "\n" || ch === "\r") && !inQuotes) {
+      commitRecord();
+      if (ch === "\r" && text[i + 1] === "\n") i++;
+      continue;
+    }
+    current += ch;
+  }
+  commitRecord();
+
+  if (!header || tail.length === 0) return { headers: [], rows: [] };
+  const ordered = dataCount > limit
+    ? [...tail.slice(dataCount % limit), ...tail.slice(0, dataCount % limit)]
+    : tail;
+  const delimiter = detectDelimiter(header);
+  const headers = parseCsvLine(header, delimiter).map((value) =>
+    value.replace(/^\uFEFF/, "").toLowerCase().trim(),
+  );
+  const rows = ordered.map((line) => {
+    const cols = parseCsvLine(line, delimiter);
+    return Object.fromEntries(headers.map((key, index) => [key, cols[index]?.trim() ?? ""]));
+  });
+  return { headers, rows };
+}
+
 export function pick(row: Record<string, string>, ...keys: string[]): string {
   for (const k of keys) {
     const v = row[k.toLowerCase()];

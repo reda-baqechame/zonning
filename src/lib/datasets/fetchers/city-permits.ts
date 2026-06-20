@@ -1,6 +1,7 @@
 import { fetchCkanResourceUrl, fetchText } from "../client";
 import { DATASETS, getSyncLimit } from "../registry";
 import {
+  parseCsvLine,
   parseCsvText,
   pick,
   parseMoney,
@@ -53,6 +54,7 @@ export function parsePermitRows(
       "nature_travaux",
       "type",
       "description",
+      "type_permis_descr",
       "TYPE_PERMIS",
       "description_type_demande",
     );
@@ -95,7 +97,7 @@ export function parsePermitRows(
 
     const permit: PermitRecord = {
       externalId,
-      permitNumber: pick(row, "id_permis", "numero_permis", "NUMERO_PERMIS") || undefined,
+      permitNumber: pick(row, "id_permis", "numero_permis", "NUMERO_PERMIS", "no_permis") || undefined,
       permitType,
       workType: pick(row, "nature_travaux", "description", "DESCRIPTION") || undefined,
       borough: pick(row, "arrondissement", "secteur", "quartier", "ARRONDISSEMENT") || undefined,
@@ -103,7 +105,7 @@ export function parsePermitRows(
       latitude: parseFloatSafe(pick(row, "latitude", "lat", "y", "LATITUDE")),
       longitude: parseFloatSafe(pick(row, "longitude", "long", "x", "lon", "LONGITUDE")),
       estimatedCost: parseMoney(
-        pick(row, "cout_estime", "cout", "montant", "COUT_ESTIME", "valeur_travaux"),
+        pick(row, "cout_estime", "cout", "montant", "COUT_ESTIME", "valeur_travaux", "cout_permis"),
       ),
       issueDate,
       applicantName:
@@ -133,6 +135,53 @@ export function parsePermitRows(
     .slice(0, cap);
 }
 
+export function parseLavalPermitRows(
+  text: string,
+  cap: number,
+  options?: FetchCityPermitOptions,
+): Record<string, string>[] {
+  const lines = text.split(/\r?\n/).filter((line) => line.trim());
+  if (lines.length < 2) return [];
+
+  const headerLine = lines[0];
+  const delimiter = parseCsvLine(headerLine, ";").length > parseCsvLine(headerLine, ",").length
+    ? ";"
+    : ",";
+  const headers = parseCsvLine(headerLine, delimiter).map((value) =>
+    value.replace(/^\uFEFF/, "").toLowerCase().trim(),
+  );
+  const dateIndex = headers.indexOf("date_emission");
+  if (dateIndex < 0) return [];
+
+  const maxAgeDays = options?.maxAgeDays ?? 365;
+  const cutoff = options?.minIssueDate
+    ? options.minIssueDate.getTime()
+    : Date.now() - maxAgeDays * 86400000;
+  const maxIssueTime = options?.maxIssueDate?.getTime();
+  const candidates: Array<{ row: Record<string, string>; issueTime: number }> = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseCsvLine(lines[i], delimiter);
+    const issueDate = parseDate(cols[dateIndex] ?? "");
+    if (!issueDate) continue;
+
+    const issueTime = issueDate.getTime();
+    if (issueTime < cutoff) continue;
+    if (maxIssueTime && issueTime >= maxIssueTime) continue;
+
+    const row: Record<string, string> = {};
+    headers.forEach((key, index) => {
+      row[key] = cols[index]?.trim() ?? "";
+    });
+    candidates.push({ row, issueTime });
+  }
+
+  return candidates
+    .sort((a, b) => b.issueTime - a.issueTime)
+    .slice(0, Math.max(cap * 4, cap))
+    .map(({ row }) => row);
+}
+
 async function fetchCityPermitsFromCkan(
   datasetId: CityPermitDatasetId,
   limit?: number,
@@ -147,12 +196,14 @@ async function fetchCityPermitsFromCkan(
     throw new Error(`CKAN resource URL not found for ${datasetId}`);
   }
 
-  const text = await fetchText(resourceUrl, 25_000_000);
+  const text = await fetchText(resourceUrl, datasetId === "permits-laval" ? 60_000_000 : 25_000_000);
   if (!text) {
     throw new Error(`Failed to fetch permit CSV for ${datasetId}`);
   }
 
-  const { rows } = parseCsvText(text, cap * 2);
+  const { rows } = datasetId === "permits-laval"
+    ? { rows: parseLavalPermitRows(text, cap, options) }
+    : parseCsvText(text, cap * 2);
   return parsePermitRows(datasetId, rows, cap, options);
 }
 

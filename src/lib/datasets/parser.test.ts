@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCsvLine, parseCsvText, parseDate, parseMoney } from "./parser";
+import { parseCsvLine, parseCsvText, parseCsvTextTail, parseDate, parseMoney } from "./parser";
 
 describe("government dataset parsing", () => {
   it("handles escaped quotes and does not treat semicolons as comma delimiters", () => {
@@ -23,6 +23,17 @@ describe("government dataset parsing", () => {
     const result = parseCsvText('"adresse, complète";type\n"10 rue Test";Rénovation');
     expect(result.headers).toEqual(["adresse, complète", "type"]);
     expect(result.rows[0].type).toBe("Rénovation");
+  });
+
+  it("keeps the newest records from an ascending large CSV", () => {
+    const result = parseCsvTextTail(
+      'id,description\n1,old\n2,"middle\nline"\n3,newer\n4,newest',
+      2,
+    );
+    expect(result.rows).toEqual([
+      { id: "3", description: "newer" },
+      { id: "4", description: "newest" },
+    ]);
   });
 
   it.each([

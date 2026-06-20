@@ -82,24 +82,39 @@ function parseStandingRelease(release: OcdsRelease): TenderRecord | null {
   };
 }
 
-export async function fetchSeaoStandingOffers(limit?: number): Promise<TenderRecord[]> {
+export type StandingOffersFetchResult = {
+  records: TenderRecord[];
+  bundlesFetched: number;
+};
+
+export function standingOffersSource(
+  recordCount: number,
+  bundlesFetched: number,
+): "live" | "unchanged" | "empty" {
+  if (recordCount > 0) return "live";
+  return bundlesFetched > 0 ? "unchanged" : "empty";
+}
+
+export async function fetchSeaoStandingOffers(limit?: number): Promise<StandingOffersFetchResult> {
   const cap = limit ?? getSyncLimit("seao-standing-offers");
   const resourceUrls = await fetchRecentSeaoJsonUrls(4);
   const seen = new Set<string>();
   const results: TenderRecord[] = [];
+  let bundlesFetched = 0;
 
   for (const resourceUrl of resourceUrls) {
     const data = await fetchJson<OcdsBundle>(resourceUrl);
     if (!data?.releases) continue;
+    bundlesFetched++;
 
     for (const release of data.releases) {
       const record = parseStandingRelease(release);
       if (!record || seen.has(record.externalId)) continue;
       seen.add(record.externalId);
       results.push(record);
-      if (results.length >= cap) return results;
+      if (results.length >= cap) return { records: results, bundlesFetched };
     }
   }
 
-  return results;
+  return { records: results, bundlesFetched };
 }

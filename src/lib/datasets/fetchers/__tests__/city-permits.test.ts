@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parsePermitRows } from "../city-permits";
+import { parseLavalPermitRows, parsePermitRows } from "../city-permits";
 
 describe("city permit ingestion contract", () => {
   it("rejects rows that only look complete because of placeholders", () => {
@@ -67,5 +67,48 @@ describe("city permit ingestion contract", () => {
 
     expect(permits).toHaveLength(1);
     expect(permits[0].estimatedCost).toBe(250_000);
+  });
+
+  it("maps the current Laval CSV schema", () => {
+    const permits = parsePermitRows(
+      "permits-laval",
+      [
+        {
+          no_permis: "PN-2026-1001",
+          type_permis: "PN",
+          type_permis_descr: "Permis de construction - nouvelle",
+          date_emission: "2026-05-15",
+          cout_permis: "125000.00",
+          adresse: "100 Boulevard Saint-Martin",
+          entrepreneur: "Construction Exemple inc.",
+        },
+      ],
+      10,
+      { maxAgeDays: 3650 },
+    );
+
+    expect(permits).toHaveLength(1);
+    expect(permits[0]).toMatchObject({
+      externalId: "permits-laval-PN-2026-1001",
+      permitNumber: "PN-2026-1001",
+      permitType: "Permis de construction - nouvelle",
+      estimatedCost: 125_000,
+      city: "Laval",
+    });
+  });
+
+  it("selects recent Laval rows even when the official CSV is not date ordered", () => {
+    const csv = [
+      '"NO_PERMIS","TYPE_PERMIS","TYPE_PERMIS_DESCR","CATEGORIE_BATIMENT","TYPE_BATIMENT",DATE_EMISSION,"STRUCTURE",COUT_PERMIS,"NOMBRE_ETAGES","NOMBRE_LOGEMENTS","SUP_CA","LOTS","ENTREPRENEUR","ADRESSE"',
+      '"PA-1993-0001","PA","Permis de construction - amélioration","Bâtiment","Habitation",1993-03-31,"",50.00,,,,,"","1 Rue Ancienne"',
+      '"PN-2026-1001","PN","Permis de construction - nouvelle","Habitation","Habitation",2026-05-15,"",125000.00,,,,,"Construction Exemple inc.","100 Boulevard Saint-Martin"',
+      '"PA-1993-0002","PA","Permis de construction - amélioration","Bâtiment","Habitation",1993-04-01,"",75.00,,,,,"","2 Rue Ancienne"',
+    ].join("\n");
+
+    const rows = parseLavalPermitRows(csv, 10, { maxAgeDays: 3650 });
+    const permits = parsePermitRows("permits-laval", rows, 10, { maxAgeDays: 3650 });
+
+    expect(permits).toHaveLength(1);
+    expect(permits[0].permitNumber).toBe("PN-2026-1001");
   });
 });

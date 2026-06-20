@@ -73,6 +73,23 @@ describe("GeoJSON centroid parsing for government datasets", () => {
     expect(centroid?.latitude).toBeGreaterThan(45);
     expect(centroid?.latitude).toBeLessThan(46);
   });
+
+  it("reprojects Montreal EPSG:2950 heritage points", () => {
+    const [feature] = reprojectGeoJsonFeatures(
+      [
+        {
+          geometry: { type: "Point", coordinates: [292146.5746, 5047730.7762] },
+          properties: {},
+        },
+      ],
+      "urn:ogc:def:crs:EPSG::2950",
+    );
+    const centroid = centroidFromGeometry(feature.geometry);
+    expect(centroid?.longitude).toBeGreaterThan(-74);
+    expect(centroid?.longitude).toBeLessThan(-73);
+    expect(centroid?.latitude).toBeGreaterThan(45);
+    expect(centroid?.latitude).toBeLessThan(46);
+  });
   it("extracts PUM 2050 polygon centroids with borough", () => {
     const rows = parseGeoJsonCentroids(
       PUM2050_FIXTURE.features,

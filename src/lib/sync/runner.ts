@@ -1777,10 +1777,11 @@ export async function syncRbqInfractions(): Promise<SyncResult> {
 export async function syncSeaoStandingOffers(): Promise<SyncResult> {
   const cfg = DATASETS["seao-standing-offers"];
   return runSync("seao-standing-offers", async () => {
-    const { fetchSeaoStandingOffers } = await import(
+    const { fetchSeaoStandingOffers, standingOffersSource } = await import(
       "@/lib/datasets/fetchers/seao-standing-offers"
     );
-    const remote = await fetchSeaoStandingOffers();
+    const fetched = await fetchSeaoStandingOffers();
+    const remote = fetched.records;
     let processed = 0;
     for (const t of remote) {
       await prisma.tender.upsert({
@@ -1819,12 +1820,13 @@ export async function syncSeaoStandingOffers(): Promise<SyncResult> {
       processed++;
     }
     await persistSourceMetadata("seao-standing-offers");
-    await logSync(cfg.syncSource, processed ? "success" : "empty", processed);
+    const source = standingOffersSource(processed, fetched.bundlesFetched);
+    await logSync(cfg.syncSource, source === "live" ? "success" : source, processed);
     return {
       dataset: "seao-standing-offers",
       ok: true,
       processed,
-      source: processed ? "live" : "empty",
+      source,
     };
   });
 }
