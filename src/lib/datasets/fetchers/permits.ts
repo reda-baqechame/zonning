@@ -1,6 +1,6 @@
 import { assessPermitQuality, buildPermitExternalId } from "@/lib/permits/quality";
 import { fetchCkanResourceUrl, fetchText } from "../client";
-import { parseCsvTextLarge, parseDate, parseFloatSafe, parseMoney, pick } from "../parser";
+import { parseCsvLine, parseDate, parseFloatSafe, parseMoney, pick } from "../parser";
 import { DATASETS, getSyncLimit } from "../registry";
 
 export type PermitRecord = {
@@ -26,7 +26,7 @@ export type FetchPermitOptions = {
   maxIssueDate?: Date;
 };
 
-function parsePermitRows(
+export function parsePermitRows(
   rows: Record<string, string>[],
   cap: number,
   options?: FetchPermitOptions,
@@ -108,6 +108,53 @@ function parsePermitRows(
     .slice(0, cap);
 }
 
+export function parseMontrealPermitRows(
+  text: string,
+  cap: number,
+  options?: FetchPermitOptions,
+): Record<string, string>[] {
+  const lines = text.split(/\r?\n/).filter((line) => line.trim());
+  if (lines.length < 2) return [];
+
+  const headerLine = lines[0];
+  const delimiter = parseCsvLine(headerLine, ";").length > parseCsvLine(headerLine, ",").length
+    ? ";"
+    : ",";
+  const headers = parseCsvLine(headerLine, delimiter).map((value) =>
+    value.replace(/^\uFEFF/, "").toLowerCase().trim(),
+  );
+  const dateIndex = headers.indexOf("date_emission");
+  if (dateIndex < 0) return [];
+
+  const maxAgeDays = options?.maxAgeDays ?? 365;
+  const cutoff = options?.minIssueDate
+    ? options.minIssueDate.getTime()
+    : Date.now() - maxAgeDays * 86_400_000;
+  const maxIssueTime = options?.maxIssueDate?.getTime();
+  const candidates: Array<{ row: Record<string, string>; issueTime: number }> = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseCsvLine(lines[i], delimiter);
+    const issueDate = parseDate(cols[dateIndex] ?? "");
+    if (!issueDate) continue;
+
+    const issueTime = issueDate.getTime();
+    if (issueTime < cutoff) continue;
+    if (maxIssueTime && issueTime >= maxIssueTime) continue;
+
+    const row: Record<string, string> = {};
+    headers.forEach((key, index) => {
+      row[key] = cols[index]?.trim() ?? "";
+    });
+    candidates.push({ row, issueTime });
+  }
+
+  return candidates
+    .sort((a, b) => b.issueTime - a.issueTime)
+    .slice(0, Math.max(cap * 4, cap))
+    .map(({ row }) => row);
+}
+
 export async function fetchPermits(
   limit?: number,
   options?: FetchPermitOptions,
@@ -119,10 +166,10 @@ export async function fetchPermits(
   );
   if (!resourceUrl) throw new Error("CKAN resource URL not found for permits");
 
-  const text = await fetchText(resourceUrl, 50_000_000);
+  const text = await fetchText(resourceUrl, 120_000_000);
   if (!text) throw new Error("Failed to fetch permit CSV");
 
-  const { rows } = parseCsvTextLarge(text, cap * 4);
+  const { rows } = { rows: parseMontrealPermitRows(text, cap, options) };
   return parsePermitRows(rows, cap, options);
 }
 
