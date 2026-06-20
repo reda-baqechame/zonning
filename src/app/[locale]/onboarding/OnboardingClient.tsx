@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { RBQ_LICENSE_CLASSES } from "@/lib/rbq";
-import { Button, FadeIn, FieldLabel, Input, Select } from "@/components/ui";
+import { Button, FadeIn, FieldError, FieldLabel, Input, Select } from "@/components/ui";
 
 const TRADES = ["plomberie", "électricité", "toiture", "mécanique", "commercial"];
 const REGIONS = ["Ville-Marie", "Rosemont", "Laval", "Longueuil", "Québec"];
@@ -12,8 +12,11 @@ const STEPS = ["stepProfile", "stepTrades", "stepPhone", "stepAmp"] as const;
 
 export default function OnboardingClient() {
   const t = useTranslations("onboarding");
+  const c = useTranslations("common");
   const router = useRouter();
   const [step, setStep] = useState(1);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     rbqLicenseClass: "",
     rbqLicenseNumber: "",
@@ -31,12 +34,29 @@ export default function OnboardingClient() {
   };
 
   const finish = async () => {
-    await fetch("/api/user/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, onboardingComplete: true }),
-    });
-    router.push("/feed");
+    if (saving) return;
+    setError("");
+    setSaving(true);
+
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, onboardingComplete: true }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(data.error ?? c("error"));
+        return;
+      }
+
+      router.push("/feed");
+    } catch {
+      setError(c("error"));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const stepTitle =
@@ -178,17 +198,26 @@ export default function OnboardingClient() {
           </label>
         )}
 
+        <FieldError message={error} />
+
         <div className="mt-10 flex gap-3">
           {step > 1 && (
-            <Button variant="secondary" onClick={() => setStep(step - 1)}>
+            <Button variant="secondary" onClick={() => setStep(step - 1)} disabled={saving}>
               {t("back")}
             </Button>
           )}
           {step < 4 ? (
-            <Button onClick={() => setStep(step + 1)}>{t("next")}</Button>
+            <Button onClick={() => setStep(step + 1)} disabled={saving}>
+              {t("next")}
+            </Button>
           ) : (
-            <Button variant="primary" className="bg-success hover:bg-emerald-600" onClick={finish}>
-              {t("finish")}
+            <Button
+              variant="primary"
+              className="bg-success hover:bg-emerald-600"
+              onClick={finish}
+              disabled={saving}
+            >
+              {saving ? c("loading") : t("finish")}
             </Button>
           )}
         </div>
