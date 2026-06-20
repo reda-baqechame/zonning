@@ -142,13 +142,14 @@ export async function findStaleLiveDatasets(): Promise<DatasetId[]> {
 
 /** RGM trio + SEAO — poll at half the configured refresh interval for lower scheduled latency. */
 export async function findRgmDueForSync(): Promise<DatasetId[]> {
+  const rgmSyncIds = RGM_REALTIME_IDS.filter(isDatasetSyncEnabled);
   const states = await prisma.syncState.findMany({
-    where: { datasetId: { in: RGM_REALTIME_IDS } },
+    where: { datasetId: { in: rgmSyncIds } },
   });
   const stateMap = new Map(states.map((s) => [s.datasetId, s]));
   const due: DatasetId[] = [];
 
-  for (const datasetId of RGM_REALTIME_IDS) {
+  for (const datasetId of rgmSyncIds) {
     const cfg = DATASETS[datasetId];
     const state = stateMap.get(datasetId);
     if (state?.status === "running") continue;
