@@ -4,6 +4,7 @@
  */
 import { prisma } from "../src/lib/prisma";
 import { resolveCoordinatesForAddress } from "../src/lib/geocode";
+import { hasUsableAddress } from "../src/lib/permits/quality";
 
 async function main() {
   const limitArg = process.argv.find((a) => a.startsWith("--limit="));
@@ -20,8 +21,13 @@ async function main() {
 
   console.log(`Geocoding ${permits.length} permits…`);
   let updated = 0;
+  let skipped = 0;
 
   for (const p of permits) {
+    if (!hasUsableAddress(p.address, p.city)) {
+      skipped++;
+      continue;
+    }
     const coords = await resolveCoordinatesForAddress(
       p.address,
       p.borough ?? undefined,
@@ -37,7 +43,7 @@ async function main() {
     await new Promise((r) => setTimeout(r, 200));
   }
 
-  console.log(`Done: ${updated}/${permits.length} permits geocoded.`);
+  console.log(`Done: ${updated}/${permits.length} permits geocoded; ${skipped} skipped as non-specific addresses.`);
 }
 
 main()

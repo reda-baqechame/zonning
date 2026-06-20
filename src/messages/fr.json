@@ -74,7 +74,7 @@
   },
   "pricing": {
     "title": "Tarifs transparents",
-    "subtitle": "Pas de démo obligatoire. Inscription en libre-service.",
+    "subtitle": "Pas de barrière commerciale. Inscription en libre-service.",
     "essentiel": "Essentiel",
     "pro": "Pro",
     "equipe": "Équipe",
@@ -208,10 +208,10 @@
     "hasAccount": "Déjà un compte?"
   },
   "validation": {
-    "title": "Demande de démo",
-    "subtitle": "Parlez-nous de votre entreprise — nous vous contactons sous 48 h.",
+    "title": "Demande d'onboarding",
+    "subtitle": "Parlez-nous de votre entreprise et de votre workflow. Nous répondrons avec la prochaine étape concrète.",
     "submit": "Envoyer la demande",
-    "success": "Demande envoyée — merci!",
+    "success": "Demande envoyée. Merci!",
     "name": "Votre nom",
     "company": "Entreprise",
     "role": "Rôle",
@@ -246,6 +246,7 @@
     "noPermits": "Aucun permis récent pour votre profil.",
     "noPermitsHint": "Ajustez vos métiers et régions dans les réglages pour voir plus de résultats.",
     "noTenders": "Aucun contrat ouvert pour votre profil.",
+    "noTendersHint": "Aucun dossier SEAO ouvert ne correspond à votre profil pour l'instant. Ajustez les filtres ou attendez la prochaine synchronisation vérifiée.",
     "subtitle": "Permis et appels d'offres classés selon votre profil et les données disponibles.",
     "localDataNotice": "En développement local, ces fiches peuvent provenir du jeu de données semé. Les scores et étiquettes d'opportunité servent à tester le produit; ils ne prouvent pas une qualification commerciale en direct.",
     "testRank": "Classement test",
@@ -288,6 +289,27 @@
     "rankScore": "Classement ajusté",
     "fitScore": "Adéquation brute",
     "confidenceLabel": "Confiance des données",
+    "confidenceLevels": {
+      "low": "faible",
+      "medium": "moyenne",
+      "high": "élevée"
+    },
+    "freshness": {
+      "today": "Observé aujourd'hui",
+      "this_week": "Observé cette semaine",
+      "recent": "Observé récemment",
+      "stale": "Dossier public ancien",
+      "unknown": "Fraîcheur indisponible"
+    },
+    "dossier": {
+      "source": "Source",
+      "nextAction": "Prochaine action",
+      "trust": "Confiance",
+      "confidence": "Confiance {value} % ({level})",
+      "notTopLead": "Pas présenté comme top lead tant que les preuves manquantes ne sont pas résolues.",
+      "why": "Pourquoi ce classement",
+      "limitations": "Limites"
+    },
     "whyRank": "Pourquoi ce classement",
     "factorRbq": "Adéquation RBQ",
     "factorCost": "Adéquation budget",
@@ -573,6 +595,45 @@
       "pending_amendments": "Amendements, avis de motion et règlements en attente"
     },
     "limitationsTitle": "Limites à résoudre",
+    "nextChecksTitle": "Prochains contrôles d'expert",
+    "nextChecks": {
+      "parcel_identity": {
+        "action": "Confirmer le lot, le matricule et la correspondance de l'adresse dans le rôle ou la carte municipale officielle.",
+        "reason": "Une opinion de zonage doit viser la bonne parcelle, pas seulement une adresse voisine."
+      },
+      "zone_by_law": {
+        "action": "Ouvrir le règlement de zonage en vigueur et la grille applicable à la parcelle.",
+        "reason": "Les couches de planification et les points à proximité ne prouvent pas la zone opposable."
+      },
+      "permitted_use": {
+        "action": "Vérifier la table des usages permis, conditionnels et prohibés.",
+        "reason": "L'app ne peut pas déduire la compatibilité d'usage à partir d'un simple code de zone."
+      },
+      "height_and_density": {
+        "action": "Vérifier la hauteur, les étages, la densité et les unités selon le projet proposé.",
+        "reason": "Un projet peut respecter l'usage mais échouer sur les normes dimensionnelles."
+      },
+      "setbacks_and_coverage": {
+        "action": "Contrôler les marges, l'implantation, le taux d'occupation et la forme bâtie.",
+        "reason": "Ces règles déterminent souvent si le concept entre réellement sur le lot."
+      },
+      "parking_and_loading": {
+        "action": "Vérifier le stationnement, les accès, le chargement et les exigences de mobilité.",
+        "reason": "Les exigences opérationnelles peuvent bloquer ou conditionner un usage compatible."
+      },
+      "overlays_and_constraints": {
+        "action": "Confirmer les surcouches patrimoine, environnement, inondation, agricole et secteurs particuliers.",
+        "reason": "Un risque à proximité ne prouve pas le statut juridique de la parcelle."
+      },
+      "discretionary_approvals": {
+        "action": "Vérifier PIIA, PPCMOI, usage conditionnel, dérogation et approbations du conseil.",
+        "reason": "Certains projets exigent des approbations discrétionnaires même si le zonage de base semble compatible."
+      },
+      "pending_amendments": {
+        "action": "Réviser les amendements, avis de motion et décisions récentes du conseil.",
+        "reason": "Un instantané réglementaire trop ancien peut manquer des règles en adoption."
+      }
+    },
     "warnings": {
       "planning_not_regulation": "Le PUM est un document de planification; il ne remplace pas la grille de zonage municipale applicable.",
       "nearest_centroid_not_parcel": "La correspondance repose sur le point source le plus proche, pas sur une intersection géométrique avec la parcelle.",

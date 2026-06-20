@@ -26,7 +26,7 @@ async function fetchZoningFromDirectUrl(
             pickProp(attrs, "affectation", "usage", "groupeusage", "v_description", "descriptio") ||
             undefined,
           zoneCode:
-            pickProp(attrs, "code_zone", "code", "zone", "zonage", "zonagemunicipalid", "no_zone") ||
+            pickProp(attrs, "code_zone", "code", "zone", "zonage", "zonagemunicipalid", "no_zone", "id") ||
             undefined,
           sourceUrl,
         };
@@ -61,7 +61,7 @@ async function fetchZoningFromDirectUrl(
           landUse:
             pickProp(props, "affectation", "usage", "groupeusage", "v_description") || undefined,
           zoneCode:
-            pickProp(props, "code_zone", "code", "zone", "zonage", "zonagemunicipalid", "no_zone") ||
+            pickProp(props, "code_zone", "code", "zone", "zonage", "zonagemunicipalid", "no_zone", "id") ||
             undefined,
           sourceUrl,
         };
@@ -120,13 +120,13 @@ async function fetchRegionalZoning(
         landUse:
           pickProp(props, "affectation", "usage", "groupeusage", "v_description") || undefined,
         zoneCode:
-          pickProp(props, "code_zone", "code", "zone", "zonage", "zonagemunicipalid", "no_zone") ||
+          pickProp(props, "code_zone", "code", "zone", "zonage", "zonagemunicipalid", "no_zone", "id") ||
           undefined,
         sourceUrl: cfg.sourceUrl,
       };
       const externalId = buildZoningExternalId(
         idPrefix,
-        pickProp(props, "id", "objectid", "fid", "uuid"),
+        pickProp(props, "id", "objectid", "fid", "uuid", "no_zone"),
         record,
       );
       return externalId ? { externalId, ...record, description: `Zonage ${city}` } : null;

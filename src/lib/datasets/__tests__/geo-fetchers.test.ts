@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { centroidFromGeometry, parseGeoJsonCentroids, haversineKm } from "../geo";
-import { reprojectGeoJsonFeatures } from "../geo-fetch";
+import { pickProp, reprojectGeoJsonFeatures } from "../geo-fetch";
 
 const PUM2050_FIXTURE = {
   type: "FeatureCollection",
@@ -123,5 +123,9 @@ describe("GeoJSON centroid parsing for government datasets", () => {
     }));
     expect(rows[0].name).toBe("Édifice patrimonial LPC");
     expect(haversineKm(rows[0].latitude, rows[0].longitude, 45.52, -73.58)).toBeLessThan(1);
+  });
+
+  it("reads uppercase ID fields used by Ville de Quebec zoning polygons", () => {
+    expect(pickProp({ ID: "21703Mc" }, "code_zone", "no_zone", "id")).toBe("21703Mc");
   });
 });

@@ -12,7 +12,7 @@ const requestSchema = z.object({
 
 export async function POST(req: NextRequest) {
   const ip = clientIp(req);
-  const limited = await rateLimitAsync(`api:validation-demo:${ip}`, 5, 60_000);
+  const limited = await rateLimitAsync(`api:validation-intake:${ip}`, 5, 60_000);
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   try {
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       data: {
         ...body,
         urgencyScore: null,
-        notes: "Public demo request; urgency has not been assessed.",
+        notes: "Public onboarding request; urgency has not been assessed.",
       },
     });
     return NextResponse.json({ ok: true, id: interview.id });

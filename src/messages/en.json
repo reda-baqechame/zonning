@@ -74,7 +74,7 @@
   },
   "pricing": {
     "title": "Transparent pricing",
-    "subtitle": "No mandatory demo. Self-serve signup.",
+    "subtitle": "No sales gate. Self-serve signup.",
     "essentiel": "Essentiel",
     "pro": "Pro",
     "equipe": "Équipe",
@@ -208,10 +208,10 @@
     "hasAccount": "Already have an account?"
   },
   "validation": {
-    "title": "Request a demo",
-    "subtitle": "Tell us about your company — we'll reach out within 48 hours.",
+    "title": "Request onboarding",
+    "subtitle": "Tell us about your company and workflow. We will respond with the next practical setup step.",
     "submit": "Send request",
-    "success": "Request sent — thank you!",
+    "success": "Request sent. Thank you!",
     "name": "Your name",
     "company": "Company",
     "role": "Role",
@@ -246,6 +246,7 @@
     "noPermits": "No recent permits for your profile.",
     "noPermitsHint": "Adjust trades and regions in settings to see more results.",
     "noTenders": "No open contracts for your profile.",
+    "noTendersHint": "No open SEAO records match your profile right now. Adjust filters or wait for the next verified sync.",
     "subtitle": "Permits and tenders ranked from your profile and the available records.",
     "localDataNotice": "In local development, these records may come from the seeded dataset. Scores and opportunity labels are product-test output, not proof of live commercial qualification.",
     "testRank": "Test ranking",
@@ -288,6 +289,27 @@
     "rankScore": "Adjusted rank",
     "fitScore": "Raw fit",
     "confidenceLabel": "Data confidence",
+    "confidenceLevels": {
+      "low": "low",
+      "medium": "medium",
+      "high": "high"
+    },
+    "freshness": {
+      "today": "Observed today",
+      "this_week": "Observed this week",
+      "recent": "Observed recently",
+      "stale": "Older public record",
+      "unknown": "Freshness unavailable"
+    },
+    "dossier": {
+      "source": "Source",
+      "nextAction": "Next action",
+      "trust": "Trust",
+      "confidence": "{value}% confidence ({level})",
+      "notTopLead": "Not promoted as a top lead until missing evidence is resolved.",
+      "why": "Why ranked",
+      "limitations": "Limitations"
+    },
     "whyRank": "Why this ranking",
     "factorRbq": "RBQ fit",
     "factorCost": "Budget fit",
@@ -573,6 +595,45 @@
       "pending_amendments": "Pending amendments, notices, and draft bylaws"
     },
     "limitationsTitle": "Unresolved limitations",
+    "nextChecksTitle": "Expert next checks",
+    "nextChecks": {
+      "parcel_identity": {
+        "action": "Confirm lot identity, roll number, and civic-address match in the official roll or municipal map.",
+        "reason": "A zoning opinion must attach to the correct parcel, not only a nearby address."
+      },
+      "zone_by_law": {
+        "action": "Open the current municipal zoning bylaw and zone schedule for the parcel.",
+        "reason": "Planning layers and nearby points do not establish the enforceable zone."
+      },
+      "permitted_use": {
+        "action": "Verify the table of permitted, conditional, and prohibited uses.",
+        "reason": "The app cannot infer use compatibility from a zone label alone."
+      },
+      "height_and_density": {
+        "action": "Verify height, floor, density, and unit standards against the proposed project.",
+        "reason": "A project can match the use but still fail dimensional standards."
+      },
+      "setbacks_and_coverage": {
+        "action": "Check setbacks, lot coverage, siting, and built-form standards.",
+        "reason": "These controls usually decide whether the concept fits on the lot."
+      },
+      "parking_and_loading": {
+        "action": "Check parking, access, loading, and mobility requirements.",
+        "reason": "Operational requirements can block or condition an otherwise compatible use."
+      },
+      "overlays_and_constraints": {
+        "action": "Confirm heritage, environmental, flood, agricultural, and special-area overlays.",
+        "reason": "Nearby risk signals do not prove the legal status of the parcel."
+      },
+      "discretionary_approvals": {
+        "action": "Check SPAIP, conditional-use, specific-proposal, variance, and council approval requirements.",
+        "reason": "Some projects require discretionary approvals even when base zoning looks compatible."
+      },
+      "pending_amendments": {
+        "action": "Review pending amendments, notices of motion, and recent council decisions.",
+        "reason": "A stale bylaw snapshot can miss rules already moving through adoption."
+      }
+    },
     "warnings": {
       "planning_not_regulation": "The PUM is a planning document; it does not replace the applicable municipal zoning schedule.",
       "nearest_centroid_not_parcel": "The match uses the nearest source point, not a geometric intersection with the parcel.",

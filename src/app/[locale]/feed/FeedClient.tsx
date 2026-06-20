@@ -20,6 +20,7 @@ import type { VerdictTier } from "@/lib/verdict/compute-verdict";
 import type { PipelineScoreResult } from "@/lib/pipeline-score";
 import type { TenderScoreResult } from "@/lib/tender-score";
 import type { PermitDataQuality } from "@/lib/permits/quality";
+import type { OpportunityDossier } from "@/lib/domain/quebec";
 import {
   PageHeader,
   Tabs,
@@ -41,6 +42,7 @@ type FeedItem =
       id: string;
       score: number;
       signals: LeadSignal[];
+      opportunityDossier?: OpportunityDossier;
       saved?: boolean;
       savedNote?: string | null;
       permit: {
@@ -59,6 +61,7 @@ type FeedItem =
         applicantName?: string | null;
         dataQuality?: PermitDataQuality;
         intelligence?: PropertyIntelligence | null;
+        opportunityDossier?: OpportunityDossier;
       };
     }
   | {
@@ -66,6 +69,7 @@ type FeedItem =
       id: string;
       score: number;
       signals: LeadSignal[];
+      opportunityDossier?: OpportunityDossier;
       saved?: boolean;
       savedNote?: string | null;
       tender: {
@@ -82,6 +86,7 @@ type FeedItem =
         sourceUrl: string;
         amendmentCount?: number;
         ranking?: TenderScoreResult;
+        opportunityDossier?: OpportunityDossier;
       };
     };
 
@@ -315,6 +320,12 @@ export default function FeedClient({
     { id: "high_value", label: t("filterHighValue") },
     { id: "risks", label: t("filterRisks") },
   ];
+  const emptyCopy =
+    tab === "watchlist"
+      ? { title: t("noWatchlist"), description: t("noWatchlistHint") }
+      : tab === "tenders"
+        ? { title: t("noTenders"), description: t("noTendersHint") }
+        : { title: t("noPermits"), description: t("noPermitsHint") };
 
   return (
     <FadeIn className="mx-auto max-w-7xl px-4 py-8 text-ink">
@@ -446,10 +457,8 @@ export default function FeedClient({
         <StaggerList className="mt-6 space-y-4">
           {displayed.length === 0 ? (
             <EmptyState
-              title={tab === "watchlist" ? t("noWatchlist") : t("noPermits")}
-              description={
-                tab === "watchlist" ? t("noWatchlistHint") : t("noPermitsHint")
-              }
+              title={emptyCopy.title}
+              description={emptyCopy.description}
               action={
                 <Link href="/settings">
                   <Button variant="secondary" size="sm">
@@ -483,6 +492,9 @@ export default function FeedClient({
                         sourceUrl: item.permit.sourceUrl,
                         applicantName: item.permit.applicantName,
                         dataQuality: item.permit.dataQuality,
+                        opportunityDossier:
+                          item.permit.opportunityDossier ??
+                          item.opportunityDossier,
                       }}
                       saved={item.saved}
                       complianceEnabled={complianceEntitled}
@@ -510,6 +522,9 @@ export default function FeedClient({
                         sourceUrl: item.tender.sourceUrl,
                         amendmentCount: item.tender.amendmentCount,
                         ranking: item.tender.ranking,
+                        opportunityDossier:
+                          item.tender.opportunityDossier ??
+                          item.opportunityDossier,
                       }}
                       saved={item.saved}
                       onSave={() => void toggleSave(item)}

@@ -55,10 +55,10 @@ export default function ValidationClient({ isAdmin }: { isAdmin?: boolean }) {
     loadAdmin();
   }, [loadAdmin]);
 
-  const submitDemo = async (e: React.FormEvent) => {
+  const submitIntake = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const res = await fetch("/api/validation/demo", {
+    const res = await fetch("/api/validation/intake", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
@@ -105,7 +105,7 @@ export default function ValidationClient({ isAdmin }: { isAdmin?: boolean }) {
           {submitted ? (
             <p className="text-center text-emerald-300">{t("success")}</p>
           ) : (
-            <form onSubmit={submitDemo} className="space-y-4">
+            <form onSubmit={submitIntake} className="space-y-4">
               <div>
                 <FieldLabel htmlFor="name" required>
                   {t("name")}

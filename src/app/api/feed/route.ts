@@ -18,6 +18,10 @@ import { HIGH_VALUE_THRESHOLD } from "@/lib/format-cad";
 import { getSimilarAwards } from "@/lib/datasets/fetchers/awards";
 import { computeTenderScore } from "@/lib/tender-score";
 import { assessPermitQuality } from "@/lib/permits/quality";
+import {
+  buildPermitOpportunityDossier,
+  buildTenderOpportunityDossier,
+} from "@/lib/opportunities/dossier";
 
 export async function GET(req: NextRequest) {
   const ip = clientIp(req);
@@ -133,11 +137,20 @@ export async function GET(req: NextRequest) {
         },
         userCtx,
       );
+      const opportunityDossier = buildPermitOpportunityDossier({
+        permit: p,
+        score: pipeline.score,
+        signals,
+        pipeline,
+        dataQuality,
+        intelligence,
+      });
       return {
         kind: "permit" as const,
         id: p.id,
         score: pipeline.score,
         signals,
+        opportunityDossier,
         saved: savedIds.has(`permit:${p.id}`),
         savedNote: savedByKey.get(`permit:${p.id}`)?.notes ?? null,
         permit: {
@@ -147,6 +160,7 @@ export async function GET(req: NextRequest) {
           pipeline,
           intelligence,
           dataQuality,
+          opportunityDossier,
         },
       };
     }),
@@ -199,11 +213,19 @@ export async function GET(req: NextRequest) {
         },
         userCtx,
       );
+      const opportunityDossier = buildTenderOpportunityDossier({
+        tender: { ...t, amendmentCount },
+        score,
+        signals,
+        ranking,
+        hasSimilarAwards,
+      });
       return {
         kind: "tender" as const,
         id: t.id,
         score,
         signals,
+        opportunityDossier,
         saved: savedIds.has(`tender:${t.id}`),
         savedNote: savedByKey.get(`tender:${t.id}`)?.notes ?? null,
         tender: {
@@ -216,6 +238,7 @@ export async function GET(req: NextRequest) {
           plainSummary: t.aiSummary || t.summary || undefined,
           amendmentCount,
           similarAwards: limits.maxTenders > 5 ? similarAwards : undefined,
+          opportunityDossier,
         },
       };
     }),

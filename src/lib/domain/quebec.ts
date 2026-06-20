@@ -1,4 +1,5 @@
 import type { ZoningExpertAnalysis } from "@/lib/zoning/expert-analysis";
+import type { LeadSignal } from "@/lib/lead-signals";
 
 export type CoverageStatus =
   | "authoritative"
@@ -121,6 +122,52 @@ export type Opportunity = {
   crmReady?: boolean;
   source: SourceRef;
   limitations: string[];
+  opportunityDossier?: OpportunityDossier;
+};
+
+export type OpportunityDossier = {
+  id: string;
+  kind: "permit" | "tender" | "roadwork" | "development_project" | "site";
+  title: string;
+  municipality?: string | null;
+  addressOrRegion: string;
+  score: number;
+  confidence: number;
+  confidenceLevel: "low" | "medium" | "high";
+  signals: LeadSignal[];
+  whyRanked: string[];
+  nextAction: string;
+  sourceUrl: string;
+  sourceLabel: string;
+  freshness: {
+    label: "today" | "this_week" | "recent" | "stale" | "unknown";
+    observedAt?: string | null;
+    refreshedAt?: string | null;
+  };
+  limitations: string[];
+  evidenceThresholds: {
+    canCallTopLead: boolean;
+    canCallHighConfidence: boolean;
+    minimumConfidence: number;
+    missingEvidence: string[];
+  };
+  siteIntelligence?: {
+    confirmedFacts: string[];
+    inferredContext: string[];
+    nearbyRisks: string[];
+    unavailableEvidence: string[];
+  };
+  zoningAnalysis?: ZoningExpertAnalysis;
+  pipelineBreakdown?: Record<string, number | null>;
+  complianceAction?: {
+    enabled: boolean;
+    label: string;
+    reason?: string;
+  };
+  exportAction?: {
+    enabled: boolean;
+    fields: string[];
+  };
 };
 
 export function evidence<T>(

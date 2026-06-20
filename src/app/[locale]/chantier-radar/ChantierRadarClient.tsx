@@ -14,6 +14,7 @@ import { createAlert } from "@/lib/alerts/create-alert";
 import type { LeadSignal } from "@/lib/lead-signals";
 import type { PipelineScoreResult } from "@/lib/pipeline-score";
 import type { PermitDataQuality } from "@/lib/permits/quality";
+import type { OpportunityDossier } from "@/lib/domain/quebec";
 import {
   PageHeader,
   Input,
@@ -43,6 +44,7 @@ type Permit = {
   signals?: LeadSignal[];
   intelligence?: PropertyIntelligence;
   dataQuality?: PermitDataQuality;
+  opportunityDossier?: OpportunityDossier;
 };
 
 export default function ChantierRadarClient() {
@@ -491,6 +493,7 @@ export default function ChantierRadarClient() {
                   sourceUrl: p.sourceUrl,
                   applicantName: p.applicantName,
                   dataQuality: p.dataQuality,
+                  opportunityDossier: p.opportunityDossier,
                 }}
                 intelligence={p.intelligence}
                 intelAccess={intelAccess}

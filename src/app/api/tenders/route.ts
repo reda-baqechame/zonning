@@ -13,35 +13,8 @@ import {
 } from "@/lib/usage";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { computeLeadSignals } from "@/lib/lead-signals";
-
-function computeMatchScore(
-  userTrades: string[],
-  userRegions: string[],
-  userAmp: boolean,
-  tender: {
-    category?: string | null;
-    region?: string | null;
-    title: string;
-    requiresAmp?: boolean;
-  }
-): number {
-  let score = 50;
-  const title = tender.title.toLowerCase();
-  const region = (tender.region ?? "").toLowerCase();
-
-  for (const trade of userTrades) {
-    if (title.includes(trade.toLowerCase())) score += 15;
-  }
-  for (const r of userRegions) {
-    if (region.includes(r.toLowerCase())) score += 20;
-  }
-  if (tender.category === "Construction") score += 5;
-  if (tender.requiresAmp) {
-    score += userAmp ? 15 : -20;
-  }
-
-  return Math.min(100, Math.max(0, score));
-}
+import { computeTenderScore } from "@/lib/tender-score";
+import { buildTenderOpportunityDossier } from "@/lib/opportunities/dossier";
 
 export async function GET(req: NextRequest) {
   const ip = clientIp(req);
@@ -97,12 +70,14 @@ export async function GET(req: NextRequest) {
       const daysLeft = t.closesAt ? differenceInDays(t.closesAt, new Date()) : null;
       const isThursday = t.closesAt ? getDay(t.closesAt) === 4 : false;
       const urgent = daysLeft !== null && daysLeft <= 7;
-      const matchScore = computeMatchScore(
-        userTrades,
-        userRegions,
-        user?.ampAuthorized ?? false,
-        t
-      );
+      const ranking = computeTenderScore(t, {
+        trades: userTrades,
+        regions: userRegions,
+        ampAuthorized: user?.ampAuthorized ?? false,
+        minProjectCost: user?.minProjectCost,
+        maxProjectCost: user?.maxProjectCost,
+      });
+      const matchScore = ranking.score;
       const [similarAwards, amendmentCount] = await Promise.all([
         limits.maxTenders > 5 ? getSimilarAwards(t.unspsc, t.category, 3) : Promise.resolve([]),
         t.externalId
@@ -124,12 +99,20 @@ export async function GET(req: NextRequest) {
           urgent,
           requiresAmp: t.requiresAmp,
           matchScore,
+          ranking,
           plainSummary: t.aiSummary || t.summary || "",
           sourceUrl: t.sourceUrl,
           hasSimilarAwards,
         },
         { ampAuthorized: user?.ampAuthorized }
       );
+      const opportunityDossier = buildTenderOpportunityDossier({
+        tender: { ...t, amendmentCount },
+        score: matchScore,
+        signals,
+        ranking,
+        hasSimilarAwards,
+      });
 
       return {
         ...t,
@@ -139,6 +122,8 @@ export async function GET(req: NextRequest) {
         matchScore,
         score: matchScore,
         signals,
+        ranking,
+        opportunityDossier,
         similarAwards,
         amendmentCount,
         plainSummary:

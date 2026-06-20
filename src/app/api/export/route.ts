@@ -11,6 +11,12 @@ import { createIntelligenceCache } from "@/lib/scoring/batch";
 import { subDays } from "date-fns";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { escapeCsvCell } from "@/lib/csv";
+import { assessPermitQuality } from "@/lib/permits/quality";
+import {
+  buildPermitOpportunityDossier,
+  buildTenderOpportunityDossier,
+} from "@/lib/opportunities/dossier";
+import { computeTenderScore } from "@/lib/tender-score";
 
 export async function GET(req: NextRequest) {
   const ip = clientIp(req);
@@ -45,12 +51,24 @@ export async function GET(req: NextRequest) {
         }),
       );
       const header =
-        "title,organization,region,closesAt,estimatedValue,requiresAmp,sourceUrl\n";
+        "title,organization,region,closesAt,estimatedValue,score,confidence,nextAction,limitations,requiresAmp,sourceUrl\n";
       const rows = filtered
-        .map(
-          (t) =>
-            `${escapeCsvCell(t.title)},${escapeCsvCell(t.organization)},${escapeCsvCell(t.region)},${escapeCsvCell(t.closesAt?.toISOString())},${escapeCsvCell(t.estimatedValue)},${escapeCsvCell(t.requiresAmp)},${escapeCsvCell(t.sourceUrl)}`,
-        )
+        .map((t) => {
+          const ranking = computeTenderScore(t, {
+            trades: userTrades,
+            regions: userRegions,
+            ampAuthorized: user.ampAuthorized,
+            minProjectCost: user.minProjectCost,
+            maxProjectCost: user.maxProjectCost,
+          });
+          const dossier = buildTenderOpportunityDossier({
+            tender: t,
+            score: ranking.score,
+            signals: [],
+            ranking,
+          });
+          return `${escapeCsvCell(t.title)},${escapeCsvCell(t.organization)},${escapeCsvCell(t.region)},${escapeCsvCell(t.closesAt?.toISOString())},${escapeCsvCell(t.estimatedValue)},${escapeCsvCell(dossier.score)},${escapeCsvCell(dossier.confidence)},${escapeCsvCell(dossier.nextAction)},${escapeCsvCell(dossier.limitations.join(" | "))},${escapeCsvCell(t.requiresAmp)},${escapeCsvCell(t.sourceUrl)}`;
+        })
         .join("\n");
       return new NextResponse(header + rows, {
         headers: {
@@ -78,6 +96,7 @@ export async function GET(req: NextRequest) {
           p.permitType,
           p.workType,
         );
+        const dataQuality = assessPermitQuality(p);
         const intelligence = getIntel ? await getIntel(p) : undefined;
         const pipeline = await computePipelineScore(
           p,
@@ -89,6 +108,7 @@ export async function GET(req: NextRequest) {
             maxProjectCost: user.maxProjectCost,
           },
           intelligence,
+          { dataQualityScore: dataQuality.score },
         );
         const signals = computeLeadSignals(
           {
@@ -111,7 +131,15 @@ export async function GET(req: NextRequest) {
             rbqVerified: user.rbqVerified,
           },
         );
-        return { p, fit, pipeline, signals, intelligence };
+        const dossier = buildPermitOpportunityDossier({
+          permit: p,
+          score: pipeline.score,
+          signals,
+          pipeline,
+          dataQuality,
+          intelligence,
+        });
+        return { p, fit, pipeline, signals, intelligence, dossier };
       }),
     );
 
@@ -125,9 +153,9 @@ export async function GET(req: NextRequest) {
     });
 
     const header =
-      "permitType,address,borough,city,estimatedCost,issueDate,pipelineScore,rbqFitScore,eligible,signals,gtcNearby,heritageNearby,rbqInfraction,inspectionFlag,sourceUrl\n";
+      "permitType,address,borough,city,estimatedCost,issueDate,pipelineScore,confidence,nextAction,limitations,rbqFitScore,eligible,signals,gtcNearby,heritageNearby,rbqInfraction,inspectionFlag,sourceUrl\n";
     const rows = filtered
-      .map(({ p, fit, pipeline, signals, intelligence }) =>
+      .map(({ p, fit, pipeline, signals, intelligence, dossier }) =>
         [
           escapeCsvCell(p.permitType),
           escapeCsvCell(p.address),
@@ -136,6 +164,9 @@ export async function GET(req: NextRequest) {
           escapeCsvCell(p.estimatedCost),
           escapeCsvCell(p.issueDate?.toISOString()),
           escapeCsvCell(pipeline.score),
+          escapeCsvCell(dossier.confidence),
+          escapeCsvCell(dossier.nextAction),
+          escapeCsvCell(dossier.limitations.join(" | ")),
           escapeCsvCell(fit.score),
           escapeCsvCell(fit.eligible),
           escapeCsvCell(
