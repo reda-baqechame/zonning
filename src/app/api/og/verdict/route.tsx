@@ -1,9 +1,11 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
+import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "edge";
 
 const TIER_COLORS: Record<string, string> = {
+  insufficient_data: "#94a3b8",
   eleve: "#10b981",
   moyen: "#f59e0b",
   faible: "#94a3b8",
@@ -11,6 +13,9 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 export async function GET(req: NextRequest) {
+  const limited = await rateLimitAsync(`api:og-verdict:${clientIp(req)}`, 60, 60_000);
+  if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
+
   const { searchParams } = req.nextUrl;
   const tier = (searchParams.get("tier") ?? "moyen").slice(0, 20);
   const label = (searchParams.get("label") ?? "Potentiel").slice(0, 40);

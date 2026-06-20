@@ -40,9 +40,9 @@ const icons = {
 };
 
 const styles = {
-  success: "border-emerald-500/40 bg-emerald-950/90 text-emerald-100",
-  error: "border-red-500/40 bg-red-950/90 text-red-100",
-  info: "border-sky-500/40 bg-slate-900/95 text-slate-100",
+  success: "border-success/30 bg-success-soft text-success",
+  error: "border-danger/30 bg-danger-soft text-danger",
+  info: "border-brand-border bg-white text-ink",
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -83,7 +83,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <div
               key={item.id}
               className={cn(
-                "pointer-events-auto flex items-start gap-3 rounded-lg border px-4 py-3 text-sm shadow-lg backdrop-blur",
+                "pointer-events-auto flex items-start gap-3 rounded-lg border px-4 py-3 text-sm shadow-lg",
                 styles[item.type],
               )}
             >

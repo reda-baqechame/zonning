@@ -2,9 +2,7 @@ import { execSync } from "child_process";
 import { ensureDbProvider, isPostgresUrl } from "./ensure-db-provider";
 import { resolveDatabaseUrl, resolveDirectDatabaseUrl } from "../src/lib/env-resolve";
 
-/**
- * Vercel build: Postgres uses db push; SQLite uses migrate deploy.
- */
+/** Vercel build: schema drift that would lose data must fail the deployment. */
 const url = resolveDatabaseUrl() ?? "";
 const isPostgres = isPostgresUrl(url);
 
@@ -21,7 +19,7 @@ ensureDbProvider(url);
 run("npx prisma generate");
 
 if (isPostgres) {
-  run("npx prisma db push --accept-data-loss");
+  run("npx prisma db push");
 } else if (url.startsWith("file:")) {
   run("npx prisma migrate deploy");
 }

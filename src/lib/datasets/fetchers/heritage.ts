@@ -1,6 +1,7 @@
 import { fetchCkanResourceUrl, fetchText, fetchCkanPackage, fetchCkanDatastoreSearch } from "../client";
 import { DATASETS, getSyncLimit } from "../registry";
 import { parseCsvText, pick, parseFloatSafe } from "../parser";
+import { fetchDatasetGeoJson, mapGeoFeatures, pickProp } from "../geo-fetch";
 
 export type HeritageRecord = {
   externalId: string;
@@ -93,18 +94,40 @@ export async function fetchHeritageSites(
 ): Promise<HeritageRecord[]> {
   const cfg = DATASETS[datasetId];
   const cap = limit ?? getSyncLimit(datasetId);
+
+  if (datasetId === "heritage-eip") {
+    const features = await fetchDatasetGeoJson(datasetId, cap);
+    return mapGeoFeatures(
+      features,
+      (props, latitude, longitude) => {
+        const id = pickProp(props, "id_enonce", "id");
+        const title = pickProp(props, "titre", "nom", "name");
+        if (!id || !title) return null;
+        return {
+          externalId: `${datasetId}-${id}`,
+          name: title,
+          address: title.split(" - ")[0]?.trim() || undefined,
+          borough: pickProp(props, "arr_ville", "groupe") || undefined,
+          latitude,
+          longitude,
+          category: "Enonce d'interet patrimonial",
+          status: "eip",
+          description: pickProp(props, "remarque") || undefined,
+          sourceUrl: pickProp(props, "lien_enonc") || cfg.sourceUrl,
+        };
+      },
+      cap,
+    );
+  }
+
   const pkg = await fetchCkanPackage(cfg.ckanId);
 
   const csvResource = pkg?.resources.find(
     (r) =>
       r.format?.toUpperCase() === "CSV" &&
-      (datasetId === "heritage-eip"
-        ? r.name?.toLowerCase().includes("intérêt") ||
-          r.name?.toLowerCase().includes("interet") ||
-          r.name?.toLowerCase().includes("protection")
-        : r.name?.toLowerCase().includes("patrimoniaux") ||
-          r.name?.toLowerCase().includes("édifices") ||
-          r.name?.toLowerCase().includes("edifices"))
+      (r.name?.toLowerCase().includes("patrimoniaux") ||
+        r.name?.toLowerCase().includes("édifices") ||
+        r.name?.toLowerCase().includes("edifices"))
   );
 
   if (csvResource?.id) {

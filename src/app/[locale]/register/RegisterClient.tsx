@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { RBQ_LICENSE_CLASSES } from "@/lib/rbq";
 import {
-  Input,
-  Select,
-  FieldLabel,
-  FieldError,
   Button,
   Card,
   FadeIn,
+  FieldError,
+  FieldLabel,
+  Input,
   PageHeader,
+  Select,
 } from "@/components/ui";
 
 export default function RegisterClient() {
@@ -58,8 +58,8 @@ export default function RegisterClient() {
   };
 
   return (
-    <FadeIn className="mx-auto max-w-md px-4 py-16">
-      <PageHeader title={t("signUp")} />
+    <FadeIn className="mx-auto max-w-md px-4 py-16 text-ink">
+      <PageHeader title={t("signUp")} subtitle="Créez votre espace d’opportunités Québec en moins de deux minutes." />
       <Card>
         <form onSubmit={submit} className="space-y-4">
           {(["email", "password", "name", "company"] as const).map((field) => (
@@ -104,21 +104,21 @@ export default function RegisterClient() {
               onChange={(e) => setForm({ ...form, rbqLicenseNumber: e.target.value })}
             />
           </div>
-          <label className="flex items-start gap-2 text-sm text-slate-400">
+          <label className="flex items-start gap-2 text-sm text-muted">
             <input
               type="checkbox"
               required
               checked={form.acceptTerms}
               onChange={(e) => setForm({ ...form, acceptTerms: e.target.checked })}
-              className="mt-1 accent-sky-500"
+              className="mt-1 accent-brand"
             />
             <span>
               J&apos;accepte les{" "}
-              <Link href="/terms" className="text-sky-400 hover:underline">
+              <Link href="/terms" className="text-brand hover:underline">
                 conditions d&apos;utilisation
               </Link>{" "}
               et la{" "}
-              <Link href="/privacy" className="text-sky-400 hover:underline">
+              <Link href="/privacy" className="text-brand hover:underline">
                 politique de confidentialité
               </Link>
               .
@@ -130,9 +130,9 @@ export default function RegisterClient() {
           </Button>
         </form>
       </Card>
-      <p className="mt-4 text-center text-sm text-slate-400">
+      <p className="mt-4 text-center text-sm text-muted">
         {t("hasAccount")}{" "}
-        <Link href="/login" className="text-sky-400 hover:underline">
+        <Link href="/login" className="text-brand hover:underline">
           {t("signIn")}
         </Link>
       </p>

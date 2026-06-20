@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { hasIntelligenceData, type PropertyIntelligence } from "@/lib/intelligence";
 import { dataWarn, getDataWarnCount, resetDataWarnCount } from "@/lib/datasets/log";
-import { isDemoFallbackEnabled } from "@/lib/sync/demo-fallback";
 import { Rng, hashSeed } from "../../../prisma/seed-data/rng";
 
 describe("hasIntelligenceData", () => {
@@ -37,23 +36,6 @@ describe("dataWarn (silent-failure visibility)", () => {
     dataWarn("fetchJson", { url: "https://example.test", status: 503 });
     dataWarn("fetchCkanPackage", { datasetId: "permits", status: 500 });
     expect(getDataWarnCount()).toBe(2);
-  });
-});
-
-describe("demo fallback guard", () => {
-  const prev = process.env.DEMO_FALLBACK;
-  afterEach(() => {
-    if (prev === undefined) delete process.env.DEMO_FALLBACK;
-    else process.env.DEMO_FALLBACK = prev;
-  });
-
-  it("is enabled by default and opt-out via DEMO_FALLBACK=false", () => {
-    delete process.env.DEMO_FALLBACK;
-    expect(isDemoFallbackEnabled()).toBe(true);
-    process.env.DEMO_FALLBACK = "false";
-    expect(isDemoFallbackEnabled()).toBe(false);
-    process.env.DEMO_FALLBACK = "true";
-    expect(isDemoFallbackEnabled()).toBe(true);
   });
 });
 

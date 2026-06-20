@@ -87,12 +87,17 @@ export function evaluateQuality(input: {
     return { status: "ok" };
   }
 
+  if (input.source === "unchanged") {
+    return { status: "ok" };
+  }
+
   const rules = QUALITY_RULES[input.datasetId];
 
   if (
     input.hadPriorSuccess &&
     input.rowsIngested === 0 &&
     input.source === "empty" &&
+    !input.isIncrementalSync &&
     !rules?.allowEmpty
   ) {
     return {
@@ -117,7 +122,8 @@ export function evaluateQuality(input: {
     rules?.dropPercentThreshold &&
     input.priorMedianIngested &&
     input.priorMedianIngested > 0 &&
-    input.rowsIngested > 0
+    input.rowsIngested > 0 &&
+    !input.isIncrementalSync
   ) {
     const drop =
       ((input.priorMedianIngested - input.rowsIngested) / input.priorMedianIngested) * 100;

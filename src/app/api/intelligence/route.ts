@@ -7,6 +7,13 @@ import {
 import { ensureFreshForKey } from "@/lib/sync/auto";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { clampQuery } from "@/lib/query-params";
+import { buildZoningExpertAnalysis } from "@/lib/zoning/expert-analysis";
+
+function optionalPositiveInt(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 && parsed <= 500 ? parsed : undefined;
+}
 
 export async function GET(req: NextRequest) {
   const ip = clientIp(req);
@@ -19,6 +26,11 @@ export async function GET(req: NextRequest) {
   const address = clampQuery(searchParams.get("address"), 300);
   const borough = clampQuery(searchParams.get("borough"), 100);
   const city = clampQuery(searchParams.get("city"), 100);
+  const project = {
+    desiredUse: clampQuery(searchParams.get("desiredUse"), 160),
+    proposedFloors: optionalPositiveInt(searchParams.get("proposedFloors")),
+    proposedUnits: optionalPositiveInt(searchParams.get("proposedUnits")),
+  };
 
   if (matricule) {
     const intel = await getIntelligenceByMatricule(matricule);
@@ -26,11 +38,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         intelligence: null,
         hasData: false,
-        message:
-          "Aucune donnée pour ce matricule. Il n'est pas encore dans nos jeux de données ingérés.",
+        message: "No indexed data matched this matricule.",
       });
     }
-    return NextResponse.json({ intelligence: intel, hasData: hasIntelligenceData(intel) });
+    return NextResponse.json({
+      intelligence: intel,
+      zoningAnalysis: buildZoningExpertAnalysis(intel, project),
+      hasData: hasIntelligenceData(intel),
+    });
   }
 
   if (address) {
@@ -38,13 +53,9 @@ export async function GET(req: NextRequest) {
     const hasData = hasIntelligenceData(intel);
     return NextResponse.json({
       intelligence: intel,
+      zoningAnalysis: buildZoningExpertAnalysis(intel, project),
       hasData,
-      ...(hasData
-        ? {}
-        : {
-            message:
-              "Aucune donnée pour cette adresse pour l'instant. Elle n'est pas encore couverte par nos jeux de données — réessayez après la prochaine synchronisation.",
-          }),
+      message: hasData ? undefined : "No indexed intelligence matched this address.",
     });
   }
 

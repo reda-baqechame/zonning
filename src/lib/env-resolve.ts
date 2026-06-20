@@ -1,8 +1,14 @@
 /** Resolve env vars from Vercel marketplace integration names. */
 
 export function resolveDatabaseUrl(): string | undefined {
+  // An explicit DATABASE_URL is the canonical override (Prisma convention).
+  // This lets local dev pin SQLite (file:./dev.db) even when Vercel marketplace
+  // Postgres vars are also present in .env.local. Production leaves DATABASE_URL
+  // unset and falls through to POSTGRES_PRISMA_URL below.
+  const explicit = process.env.DATABASE_URL?.trim();
+  if (explicit) return explicit;
+
   const candidates = [
-    process.env.DATABASE_URL,
     process.env.POSTGRES_PRISMA_URL,
     process.env.POSTGRES_URL,
   ]

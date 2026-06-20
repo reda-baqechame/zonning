@@ -33,7 +33,7 @@ For local dev with SQLite, keep `provider = "sqlite"` on a dev branch.
 | `SYNC_BATCH_SIZE` | No | Default `8` — datasets per scheduler cron |
 | `RESEND_API_KEY` | Yes | Resend API key |
 | `EMAIL_FROM` | No | Default: `ZONNING <alerts@zonning.ca>` |
-| `STRIPE_*` | No | Billing (demo mode without) |
+| `STRIPE_*` | No | Billing actions remain disabled until the complete Stripe configuration is present |
 | `STRIPE_WEBHOOK_SECRET` | Yes (if Stripe) | Webhook at `/api/stripe/webhook` |
 | `ADMIN_EMAILS` | **Yes (prod)** | Comma-separated; no default in production |
 | `TWILIO_*` | No | SMS alerts for Pro+ |

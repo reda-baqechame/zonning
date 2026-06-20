@@ -20,15 +20,26 @@ export default function ConciergeClient() {
       .catch(() => {});
   }, []);
 
-  const opportunities = req?.opportunities
-    ? (JSON.parse(req.opportunities) as { type: string; title: string }[])
-    : [];
+  let opportunities: { type: string; title: string }[] = [];
+  if (req?.opportunities) {
+    try {
+      const parsed = JSON.parse(req.opportunities);
+      if (Array.isArray(parsed)) {
+        opportunities = parsed.filter(
+          (value): value is { type: string; title: string } =>
+            Boolean(value) && typeof value.type === "string" && typeof value.title === "string",
+        );
+      }
+    } catch {
+      opportunities = [];
+    }
+  }
 
   return (
     <FadeIn className="mx-auto max-w-3xl px-4 py-16">
       <PageHeader
         title="Concierge ZONNING"
-        subtitle="Onboarding personnalisé + 50 opportunités qualifiées à la main."
+        subtitle="Revue par analyste et livraison d'opportunités selon la portée convenue."
       />
 
       {!req ? (
@@ -36,7 +47,7 @@ export default function ConciergeClient() {
           title="Aucune demande active"
           action={
             <Link href="/pricing" className="text-sky-400 hover:text-sky-300">
-              Réserver le Concierge ($2,500) →
+              Voir les forfaits Concierge →
             </Link>
           }
         />
@@ -57,7 +68,7 @@ export default function ConciergeClient() {
           )}
           {req.status === "pending" && (
             <p className="text-sm text-amber-300">
-              Notre équipe prépare vos 50 premières opportunités (24–48h).
+              {"La demande est enregistrée. La portée et l'échéancier doivent être confirmés avant la livraison."}
             </p>
           )}
         </div>

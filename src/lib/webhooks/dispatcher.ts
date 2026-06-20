@@ -1,5 +1,6 @@
 import { createHmac } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { assertPublicWebhookUrl } from "@/lib/security/webhook-url";
 
 const MAX_ATTEMPTS = 3;
 
@@ -8,7 +9,7 @@ async function deliverWebhook(
   url: string,
   secret: string,
   event: string,
-  payload: Record<string, unknown>
+  payload: Record<string, unknown>,
 ): Promise<void> {
   const body = JSON.stringify({ event, data: payload, ts: Date.now() });
   const signature = createHmac("sha256", secret).update(body).digest("hex");
@@ -25,7 +26,8 @@ async function deliverWebhook(
   let lastError: string | undefined;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      const res = await fetch(url, {
+      const safeUrl = await assertPublicWebhookUrl(url);
+      const res = await fetch(safeUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -39,7 +41,11 @@ async function deliverWebhook(
       if (res.ok) {
         await prisma.webhookDelivery.update({
           where: { id: delivery.id },
-          data: { status: "delivered", attempts: attempt, deliveredAt: new Date() },
+          data: {
+            status: "delivered",
+            attempts: attempt,
+            deliveredAt: new Date(),
+          },
         });
         return;
       }
@@ -66,14 +72,20 @@ async function deliverWebhook(
 
 export async function dispatchWebhookEvent(
   event: string,
-  payload: Record<string, unknown>
+  payload: Record<string, unknown>,
 ): Promise<void> {
   const webhooks = await prisma.orgWebhook.findMany({
     where: { active: true },
   });
 
   const matching = webhooks.filter((w) => {
-    if (!w.events.split(",").map((e) => e.trim()).includes(event)) return false;
+    if (
+      !w.events
+        .split(",")
+        .map((e) => e.trim())
+        .includes(event)
+    )
+      return false;
     if (!w.filters) return true;
     try {
       const filters = JSON.parse(w.filters) as {
@@ -99,11 +111,13 @@ export async function dispatchWebhookEvent(
   });
 
   await Promise.all(
-    matching.map((w) => deliverWebhook(w.id, w.url, w.secret, event, payload))
+    matching.map((w) => deliverWebhook(w.id, w.url, w.secret, event, payload)),
   );
 }
 
-export async function dispatchHighScoreLeadEvents(permitIds: string[]): Promise<void> {
+export async function dispatchHighScoreLeadEvents(
+  permitIds: string[],
+): Promise<void> {
   if (permitIds.length === 0) return;
 
   const permits = await prisma.permit.findMany({
@@ -111,23 +125,28 @@ export async function dispatchHighScoreLeadEvents(permitIds: string[]): Promise<
     take: 50,
   });
 
-  for (const permit of permits) {
-    if ((permit.estimatedCost ?? 0) < 500_000) continue;
-    void dispatchWebhookEvent("lead.high_score", {
-      id: permit.id,
-      externalId: permit.externalId,
-      address: permit.address,
-      city: permit.city,
-      borough: permit.borough,
-      permitType: permit.permitType,
-      estimatedCost: permit.estimatedCost,
-      issueDate: permit.issueDate?.toISOString(),
-      scoreHint: "high_value",
-    });
-  }
+  await Promise.all(
+    permits
+      .filter((permit) => (permit.estimatedCost ?? 0) >= 500_000)
+      .map((permit) =>
+        dispatchWebhookEvent("lead.high_score", {
+          id: permit.id,
+          externalId: permit.externalId,
+          address: permit.address,
+          city: permit.city,
+          borough: permit.borough,
+          permitType: permit.permitType,
+          estimatedCost: permit.estimatedCost,
+          issueDate: permit.issueDate?.toISOString(),
+          scoreHint: "high_value",
+        }),
+      ),
+  );
 }
 
-export async function dispatchPermitCreatedEvents(permitIds: string[]): Promise<void> {
+export async function dispatchPermitCreatedEvents(
+  permitIds: string[],
+): Promise<void> {
   if (permitIds.length === 0) return;
 
   const permits = await prisma.permit.findMany({
@@ -135,21 +154,25 @@ export async function dispatchPermitCreatedEvents(permitIds: string[]): Promise<
     take: 50,
   });
 
-  for (const permit of permits) {
-    void dispatchWebhookEvent("permit.created", {
-      id: permit.id,
-      externalId: permit.externalId,
-      address: permit.address,
-      city: permit.city,
-      borough: permit.borough,
-      permitType: permit.permitType,
-      estimatedCost: permit.estimatedCost,
-      issueDate: permit.issueDate?.toISOString(),
-    });
-  }
+  await Promise.all(
+    permits.map((permit) =>
+      dispatchWebhookEvent("permit.created", {
+        id: permit.id,
+        externalId: permit.externalId,
+        address: permit.address,
+        city: permit.city,
+        borough: permit.borough,
+        permitType: permit.permitType,
+        estimatedCost: permit.estimatedCost,
+        issueDate: permit.issueDate?.toISOString(),
+      }),
+    ),
+  );
 }
 
-export async function dispatchTenderCreatedEvents(tenderIds: string[]): Promise<void> {
+export async function dispatchTenderCreatedEvents(
+  tenderIds: string[],
+): Promise<void> {
   if (tenderIds.length === 0) return;
 
   const tenders = await prisma.tender.findMany({
@@ -157,13 +180,15 @@ export async function dispatchTenderCreatedEvents(tenderIds: string[]): Promise<
     take: 50,
   });
 
-  for (const tender of tenders) {
-    void dispatchWebhookEvent("tender.created", {
-      id: tender.id,
-      externalId: tender.externalId,
-      title: tender.title,
-      closesAt: tender.closesAt?.toISOString(),
-      organization: tender.organization,
-    });
-  }
+  await Promise.all(
+    tenders.map((tender) =>
+      dispatchWebhookEvent("tender.created", {
+        id: tender.id,
+        externalId: tender.externalId,
+        title: tender.title,
+        closesAt: tender.closesAt?.toISOString(),
+        organization: tender.organization,
+      }),
+    ),
+  );
 }

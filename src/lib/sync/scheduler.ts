@@ -1,10 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { checkSourceChanged } from "@/lib/datasets/change-detection";
-import {
-  ALL_DATASET_IDS,
-  DATASETS,
-  type DatasetId,
-} from "@/lib/datasets/registry";
+import { DATASETS, getSyncEnabledDatasetIds, type DatasetId } from "@/lib/datasets/registry";
 import { syncDataset, type SyncResult } from "./runner";
 import {
   findDatasetsWithSourceChanges,
@@ -44,7 +40,7 @@ export async function getDatasetStaleness(): Promise<DatasetStaleness[]> {
   const states = await prisma.syncState.findMany();
   const stateMap = new Map(states.map((s) => [s.datasetId, s]));
 
-  return ALL_DATASET_IDS.map((datasetId) => {
+  return getSyncEnabledDatasetIds().map((datasetId) => {
     const cfg = DATASETS[datasetId];
     const state = stateMap.get(datasetId);
     const staleRatio = computeStaleRatio(
@@ -120,7 +116,7 @@ export async function syncNextBatch(options?: {
   const synced = new Set<DatasetId>();
 
   const changed = sortByPriority(
-    await findDatasetsWithSourceChanges(ALL_DATASET_IDS)
+    await findDatasetsWithSourceChanges(getSyncEnabledDatasetIds())
   );
   const probed = await findAllowlistedSourcesNowLive();
   const never = await findNeverSynced();

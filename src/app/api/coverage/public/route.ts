@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchMarketPulseStats } from "@/lib/market-pulse";
 import { citySourceLabel } from "@/lib/quebec-coverage";
-import { COVERAGE_CITIES } from "@/lib/datasets/registry";
+import { COVERAGE_CITIES, DATASETS, getRegisteredDatasetIds } from "@/lib/datasets/registry";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { ensureQuebecRealtimeFresh } from "@/lib/sync/auto";
 import { buildSyncHealthSummary } from "@/lib/sync/health-summary";
-import { getDataModeStatus } from "@/lib/sync/demo-fallback";
 
 export async function GET(req: NextRequest) {
   const ip = clientIp(req);
@@ -13,10 +12,9 @@ export async function GET(req: NextRequest) {
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   ensureQuebecRealtimeFresh();
-  const [stats, health, dataMode] = await Promise.all([
+  const [stats, health] = await Promise.all([
     fetchMarketPulseStats(),
     buildSyncHealthSummary({ authorized: false }),
-    getDataModeStatus().catch(() => null),
   ]);
 
   const syncSummary = {
@@ -39,9 +37,15 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ...stats,
     cities,
+    registered: getRegisteredDatasetIds().map((id) => ({
+      id,
+      label: DATASETS[id].label,
+      status: DATASETS[id].coverageStatus ?? "authoritative",
+      syncEnabled: DATASETS[id].syncEnabled !== false,
+      note: DATASETS[id].coverageNote ?? null,
+      sourceUrl: DATASETS[id].sourceUrl,
+    })),
     syncSummary,
-    dataMode: dataMode?.mode,
-    demoFallbackActive: dataMode?.demoFallbackActive ?? false,
     updatedAt: stats.updatedAt,
   });
 }

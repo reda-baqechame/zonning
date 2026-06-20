@@ -50,7 +50,7 @@ See live version: `/fr/build-log`
 - Alerts: Twilio SMS, Thursday SEAO cron, Essentiel trade/region limits
 - Revenue: Organizations, API v1, CRM export, Concierge workflow
 - Geography: Laval + Longueuil permit datasets
-- Phase 3: Prompt-payment tracker, density gap, thermopompe funnel
+- Phase 3: Prompt-payment tracker and density-gap analysis
 - GTM: Live stats homepage, digest signup, build log
 
 ## 2026-06-18 — Gap Closure

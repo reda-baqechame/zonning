@@ -39,14 +39,27 @@ describe("evaluateQuality", () => {
   it("flags large drop vs median", () => {
     const result = evaluateQuality({
       datasetId: "permits",
-      rowsIngested: 50,
+      rowsIngested: 600,
       hadPriorSuccess: true,
-      priorMedianIngested: 200,
+      priorMedianIngested: 2000,
+      syncOk: true,
+      source: "live",
+      isIncrementalSync: false,
+    });
+    expect(result.status).toBe("anomaly");
+  });
+
+  it("does not compare incremental cursor syncs to full-refresh medians", () => {
+    const result = evaluateQuality({
+      datasetId: "permits",
+      rowsIngested: 600,
+      hadPriorSuccess: true,
+      priorMedianIngested: 2000,
       syncOk: true,
       source: "live",
       isIncrementalSync: true,
     });
-    expect(result.status).toBe("anomaly");
+    expect(result.status).toBe("ok");
   });
 
   it("allows empty for bootstrap allowlist datasets", () => {

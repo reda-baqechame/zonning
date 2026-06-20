@@ -18,6 +18,41 @@ type IChercheFeature = {
   properties?: { nom?: string; municipalite?: string; confiance?: number };
 };
 
+const ADDRESS_STOP_WORDS = new Set([
+  "rue",
+  "avenue",
+  "av",
+  "boulevard",
+  "boul",
+  "chemin",
+  "ch",
+  "route",
+  "rang",
+  "place",
+  "montee",
+  "nord",
+  "sud",
+  "est",
+  "ouest",
+  "quebec",
+  "canada",
+]);
+
+export function addressMatchesCandidate(query: string, candidate: string): boolean {
+  const normalizedQuery = normalizeAddress(query).replace(/[.,]/g, " ");
+  const normalizedCandidate = normalizeAddress(candidate).replace(/[.,]/g, " ");
+  const queryNumber = normalizedQuery.match(/\b\d+[a-z]?\b/)?.[0];
+  const candidateNumber = normalizedCandidate.match(/\b\d+[a-z]?\b/)?.[0];
+
+  if (queryNumber && queryNumber !== candidateNumber) return false;
+
+  const streetTokens = normalizedQuery
+    .split(/[\s'-]+/)
+    .filter((token) => token.length >= 3 && !ADDRESS_STOP_WORDS.has(token) && !/^\d/.test(token));
+
+  return streetTokens.length > 0 && streetTokens.some((token) => normalizedCandidate.includes(token));
+}
+
 async function geocodeWithICherche(
   address: string,
   city?: string
@@ -37,6 +72,8 @@ async function geocodeWithICherche(
     const feature = data.features?.[0];
     const coords = feature?.geometry?.coordinates;
     if (!coords || coords.length < 2) return null;
+    const candidateName = feature?.properties?.nom;
+    if (!candidateName || !addressMatchesCandidate(address, candidateName)) return null;
 
     const longitude = coords[0];
     const latitude = coords[1];
@@ -68,9 +105,10 @@ async function geocodeWithOsm(
     { retries: 1, timeoutMs: 10_000 }
   );
   if (!res.ok) return null;
-  const data = (await res.json()) as { lat?: string; lon?: string }[];
+  const data = (await res.json()) as { lat?: string; lon?: string; display_name?: string }[];
   const hit = data[0];
   if (!hit?.lat || !hit.lon) return null;
+  if (!hit.display_name || !addressMatchesCandidate(address, hit.display_name)) return null;
   const latitude = parseFloat(hit.lat);
   const longitude = parseFloat(hit.lon);
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;

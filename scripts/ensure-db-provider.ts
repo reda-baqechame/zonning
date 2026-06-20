@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
-import { resolveDatabaseUrl, resolveUpstashRestToken, resolveUpstashRestUrl } from "../src/lib/env-resolve";
+import { resolveDatabaseUrl } from "../src/lib/env-resolve";
 
 const SCHEMA = join(process.cwd(), "prisma", "schema.prisma");
 

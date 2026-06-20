@@ -1,5 +1,5 @@
 ---
-description: ZONNING stack, deploy flow, and agent conventions
+description: ZONNING stack, credentials, deploy flow, and agent conventions
 globs:
   - "**/*"
 alwaysApply: true
@@ -11,57 +11,75 @@ alwaysApply: true
 
 - Next.js App Router, TypeScript, Prisma (SQLite local / Postgres prod via Supabase)
 - next-intl (`fr` / `en`), Tailwind, Resend, Stripe, Upstash Redis, Twilio (optional)
-- 33 active datasets in `src/lib/datasets/registry.ts` — never count legacy `zoning`
+- Dataset registration, ingestion support, and indexed-record counts are separate. Use `src/lib/datasets/registry.ts` plus the runtime coverage endpoints instead of hard-coded totals.
+
+## Credentials (read before prod ops)
+
+Secrets live in **gitignored local files only**. Never commit or echo values.
+
+1. Run `npm run agent:env` — shows SET/MISSING without printing secrets
+2. Read env from disk in order: `.env.production.local` → `.env.production.secrets` → `.env.local` → `.env`
+3. Refresh from Vercel: `npx vercel env pull .env.production.local --environment=production`
+4. Full inventory: **`AGENTS.md`** · templates: **`.env.production.example`**
+
+**Aliases:** `POSTGRES_PRISMA_URL` → DB, `KV_REST_API_*` → Upstash. Resolved in `src/lib/env-resolve.ts`.
+
+**Demo login:** `demo@zonning.ca` / `demo1234` (after `npm run db:seed`)
+
+**Prod URL:** https://zonning.vercel.app · **Cron auth:** `Authorization: Bearer $CRON_SECRET`
 
 ## Never commit
 
-- `.env`, `.env.local`, real API keys, `DATABASE_URL` with credentials
+- `.env`, `.env.local`, `.env.production.local`, real API keys
 - Use `.env.example` / `.env.production.example` for templates only
 
 ## Key paths
 
 | Area | Path |
 |------|------|
+| Agent credential guide | `AGENTS.md` |
+| Quebec source URLs | `docs/QUEBEC_SOURCES.md` |
 | Dataset registry | `src/lib/datasets/registry.ts` |
-| Sync runners | `src/lib/sync/` |
+| Sync / RGM | `src/lib/sync/` |
 | Env validation | `src/lib/env.ts` |
+| Env file loader | `scripts/load-prod-env.ts` |
+| Safe env audit | `scripts/agent-env-audit.ts` |
 | Plans / gates | `src/lib/plans.ts`, `src/lib/require-page.ts` |
-| Crons | `vercel.json`, `.github/workflows/sync-datasets.yml` |
+| Crons | `vercel.pro.json`, `.github/workflows/sync-datasets.yml` |
 | Launch runbook | `LAUNCH.md` |
 
 ## Commands
 
 ```bash
-npm run ci                    # test + lint + build
-npm run generate-secrets      # CRON_SECRET + SESSION_SECRET
-npm run launch-checklist      # green/red env status
-npm run setup:postgres        # db push + PostGIS (needs DATABASE_URL)
-npm run bootstrap:prod        # remote dataset bootstrap
-npm run verify:deploy         # 12 remote checks
+npm run agent:env           # credential audit (no values)
+npm run ci                  # test + lint + build
+npm run launch-checklist    # green/red env status
+npm run setup:postgres      # db push + PostGIS
+npm run bootstrap:prod      # remote dataset bootstrap
+npm run verify:deploy       # remote checks (~16)
+npm run discover:quebec     # CKAN/ArcGIS discovery
 ```
 
 ## Deploy flow (production)
 
-1. Paste secrets in Vercel from `LAUNCH.md` / `.env.production.example`
-2. `vercel link && vercel --prod` — build uses `scripts/vercel-build.ts` (Postgres → `db push`)
-3. `DATABASE_URL=... npm run setup:postgres` if PostGIS needed
-4. `NEXT_PUBLIC_APP_URL=... CRON_SECRET=... npm run bootstrap:prod`
-5. GitHub Actions secrets: `APP_URL`, `CRON_SECRET`
-6. `npm run verify:deploy` → 12/12 pass
+1. `vercel env pull .env.production.local --environment=production`
+2. `npm run agent:env` → fix MISSING required keys in Vercel dashboard
+3. `vercel --prod` — build uses `scripts/vercel-build.ts`
+4. `npm run setup:postgres` then `npm run bootstrap:prod`
+5. GitHub secrets: `APP_URL`, `CRON_SECRET`
+6. `npm run verify:deploy`
 
 ## Code conventions
 
-- Server page gates: use `requireAuth`, `requireOnboardingComplete`, `requirePlan` from `src/lib/require-page.ts`
-- Rate-limit public APIs with `rateLimitAsync` from `src/lib/rate-limit.ts`
-- Upstash Redis **required** in production (env validation errors if missing)
-- Cron/sync: `Authorization: Bearer $CRON_SECRET` only in prod (no header spoofing)
-- Audit sensitive actions via `auditLog()` from `src/lib/audit.ts`
-- Never expose `stripeCustomerId` to clients — use `toPublicUser()` from `src/lib/user-dto.ts`
-- Admin-only routes: `isAdminEmail` / sync auth via `CRON_SECRET`
-- Stripe demo mode when `STRIPE_SECRET_KEY` unset; block partial Stripe config in prod
-- Match existing i18n keys in `src/messages/fr.json` and `en.json`
+- Server page gates: `requireAuth`, `requireOnboardingComplete`, `requirePlan` from `src/lib/require-page.ts`
+- Rate-limit public APIs: `rateLimitAsync` from `src/lib/rate-limit.ts`
+- Upstash Redis **required** in production
+- Cron/sync: `Authorization: Bearer $CRON_SECRET` in prod
+- Admin: `ADMIN_EMAILS` / sync auth via `CRON_SECRET`
+- Keep billing plans and payment actions disabled when Stripe configuration is incomplete; never simulate payment success
+- Match i18n in `src/messages/fr.json` and `en.json`
 
 ## Dataset changes
 
-- Add to registry, sync runner, quality rules, and bootstrap allowlist if first-run critical
+- Add to registry, sync runner, quality rules, bootstrap allowlist if critical
 - Do not edit plan files in `.cursor/plans/`

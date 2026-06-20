@@ -8,13 +8,6 @@ import {
   findNearestZoningPoint,
 } from "@/lib/spatial";
 
-/**
- * True when an intelligence payload carries at least one substantive layer.
- * Used by API routes/pages to render a "no data yet for this address" empty
- * state instead of a blank panel — the address simply isn't in our ingested
- * datasets (or live sync hasn't reached it yet), which is meaningful signal,
- * not an error.
- */
 export function hasIntelligenceData(intel: PropertyIntelligence): boolean {
   return Boolean(
     intel.assessment ||
@@ -29,7 +22,7 @@ export function hasIntelligenceData(intel: PropertyIntelligence): boolean {
       intel.marketHeat ||
       intel.permitDelays ||
       intel.municipalContracts ||
-      intel.municipalInspection,
+      intel.municipalInspection
   );
 }
 
@@ -75,6 +68,14 @@ export type PropertyIntelligence = {
     intensificationLevel?: string | null;
     landUse?: string | null;
     source?: "pum2050" | "legacy" | "regional";
+    zoneCode?: string | null;
+    densityThreshold?: number | null;
+    sourceUrl?: string | null;
+    sourceFetchedAt?: string | null;
+    matchMethod?: "nearest_centroid" | "borough_summary" | "parcel_intersection";
+    matchDistanceMeters?: number | null;
+    evidenceScope?: "planning_area_nearby" | "borough_summary" | "parcel";
+    determination?: "confirmed" | "indicative" | "review_required";
   };
   heritage?: {
     nearby: boolean;
@@ -241,7 +242,13 @@ export async function getIntelligenceForPermit(permit: {
       permit.longitude,
       zoningCity
     );
-    if (zoningPoint) {
+    const hasMeaningfulZoningEvidence = Boolean(
+      zoningPoint?.landUse ||
+        zoningPoint?.intensificationLevel ||
+        zoningPoint?.densityThreshold != null ||
+        zoningPoint?.zoneCode,
+    );
+    if (zoningPoint && hasMeaningfulZoningEvidence) {
       intel.layers!.pum2050 = zoningCity === "Montréal";
       intel.layers!.regionalZoning = zoningCity !== "Montréal";
       intel.zoning = {
@@ -249,9 +256,14 @@ export async function getIntelligenceForPermit(permit: {
         landUse: zoningPoint.landUse,
         intensificationLevel: zoningPoint.intensificationLevel,
         description: zoningPoint.description,
-        maxFloors: zoningPoint.densityThreshold
-          ? Math.round(zoningPoint.densityThreshold / 10)
-          : undefined,
+        zoneCode: zoningPoint.zoneCode,
+        densityThreshold: zoningPoint.densityThreshold,
+        sourceUrl: zoningPoint.sourceUrl,
+        sourceFetchedAt: zoningPoint.sourceFetchedAt.toISOString(),
+        matchMethod: "nearest_centroid",
+        matchDistanceMeters: zoningPoint.distanceMeters,
+        evidenceScope: "planning_area_nearby",
+        determination: "indicative",
         source: zoningCity === "Montréal" ? "pum2050" : "regional",
       };
     }
@@ -333,6 +345,11 @@ export async function getIntelligenceForPermit(permit: {
         maxFloors: zoning.maxFloors,
         description: zoning.description,
         source: "legacy",
+        sourceUrl: zoning.sourceUrl,
+        sourceFetchedAt: zoning.sourceFetchedAt.toISOString(),
+        matchMethod: "borough_summary",
+        evidenceScope: "borough_summary",
+        determination: "review_required",
       };
     }
 

@@ -1,9 +1,19 @@
 {
   "meta": {
-    "title": "ZONNING — Pipeline de revenus pour le Québec",
-    "description": "Projets qualifiés RBQ, marchés publics SEAO et conformité CASL pour les entreprises de construction québécoises."
+    "title": "ZONNING — Données de construction au Québec",
+    "description": "Recherche de permis, marchés publics, entreprises et sources municipales avec couverture et limites explicites."
   },
   "nav": {
+    "search": "Recherche",
+    "map": "Carte",
+    "dossier": "Dossier",
+    "opportunities": "Opportunités",
+    "municipalities": "Municipalités",
+    "companies": "Entreprises",
+    "createWorkspace": "Créer un espace",
+    "mainNavigation": "Navigation principale",
+    "mobileNavigation": "Navigation mobile",
+    "menu": "Menu",
     "feed": "Fil",
     "verdict": "PERMIS.AI",
     "settings": "Réglages",
@@ -28,7 +38,7 @@
   "hero": {
     "badge": "{datasets} jeux de données · {cities} villes",
     "title": "Commencez votre semaine dans ZONNING",
-    "subtitle": "Fil unifié permis (Montréal, Laval, Longueuil + tout le Québec) + contrats SEAO. Verdict PERMIS.AI gratuit. RBQ, zonage, transactions et CASL en un seul moteur.",
+    "subtitle": "Fil unifié des permis municipaux actuellement indexés et des contrats SEAO, avec sources, fraîcheur et limites visibles.",
     "cta": "Ouvrir mon fil",
     "ctaSecondary": "Voir les tarifs",
     "ctaVerdict": "Essayer PERMIS.AI",
@@ -148,13 +158,10 @@
     "upgradeDesc": "Générez des certificats CASL PDF pour chaque contact issu de registres publics vérifiables.",
     "upgradeCta": "Passer au plan Pro"
   },
-  "demoMode": {
-    "banner": "Mode démonstration — données d'exemple affichées jusqu'à la première synchronisation des données publiques en direct."
-  },
   "footer": {
-    "tagline": "ZONNING — Pipeline de revenus et conformité pour le Québec",
-    "trust": "Données publiques · Conformité CASL · {datasets} jeux · {cities} villes · Registre RBQ",
-    "buildLog": "Journal de construction",
+    "tagline": "ZONNING — Recherche et couverture des données de construction au Québec",
+    "trust": "Sources publiques · {datasets} jeux indexés · {cities} villes suivies · Liens vers les sources officielles",
+    "buildLog": "Preuves du système",
     "dataHealth": "Santé des données",
     "coverage": "Couverture",
     "intelligence": "Intelligence",
@@ -168,8 +175,7 @@
     "save": "Enregistrer",
     "cancel": "Annuler",
     "success": "Opération réussie",
-    "alertCreated": "Alerte créée",
-    "demoHint": "Démo : demo@zonning.ca / demo1234"
+    "alertCreated": "Alerte créée"
   },
   "onboarding": {
     "title": "Configuration de votre profil",
@@ -228,12 +234,8 @@
     "syncErrors": "erreur(s) de sync"
   },
   "sync": {
-    "live": "Live",
+    "live": "Indexé",
     "pending": "Sync en attente"
-  },
-  "beta": {
-    "title": "Programme bêta Québec",
-    "desc": "Rejoignez les 10 premières PME — onboarding concierge offert pour les 3 premiers inscrits Pro."
   },
   "feed": {
     "title": "Centre de commande",
@@ -244,9 +246,14 @@
     "noPermits": "Aucun permis récent pour votre profil.",
     "noPermitsHint": "Ajustez vos métiers et régions dans les réglages pour voir plus de résultats.",
     "noTenders": "Aucun contrat ouvert pour votre profil.",
-    "subtitle": "Vos opportunités qualifiées du jour — permis, SEAO et verdict PERMIS.AI.",
+    "subtitle": "Permis et appels d'offres classés selon votre profil et les données disponibles.",
+    "localDataNotice": "En développement local, ces fiches peuvent provenir du jeu de données semé. Les scores et étiquettes d'opportunité servent à tester le produit; ils ne prouvent pas une qualification commerciale en direct.",
+    "testRank": "Classement test",
     "map": "Carte",
     "source": "Source",
+    "recordSource": "Source du permis",
+    "datasetSource": "Source du jeu de données",
+    "declaredValue": "Valeur déclarée {value}",
     "closesIn": "Clôture dans",
     "thursday": "Jeudi SEAO",
     "match": "Match",
@@ -266,11 +273,70 @@
     "filterRbq": "RBQ éligible",
     "filterHighValue": "Gros projets",
     "filterRisks": "Risques",
-    "noWatchlist": "Aucun lead suivi — cliquez sur l'étoile pour enregistrer."
+    "noWatchlist": "Aucun lead suivi — cliquez sur l'étoile pour enregistrer.",
+    "noWatchlistHint": "Les permis et contrats enregistrés restent ici même lorsqu'ils sortent du fil récent.",
+    "watchlistNote": "Note de suivi",
+    "watchlistNotePlaceholder": "Prochaine action, personne à contacter, contexte…",
+    "saveNote": "Enregistrer la note",
+    "noteSaved": "Note enregistrée",
+    "noteSaveError": "Impossible d'enregistrer la note",
+    "addToWatchlist": "Ajouter aux suivis",
+    "removeFromWatchlist": "Retirer des suivis",
+    "rankingReasonsLabel": "Raisons du classement",
+    "rankCompact": "Classement {value}",
+    "confidenceCompact": "Conf. {value} %",
+    "rankScore": "Classement ajusté",
+    "fitScore": "Adéquation brute",
+    "confidenceLabel": "Confiance des données",
+    "whyRank": "Pourquoi ce classement",
+    "factorRbq": "Adéquation RBQ",
+    "factorCost": "Adéquation budget",
+    "factorMarket": "Activité du marché",
+    "factorFreshness": "Fraîcheur",
+    "factorIntel": "Faisabilité du site",
+    "factorZoning": "Potentiel de zonage",
+    "dataQuality": {
+      "high": "Dossier bien documenté",
+      "medium": "Données partielles",
+      "low": "Données insuffisantes",
+      "limitations": "Limites du dossier public",
+      "issues": {
+        "missing_source_id": "Identifiant source absent",
+        "derived_identity": "Identifiant stable reconstruit à partir du dossier",
+        "missing_address": "Adresse absente",
+        "placeholder_address": "Adresse non spécifique",
+        "missing_permit_type": "Type de permis absent",
+        "generic_permit_type": "Type de permis générique",
+        "missing_issue_date": "Date de délivrance absente",
+        "future_issue_date": "Date future à vérifier",
+        "stale_record": "Dossier de plus de deux ans",
+        "missing_cost": "Valeur des travaux non publiée",
+        "missing_coordinates": "Coordonnées non publiées",
+        "invalid_source": "Lien source invalide ou non sécurisé",
+        "dataset_level_source": "Le lien mène au jeu de données, pas au permis individuel"
+      }
+    },
+    "rankingReasons": {
+      "verified_rbq_match": "Licence RBQ vérifiée",
+      "rbq_mismatch": "Licence RBQ non adaptée",
+      "cost_in_range": "Budget dans votre plage",
+      "cost_outside_range": "Budget hors de votre plage",
+      "fresh_record": "Dossier récent",
+      "stale_record": "Dossier ancien",
+      "active_market": "Marché actif",
+      "site_upside": "Potentiel du site",
+      "site_constraints": "Contraintes du site",
+      "trade_match": "Métier correspondant",
+      "trade_mismatch": "Métier non correspondant",
+      "region_match": "Région correspondante",
+      "amp_blocked": "Autorisation AMP manquante",
+      "bid_window": "Délai de soumission viable",
+      "limited_evidence": "Données insuffisantes"
+    }
   },
   "leadSignals": {
     "strong_match": "Match fort",
-    "rbq_eligible": "RBQ éligible",
+    "rbq_eligible": "Profil RBQ compatible",
     "high_value": "Gros projet",
     "urgent_close": "Clôture imminente",
     "thursday_seao": "Jeudi SEAO",
@@ -318,10 +384,6 @@
     "cta": "Analyser l'adresse",
     "footer": "Analyse PERMIS.AI · Propulsé par ZONNING"
   },
-  "cursorCase": {
-    "title": "Construit avec Cursor",
-    "desc": "Un fondateur, 21 jeux de données gouvernementaux, sync auto 15 min, dual brand ZONNING + PERMIS.AI — livré en semaines, pas en mois."
-  },
   "legal": {
     "termsTitle": "Conditions d'utilisation",
     "termsUpdated": "Dernière mise à jour : juin 2026",
@@ -340,7 +402,7 @@
     "privacy2Title": "Utilisation",
     "privacy2Body": "Vos données servent à personnaliser le fil, les alertes et la facturation. Nous ne vendons pas vos listes de contacts. Les clés API Équipe sont hachées (SHA-256).",
     "privacy3Title": "Hébergement",
-    "privacy3Body": "Données hébergées au Canada ou via fournisseurs conformes (Vercel, Supabase). Les courriels d'alerte passent par Resend.",
+    "privacy3Body": "L'application utilise Vercel ainsi que les fournisseurs de base de données et de courriel configurés par l'exploitant. La résidence des données dépend de la région sélectionnée chez chaque fournisseur.",
     "privacy4Title": "Vos droits",
     "privacy4Body": "Contactez-nous pour accéder, corriger ou supprimer votre compte. Les données de conformité CASL peuvent être conservées pour fins d'audit.",
     "termsLink": "Conditions d'utilisation",
@@ -349,7 +411,7 @@
     "footerPrivacy": "Confidentialité"
   },
   "fomo": {
-    "live": "En direct",
+    "live": "Données indexées",
     "pulseToday": "{count} nouveaux permis aujourd'hui",
     "pulseWeek": "{count} permis cette semaine",
     "pulseHighValue": "{count} mandats ≥ 500 k$",
@@ -371,7 +433,7 @@
     "missedHighValue": "{count} mandats ≥ 500 k$ masqués par votre forfait",
     "missedValue": "{value} de valeur cachée",
     "missedUrgent": "{count} appels urgents que vous ne pouvez pas voir",
-    "missedHint": "Forfait {plan} — les entrepreneurs Pro voient tout le fil en temps réel",
+    "missedHint": "Forfait {plan} — les entrepreneurs Pro voient tout le fil actuellement indexé",
     "unlockCta": "Débloquer le fil complet",
     "lockedHeading": "Ce que les abonnés Pro voient en ce moment",
     "lockedBody": "Adresse · score · RBQ-Fit verrouillés",
@@ -387,9 +449,13 @@
   },
   "quebec": {
     "engineEyebrow": "Moteur Québec",
-    "engineTitle": "{cities} villes · moteur Québec en direct",
+    "engineTitle": "{cities} villes suivies",
     "engineMeta": "{datasets} jeux de données · {cities} villes · {records} enregistrements indexés",
-    "syncLive": "Sync auto 5 min",
+    "syncLive": "État de synchronisation",
+    "coverageTitle": "Atlas Québec : {municipalities} municipalités avec des permis indexés",
+    "coverageMeta": "{datasets} jeux indexés · {sources} sources enregistrées · {records} enregistrements indexés",
+    "compactCoverage": "{datasets} jeux indexés · permis présents dans {municipalities} municipalités",
+    "databaseBacked": "Comptes tirés de la base",
     "permitsIndexed": "permis",
     "weekCount": "{count} cette semaine",
     "rgmLive": "RMM {today} permis aujourd'hui · {city} +{count}",
@@ -409,7 +475,7 @@
   },
   "coverage": {
     "title": "Couverture Québec — transparence des données",
-    "subtitle": "Sources publiques, sync automatique, 17 villes et 52 jeux de données indexés pour la construction et l'immobilier.",
+    "subtitle": "État réel des sources publiques, des synchronisations et des enregistrements actuellement indexés.",
     "datasets": "Jeux de données actifs",
     "cities": "Villes couvertes",
     "rbqLicenses": "Licences RBQ actives",
@@ -435,18 +501,20 @@
   },
   "intelExplorer": {
     "title": "Explorateur intelligence site",
-    "subtitle": "Toutes les couches publiques pour une adresse québécoise — zonage, GTC, patrimoine, transactions.",
+    "subtitle": "Signaux publics actuellement indexés pour une adresse québécoise, avec leur portée et leurs limites.",
     "address": "Adresse",
     "addressPlaceholder": "123 rue Example",
     "city": "Ville",
     "borough": "Arrondissement",
     "boroughOptional": "Optionnel",
+    "desiredUse": "Usage projeté",
+    "desiredUsePlaceholder": "Ex. logement, commerce, garderie",
+    "proposedFloors": "Étages projetés",
+    "proposedUnits": "Unités projetées",
     "search": "Analyser",
     "loading": "Analyse…",
-    "examples": "Exemples",
-    "recentSearches": "Recherches récentes",
-    "noDataTitle": "Aucune donnée pour cette adresse",
-    "noDataDescription": "Cette adresse n'est pas encore couverte par nos jeux de données ingérés. Réessayez après la prochaine synchronisation ou testez une adresse exemple."
+    "noMatch": "Aucune intelligence indexée ne correspond à cette adresse.",
+    "lookupFailed": "L'analyse n'a pas pu être effectuée. Réessayez plus tard."
   },
   "intel": {
     "title": "Intelligence site",
@@ -464,6 +532,57 @@
     "lockedPreview": "Couches de données détectées",
     "layersDetected": "signaux actifs",
     "upgradeIntel": "Passez Essentiel pour voir l'intelligence complète"
+  },
+  "zoningExpert": {
+    "title": "Analyse réglementaire du zonage",
+    "subtitle": "Sépare les faits vérifiés, les signaux de planification et les contrôles encore requis avant une décision de conformité.",
+    "confidence": "Confiance {value} %",
+    "status": {
+      "confirmed": "Règles parcellaires confirmées",
+      "indicative": "Contexte indicatif",
+      "review_required": "Vérification requise",
+      "unavailable": "Données indisponibles"
+    },
+    "noComplianceTitle": "Aucune conclusion de conformité émise",
+    "noComplianceBody": "Le règlement municipal applicable, la grille de zone et les normes du projet ne sont pas tous établis. Le signal affiché ne constitue pas une autorisation.",
+    "evidenceTitle": "Preuves et portée",
+    "noEvidence": "Aucune preuve de zonage exploitable n'est indexée pour cette adresse.",
+    "scope": {
+      "parcel": "Correspondance à la parcelle",
+      "planning_area_nearby": "Signal d'une aire de planification à proximité",
+      "borough_summary": "Résumé à l'échelle de l'arrondissement"
+    },
+    "distance": "Point source à environ {value} m",
+    "officialSource": "Ouvrir la source officielle",
+    "checklistTitle": "Contrôles d'un dossier expert",
+    "coverage": "{verified}/{total} vérifiés",
+    "checkStatus": {
+      "verified": "Vérifié",
+      "partial": "Partiel",
+      "missing": "Manquant"
+    },
+    "checks": {
+      "parcel_identity": "Identité de la parcelle et matricule",
+      "zone_by_law": "Zone et règlement municipal en vigueur",
+      "permitted_use": "Usage principal, conditionnel ou prohibé",
+      "height_and_density": "Hauteur, étages, densité et unités",
+      "setbacks_and_coverage": "Marges, implantation et taux d'occupation",
+      "parking_and_loading": "Stationnement, accès et chargement",
+      "overlays_and_constraints": "Patrimoine, environnement et secteurs particuliers",
+      "discretionary_approvals": "PIIA, PPCMOI, usage conditionnel ou dérogation",
+      "pending_amendments": "Amendements, avis de motion et règlements en attente"
+    },
+    "limitationsTitle": "Limites à résoudre",
+    "warnings": {
+      "planning_not_regulation": "Le PUM est un document de planification; il ne remplace pas la grille de zonage municipale applicable.",
+      "nearest_centroid_not_parcel": "La correspondance repose sur le point source le plus proche, pas sur une intersection géométrique avec la parcelle.",
+      "borough_summary_not_parcel": "Un résumé d'arrondissement ne permet pas de déterminer les normes d'une parcelle.",
+      "uses_not_verified": "La table des usages permis, conditionnels et prohibés n'a pas été vérifiée.",
+      "dimensions_not_verified": "Les normes de hauteur, marges, implantation, densité et stationnement ne sont pas toutes vérifiées.",
+      "overlays_not_exhaustive": "Les signaux patrimoniaux et environnementaux de proximité ne prouvent pas le statut juridique de la parcelle.",
+      "amendments_not_checked": "Les amendements et décisions discrétionnaires en cours ne sont pas confirmés.",
+      "project_not_defined": "L'usage et les dimensions du projet doivent être précisés pour tester la conformité."
+    }
   },
   "digest": {
     "title": "Digest hebdomadaire gratuit",

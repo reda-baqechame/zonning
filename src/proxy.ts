@@ -5,7 +5,7 @@ import { getRequestId } from "./lib/request-id";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
-export default function middleware(req: NextRequest) {
+export default function proxy(req: NextRequest) {
   const requestId = getRequestId(req);
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-request-id", requestId);

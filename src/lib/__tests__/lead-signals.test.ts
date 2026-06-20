@@ -11,6 +11,23 @@ describe("computeLeadSignals", () => {
       permitType: "Construction",
       address: "123 rue Test",
       rbqFit: { eligible: true, score: 90 },
+      pipeline: {
+        score: 85,
+        fitScore: 90,
+        confidence: 80,
+        confidenceLevel: "high",
+        breakdown: {
+          rbqFit: 90,
+          costFit: 90,
+          marketActivity: 80,
+          freshness: 90,
+          intelligence: null,
+          zoning: null,
+        },
+        marketActivityCount: 8,
+        reasons: [],
+        missingEvidence: ["site_intelligence", "zoning"],
+      },
     });
     expect(signals.some((s) => s.id === "strong_match")).toBe(true);
   });
@@ -26,6 +43,40 @@ describe("computeLeadSignals", () => {
       sourceUrl: "https://seao.ca",
     });
     expect(signals.some((s) => s.id === "urgent_close")).toBe(true);
+  });
+
+  it("does not call a low-confidence score a strong match", () => {
+    const signals = computeLeadSignals({
+      kind: "permit",
+      id: "uncertain",
+      score: 90,
+      permitType: "Construction",
+      address: "123 rue Test",
+      pipeline: {
+        score: 90,
+        fitScore: 98,
+        confidence: 30,
+        confidenceLevel: "low",
+        breakdown: {
+          rbqFit: null,
+          costFit: null,
+          marketActivity: 90,
+          freshness: 100,
+          intelligence: null,
+          zoning: null,
+        },
+        marketActivityCount: 20,
+        reasons: [{ id: "limited_evidence", impact: "info" }],
+        missingEvidence: [
+          "rbq_profile",
+          "cost_or_budget",
+          "site_intelligence",
+          "zoning",
+        ],
+      },
+    });
+
+    expect(signals.some((signal) => signal.id === "strong_match")).toBe(false);
   });
 
   it("flags GTC risk on permits", () => {
@@ -45,8 +96,14 @@ describe("computeLeadSignals", () => {
 
 describe("filterItemsBySignal", () => {
   const items = [
-    { id: "a", signals: [{ id: "urgent_close" as const, severity: "warning" as const }] },
-    { id: "b", signals: [{ id: "rbq_eligible" as const, severity: "positive" as const }] },
+    {
+      id: "a",
+      signals: [{ id: "urgent_close" as const, severity: "warning" as const }],
+    },
+    {
+      id: "b",
+      signals: [{ id: "rbq_eligible" as const, severity: "positive" as const }],
+    },
   ];
 
   it("filters urgent items", () => {
@@ -58,10 +115,15 @@ describe("filterItemsBySignal", () => {
 
 describe("matchesEssentielProfile", () => {
   it("matches any trade when multiple configured", () => {
-    const ok = matchesEssentielProfile("ESSENTIEL", ["plomberie", "toiture"], ["Laval"], {
-      title: "Réfection toiture commerciale",
-      region: "Laval",
-    });
+    const ok = matchesEssentielProfile(
+      "ESSENTIEL",
+      ["plomberie", "toiture"],
+      ["Laval"],
+      {
+        title: "Réfection toiture commerciale",
+        region: "Laval",
+      },
+    );
     expect(ok).toBe(true);
   });
 
@@ -75,7 +137,9 @@ describe("matchesEssentielProfile", () => {
 
   it("passes through for PRO plan", () => {
     expect(
-      matchesEssentielProfile("PRO", ["plomberie"], ["Laval"], { title: "anything" })
+      matchesEssentielProfile("PRO", ["plomberie"], ["Laval"], {
+        title: "anything",
+      }),
     ).toBe(true);
   });
 });

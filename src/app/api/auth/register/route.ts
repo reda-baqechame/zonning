@@ -6,13 +6,13 @@ import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { z } from "zod";
 
 const schema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  name: z.string().optional(),
-  companyName: z.string().optional(),
-  rbqLicenseClass: z.string().optional(),
-  rbqLicenseNumber: z.string().optional(),
-  phone: z.string().optional(),
+  email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
+  password: z.string().min(8).max(200),
+  name: z.string().trim().min(1).max(120).optional(),
+  companyName: z.string().trim().min(1).max(180).optional(),
+  rbqLicenseClass: z.string().trim().max(80).optional(),
+  rbqLicenseNumber: z.string().trim().max(80).optional(),
+  phone: z.string().trim().max(32).optional(),
   ampAuthorized: z.boolean().optional(),
   acceptTerms: z.boolean().refine((v) => v === true, { message: "Terms acceptance required" }),
 });

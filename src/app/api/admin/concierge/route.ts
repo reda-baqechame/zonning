@@ -5,17 +5,18 @@ import { z } from "zod";
 import { rateLimitAsync, rateLimitResponse, clientIp } from "@/lib/rate-limit";
 
 import { isAdminEmail } from "@/lib/admin";
+import { escapeHtml, safeEmailHref } from "@/lib/email/html";
 
 const deliverSchema = z.object({
-  userId: z.string(),
+  userId: z.string().min(1).max(128),
   opportunities: z.array(
     z.object({
-      type: z.string(),
-      title: z.string(),
-      url: z.string().optional(),
+      type: z.string().trim().min(1).max(80),
+      title: z.string().trim().min(1).max(300),
+      url: z.string().url().startsWith("https://").max(2048).optional(),
     })
-  ),
-  notes: z.string().optional(),
+  ).max(100),
+  notes: z.string().trim().max(5000).optional(),
   status: z.enum(["pending", "delivered", "completed"]).optional(),
 });
 
@@ -73,16 +74,16 @@ export async function PATCH(req: NextRequest) {
       try {
         const { sendEmail } = await import("@/lib/email/resend");
         const oppList = body.opportunities
-          .map((o) => `<li>${o.title}${o.url ? ` — <a href="${o.url}">${o.url}</a>` : ""}</li>`)
+          .map((o) => `<li>${escapeHtml(o.title)}${o.url ? ` — <a href="${safeEmailHref(o.url)}">${escapeHtml(o.url)}</a>` : ""}</li>`)
           .join("");
         await sendEmail({
           to: updated.user.email,
           subject: "[ZONNING] Nouvelles opportunités Concierge",
-          html: `<p>Bonjour${updated.user.name ? ` ${updated.user.name}` : ""},</p>
+          html: `<p>Bonjour${updated.user.name ? ` ${escapeHtml(updated.user.name)}` : ""},</p>
             <p>Votre analyste ZONNING a livré de nouvelles opportunités :</p>
             <ul>${oppList}</ul>
-            ${body.notes ? `<p><strong>Notes :</strong> ${body.notes}</p>` : ""}
-            <p><a href="${process.env.NEXT_PUBLIC_APP_URL ?? ""}/concierge">Voir dans ZONNING</a></p>`,
+            ${body.notes ? `<p><strong>Notes :</strong> ${escapeHtml(body.notes)}</p>` : ""}
+            <p><a href="${safeEmailHref(`${process.env.NEXT_PUBLIC_APP_URL ?? "https://zonning.vercel.app"}/fr/concierge`)}">Voir dans ZONNING</a></p>`,
         });
       } catch {
         /* email optional */

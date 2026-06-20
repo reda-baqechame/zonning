@@ -18,14 +18,14 @@ export default function GlobalError({
 
   return (
     <html lang="fr">
-      <body className="bg-slate-950 text-slate-100">
+      <body className="bg-bg text-ink">
         <div className="mx-auto max-w-md px-4 py-24 text-center">
           <h1 className="text-xl font-bold">Une erreur est survenue</h1>
-          <p className="mt-3 text-slate-400">ZONNING a rencontré un problème inattendu.</p>
+          <p className="mt-3 text-muted">ZONNING a rencontré un problème inattendu.</p>
           <button
             type="button"
             onClick={reset}
-            className="mt-6 rounded-lg bg-sky-500 px-4 py-2 text-sm font-medium"
+            className="mt-6 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover"
           >
             Réessayer
           </button>

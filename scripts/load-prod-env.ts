@@ -4,7 +4,7 @@ import { join } from "path";
 const ROOT = process.cwd();
 
 export function loadProdEnv() {
-  for (const file of [".env.production.local", ".env.production.secrets", ".env.local"]) {
+  for (const file of [".env.production.local", ".env.production.secrets", ".env.local", ".env"]) {
     const path = join(ROOT, file);
     if (!existsSync(path)) continue;
     for (const line of readFileSync(path, "utf8").split("\n")) {
@@ -17,6 +17,7 @@ export function loadProdEnv() {
       if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
         val = val.slice(1, -1);
       }
+      if (!val) continue;
       process.env[key] = val;
     }
   }

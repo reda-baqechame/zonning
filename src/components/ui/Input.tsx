@@ -4,7 +4,7 @@ import { forwardRef, type InputHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
 const fieldClass =
-  "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 disabled:cursor-not-allowed disabled:opacity-50";
+  "w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink shadow-sm placeholder:text-subtle focus:border-brand focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 export const Input = forwardRef<
   HTMLInputElement,
@@ -13,7 +13,7 @@ export const Input = forwardRef<
   return (
     <input
       ref={ref}
-      className={cn(fieldClass, error && "border-red-500/70 focus:ring-red-500/30", className)}
+      className={cn(fieldClass, error && "border-danger/70 focus:ring-danger/30", className)}
       {...props}
     />
   );
@@ -26,7 +26,7 @@ export const Textarea = forwardRef<
   return (
     <textarea
       ref={ref}
-      className={cn(fieldClass, "min-h-[100px] resize-y", error && "border-red-500/70", className)}
+      className={cn(fieldClass, "min-h-[100px] resize-y", error && "border-danger/70", className)}
       {...props}
     />
   );
@@ -39,7 +39,7 @@ export const Select = forwardRef<
   return (
     <select
       ref={ref}
-      className={cn(fieldClass, error && "border-red-500/70", className)}
+      className={cn(fieldClass, error && "border-danger/70", className)}
       {...props}
     >
       {children}
@@ -57,14 +57,14 @@ export function FieldLabel({
   required?: boolean;
 }) {
   return (
-    <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-slate-300">
+    <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-ink">
       {children}
-      {required && <span className="ml-0.5 text-red-400">*</span>}
+      {required && <span className="ml-0.5 text-danger">*</span>}
     </label>
   );
 }
 
 export function FieldError({ message }: { message?: string }) {
   if (!message) return null;
-  return <p className="mt-1.5 text-sm text-red-400">{message}</p>;
+  return <p className="mt-1.5 text-sm text-danger">{message}</p>;
 }

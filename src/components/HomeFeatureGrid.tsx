@@ -31,16 +31,16 @@ export function HomeFeatureGrid() {
           <FadeIn key={f.key} delay={i * 0.05}>
             <Link
               href={f.href}
-              className="group flex h-full flex-col rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition hover:border-sky-500/40 hover:bg-slate-900/80"
+              className="group flex h-full flex-col rounded-xl border border-line bg-surface p-6 shadow-sm transition hover:border-brand-border hover:shadow-md"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-700 bg-slate-800/80 text-sky-400">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-border bg-brand-soft text-brand">
                 <Icon className="h-5 w-5" />
               </div>
-              <h3 className="mt-4 text-lg font-semibold text-white">{t(`${f.key}.title`)}</h3>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-400">
+              <h3 className="mt-4 text-lg font-semibold text-ink">{t(`${f.key}.title`)}</h3>
+              <p className="mt-2 flex-1 text-sm leading-relaxed text-muted">
                 {t(`${f.key}.desc`)}
               </p>
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-sky-400 group-hover:gap-2 transition-all">
+              <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand transition-all group-hover:gap-2">
                 {h("explore")}
                 <ArrowRight className="h-4 w-4" />
               </span>

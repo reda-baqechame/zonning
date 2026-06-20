@@ -1,46 +1,164 @@
 @import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+/* =====================================================================
+   ZONNING design system
+   Semantic tokens drive every surface. Two themes share one token set:
+   - default / [data-theme="dark"]  → product chrome + bold marketing
+   - [data-theme="light"]           → clean, data-dense product surfaces
+   Components reference semantic utilities (bg-surface, text-ink,
+   border-line, bg-brand…) so a surface re-themes by setting data-theme.
+   ===================================================================== */
 
 :root {
-  color-scheme: dark;
-  --color-bg: #020617;
-  --color-surface: #0f172a;
-  --color-surface-elevated: #1e293b;
-  --color-border: #334155;
-  --color-text: #f1f5f9;
-  --color-text-muted: #94a3b8;
-  --color-text-subtle: #64748b;
-  --color-primary: #0ea5e9;
-  --color-primary-hover: #38bdf8;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #f87171;
+  color-scheme: light;
+
+  --bg: #f6f8fb;
+  --bg-grid: rgba(15, 23, 42, 0.03);
+  --surface: #ffffff;
+  --surface-2: #f9fbfd;
+  --surface-hover: #f1f5fb;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --ink: #0e1726;
+  --muted: #515c6e;
+  --subtle: #8b94a3;
+
+  --brand: #2563eb;
+  --brand-hover: #1d4ed8;
+  --brand-ink: #ffffff;
+  --brand-soft: #e9f0ff;
+  --brand-border: #c4d8ff;
+
+  --success: #0a9d63;
+  --success-soft: #e3f6ed;
+  --success-ink: #097a4e;
+  --warning: #b9720a;
+  --warning-soft: #fbf0db;
+  --warning-ink: #97600c;
+  --danger: #dc2b46;
+  --danger-soft: #fcebee;
+  --danger-ink: #c01f39;
+  --live: #0a9d63;
+
+  --ring: rgba(37, 99, 235, 0.38);
+  --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-2: 0 14px 36px -20px rgba(16, 24, 40, 0.28);
+  --shadow-pop: 0 24px 70px -28px rgba(16, 24, 40, 0.32);
 }
 
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f5f7fa;
+  --bg-grid: rgba(15, 23, 42, 0.03);
+  --surface: #ffffff;
+  --surface-2: #ffffff;
+  --surface-hover: #f3f6fa;
+  --line: #e5e9ef;
+  --line-strong: #d3dae4;
+  --ink: #0e1726;
+  --muted: #515c6e;
+  --subtle: #8b94a3;
+
+  --brand: #2563eb;
+  --brand-hover: #1d4ed8;
+  --brand-ink: #ffffff;
+  --brand-soft: #e9f0ff;
+  --brand-border: #c4d8ff;
+
+  --success: #0a9d63;
+  --success-soft: #e3f6ed;
+  --success-ink: #097a4e;
+  --warning: #b9720a;
+  --warning-soft: #fbf0db;
+  --warning-ink: #97600c;
+  --danger: #dc2b46;
+  --danger-soft: #fcebee;
+  --danger-ink: #c01f39;
+  --live: #0a9d63;
+
+  --ring: rgba(37, 99, 235, 0.38);
+  --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-2: 0 8px 24px -8px rgba(16, 24, 40, 0.12);
+  --shadow-pop: 0 20px 50px -16px rgba(16, 24, 40, 0.22);
+}
+
+/* Shared scale tokens (theme-independent) */
+:root {
+  --radius-sm: 0.5rem;
+  --radius: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --font-sans: var(--font-ibm-plex), system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), var(--font-ibm-plex), system-ui, sans-serif;
+}
+
+/* Map semantic tokens → Tailwind utilities (inline = resolves the var at use
+   site, so utilities follow data-theme overrides at runtime). */
 @theme inline {
-  --color-background: var(--color-bg);
-  --color-foreground: var(--color-text);
-  --font-sans: var(--font-ibm-plex);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-hover: var(--surface-hover);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-border: var(--brand-border);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-ink: var(--success-ink);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-ink: var(--warning-ink);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-ink: var(--danger-ink);
+  --color-live: var(--live);
+
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-ibm-plex), system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--brand-soft);
+  color: var(--ink);
 }
 
 input,
 textarea,
 select {
-  color: var(--color-text);
+  color: var(--ink);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--color-text-subtle);
+  color: var(--subtle);
 }
 
 input:-webkit-autofill,
@@ -50,17 +168,73 @@ textarea:-webkit-autofill,
 textarea:-webkit-autofill:hover,
 textarea:-webkit-autofill:focus,
 select:-webkit-autofill {
-  -webkit-text-fill-color: var(--color-text);
-  -webkit-box-shadow: 0 0 0 1000px var(--color-bg) inset;
-  caret-color: var(--color-text);
+  -webkit-text-fill-color: var(--ink);
+  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset;
+  caret-color: var(--ink);
   transition: background-color 9999s ease-out;
 }
 
+/* Tabular numerals for data/metrics */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ Motion primitives ============ */
+@keyframes live-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  70%,
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes float-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--ink) 7%, transparent),
+    transparent
+  );
+  animation: shimmer 1.6s infinite;
+}
+
+/* Subtle dotted grid backdrop for hero / empty canvases */
+.bg-dot-grid {
+  background-image: radial-gradient(var(--bg-grid) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* ============ Leaflet (map) theming ============ */
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
-  background: var(--color-surface) !important;
-  color: var(--color-text) !important;
-  border: 1px solid var(--color-border);
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--line);
 }
 
 .leaflet-popup-content {
@@ -77,4 +251,34 @@ select:-webkit-autofill {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+/* MapLibre Quebec atlas markers */
+.atlas-marker {
+  display: grid;
+  height: 22px;
+  width: 22px;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.08), 0 14px 30px rgba(15, 23, 42, 0.18);
+}
+
+.atlas-marker span {
+  height: 8px;
+  width: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.atlas-marker--authoritative span {
+  background: #34d399;
+}
+
+.atlas-marker--partial span {
+  background: #f59e0b;
+}
+
+.atlas-marker--document span {
+  background: #cbd5e1;
 }

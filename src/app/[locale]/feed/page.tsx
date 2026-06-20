@@ -1,4 +1,5 @@
 import FeedClient from "./FeedClient";
+import { getRuntimeDataMode } from "@/lib/data-mode";
 import { requireOnboardingComplete } from "@/lib/require-page";
 
 export default async function FeedPage({
@@ -8,5 +9,5 @@ export default async function FeedPage({
 }) {
   const { locale } = await params;
   await requireOnboardingComplete(locale);
-  return <FeedClient />;
+  return <FeedClient dataMode={getRuntimeDataMode()} />;
 }
