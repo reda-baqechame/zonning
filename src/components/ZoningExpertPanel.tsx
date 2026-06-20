@@ -114,6 +114,23 @@ export default function ZoningExpertPanel({ analysis }: { analysis: ZoningExpert
           </ul>
         </div>
       ) : null}
+
+      {analysis.expertNextChecks.length ? (
+        <div className="mt-5 border-t border-line pt-4">
+          <h3 className="text-sm font-semibold text-ink">{t("nextChecksTitle")}</h3>
+          <ul className="mt-2 space-y-2 text-sm text-muted">
+            {analysis.expertNextChecks.slice(0, 5).map((check) => (
+              <li key={check.id} className="rounded-md border border-line bg-white p-3">
+                <p className="font-medium text-ink">{t(`checks.${check.id}`)}</p>
+                <p className="mt-1">{t(`nextChecks.${check.id}.action`)}</p>
+                <p className="mt-1 text-xs text-subtle">
+                  {t(`nextChecks.${check.id}.reason`)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { resolveCoordinatesForAddress } from "@/lib/geocode";
 import { RGM_CITIES } from "@/lib/quebec-coverage";
+import { hasUsableAddress } from "@/lib/permits/quality";
 
 const geocodeInFlight = new Set<string>();
 
@@ -13,7 +14,7 @@ export async function geocodePermitsWithoutCoords(options?: {
   limit?: number;
 }): Promise<number> {
   const cities = options?.cities ?? [...RGM_CITIES, "Québec", "Gatineau"];
-  const limit = options?.limit ?? 12;
+  const limit = options?.limit ?? 25;
 
   const permits = await prisma.permit.findMany({
     where: {
@@ -28,6 +29,7 @@ export async function geocodePermitsWithoutCoords(options?: {
 
   let updated = 0;
   for (const p of permits) {
+    if (!hasUsableAddress(p.address, p.city)) continue;
     if (geocodeInFlight.has(p.id)) continue;
     geocodeInFlight.add(p.id);
     try {
@@ -55,5 +57,5 @@ export function scheduleGeocodeAfterPermitIngest(city?: string | null): void {
   const cities = city && (RGM_CITIES as readonly string[]).includes(city)
     ? [city]
     : [...RGM_CITIES];
-  void geocodePermitsWithoutCoords({ cities, limit: 8 }).catch(() => {});
+  void geocodePermitsWithoutCoords({ cities, limit: city ? 25 : 15 }).catch(() => {});
 }

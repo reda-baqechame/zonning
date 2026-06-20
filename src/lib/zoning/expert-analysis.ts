@@ -44,6 +44,11 @@ export type ZoningExpertAnalysis = {
     matchDistanceMeters?: number | null;
   }>;
   checks: Array<{ id: ZoningCheckId; status: "verified" | "partial" | "missing" }>;
+  expertNextChecks: Array<{
+    id: ZoningCheckId;
+    action: string;
+    reason: string;
+  }>;
   warnings: ZoningWarningId[];
   verifiedCheckCount: number;
   totalCheckCount: number;
@@ -83,6 +88,45 @@ function hasOverlaySignal(intel: PropertyIntelligence): boolean {
           (contamination.gtcCount ?? 0) > 0)),
   );
 }
+
+const NEXT_CHECK_ACTIONS: Record<ZoningCheckId, { action: string; reason: string }> = {
+  parcel_identity: {
+    action: "Confirm lot identity, matricule and civic-address match in the official roll or municipal map.",
+    reason: "A zoning opinion must attach to the correct parcel, not only a nearby address.",
+  },
+  zone_by_law: {
+    action: "Open the current municipal zoning bylaw and zone schedule for the parcel.",
+    reason: "Planning layers and nearby points do not establish the enforceable zone.",
+  },
+  permitted_use: {
+    action: "Verify the use table for permitted, conditional and prohibited uses.",
+    reason: "The app cannot infer use compatibility from a zone label alone.",
+  },
+  height_and_density: {
+    action: "Verify height, floor, density and unit standards against the proposed project.",
+    reason: "A project can match the use but still fail dimensional standards.",
+  },
+  setbacks_and_coverage: {
+    action: "Check setbacks, lot coverage, siting and built-form standards.",
+    reason: "These controls usually decide whether the concept fits on the lot.",
+  },
+  parking_and_loading: {
+    action: "Check parking, access, loading and mobility requirements.",
+    reason: "Operational requirements can block or condition an otherwise compatible use.",
+  },
+  overlays_and_constraints: {
+    action: "Confirm heritage, environmental, flood, agricultural and special-area overlays.",
+    reason: "Nearby risk signals do not prove the legal status of the parcel.",
+  },
+  discretionary_approvals: {
+    action: "Check PIIA, PPCMOI, conditional-use, minor-variance and council approval requirements.",
+    reason: "Some projects require discretionary approvals even when base zoning looks compatible.",
+  },
+  pending_amendments: {
+    action: "Review pending amendments, notices of motion and recent council decisions.",
+    reason: "A stale bylaw snapshot can miss rules already moving through adoption.",
+  },
+};
 
 export function buildZoningExpertAnalysis(
   intel: PropertyIntelligence,
@@ -141,6 +185,12 @@ export function buildZoningExpertAnalysis(
   }
 
   const verifiedCheckCount = checks.filter((check) => check.status === "verified").length;
+  const expertNextChecks = checks
+    .filter((check) => check.status !== "verified")
+    .map((check) => ({
+      id: check.id,
+      ...NEXT_CHECK_ACTIONS[check.id],
+    }));
   return {
     status: confirmed
       ? "confirmed"
@@ -155,6 +205,7 @@ export function buildZoningExpertAnalysis(
     project,
     evidence,
     checks,
+    expertNextChecks,
     warnings: [...warnings],
     verifiedCheckCount,
     totalCheckCount: checks.length,

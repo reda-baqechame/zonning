@@ -7,6 +7,8 @@ import TenderCountdown from "@/components/TenderCountdown";
 import { LeadCard } from "@/components/LeadCard";
 import { createAlert } from "@/lib/alerts/create-alert";
 import type { LeadSignal } from "@/lib/lead-signals";
+import type { OpportunityDossier } from "@/lib/domain/quebec";
+import type { TenderScoreResult } from "@/lib/tender-score";
 import {
   PageHeader,
   Input,
@@ -47,6 +49,8 @@ type Tender = {
     contractStatus?: string | null;
   }[];
   amendmentCount?: number;
+  ranking?: TenderScoreResult;
+  opportunityDossier?: OpportunityDossier;
 };
 
 const DEFAULT_CATEGORIES = ["Construction", "Services", "Fournitures", "Services professionnels"];
@@ -265,6 +269,8 @@ export default function MarchesQcClient() {
                   plainSummary: tender.plainSummary,
                   sourceUrl: tender.sourceUrl,
                   amendmentCount: tender.amendmentCount,
+                  ranking: tender.ranking,
+                  opportunityDossier: tender.opportunityDossier,
                 }}
                 countdown={
                   <TenderCountdown

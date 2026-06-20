@@ -8,7 +8,14 @@ const isPostgres = isPostgresUrl(url);
 
 function run(cmd: string) {
   console.log(`> ${cmd}`);
-  execSync(cmd, { stdio: "inherit", env: process.env });
+  execSync(cmd, {
+    stdio: "inherit",
+    env: process.env,
+    shell:
+      process.platform === "win32"
+        ? process.env.ComSpec || "C:\\Windows\\System32\\cmd.exe"
+        : "/bin/sh",
+  });
 }
 
 if (isPostgres) {

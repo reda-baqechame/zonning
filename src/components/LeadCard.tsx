@@ -15,6 +15,7 @@ import type { PropertyIntelligence } from "@/lib/intelligence";
 import type { PipelineScoreResult, RankingReason } from "@/lib/pipeline-score";
 import type { TenderScoreResult } from "@/lib/tender-score";
 import type { PermitDataQuality } from "@/lib/permits/quality";
+import type { OpportunityDossier } from "@/lib/domain/quebec";
 
 export type LeadCardPermit = {
   kind: "permit";
@@ -33,6 +34,7 @@ export type LeadCardPermit = {
   sourceUrl?: string;
   applicantName?: string | null;
   dataQuality?: PermitDataQuality;
+  opportunityDossier?: OpportunityDossier;
 };
 
 export type LeadCardTender = {
@@ -50,6 +52,7 @@ export type LeadCardTender = {
   sourceUrl: string;
   amendmentCount?: number;
   ranking?: TenderScoreResult;
+  opportunityDossier?: OpportunityDossier;
 };
 
 export type LeadCardProps = {
@@ -126,6 +129,10 @@ export function LeadCard({
   const [expanded, setExpanded] = useState(false);
   const dateLocale = locale === "fr" ? fr : enCA;
   const ranking = item.kind === "permit" ? item.pipeline : item.ranking;
+  const dossier = item.opportunityDossier;
+  const topLeadAllowed =
+    dossier?.evidenceThresholds.canCallTopLead ??
+    (item.score >= 80 && (ranking?.confidence ?? 0) >= 65);
 
   const urgent = item.signals.some(
     (s) => s.id === "urgent_close" || s.id === "thursday_seao",
@@ -199,7 +206,7 @@ export function LeadCard({
             )}
           </div>
           <div className="flex flex-col items-end gap-2">
-            {item.score >= 80 && (ranking?.confidence ?? 0) >= 65 && (
+            {topLeadAllowed && (
               <span className="rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success-ink">
                 {testData ? tf("testRank") : tFomo("topLead")}
               </span>
@@ -271,6 +278,40 @@ export function LeadCard({
           </div>
         ) : null}
 
+        {dossier ? (
+          <div className="mt-3 grid gap-3 rounded-md border border-line bg-slate-50 p-3 text-xs text-muted md:grid-cols-3">
+            <div>
+              <p className="font-semibold uppercase text-subtle">
+                {tf("dossier.source")}
+              </p>
+              <p className="mt-1 font-medium text-ink">{dossier.sourceLabel}</p>
+              <p>{tf(`freshness.${dossier.freshness.label}`)}</p>
+            </div>
+            <div>
+              <p className="font-semibold uppercase text-subtle">
+                {tf("dossier.nextAction")}
+              </p>
+              <p className="mt-1 text-ink">{dossier.nextAction}</p>
+            </div>
+            <div>
+              <p className="font-semibold uppercase text-subtle">
+                {tf("dossier.trust")}
+              </p>
+              <p className="mt-1">
+                {tf("dossier.confidence", {
+                  value: dossier.confidence,
+                  level: tf(`confidenceLevels.${dossier.confidenceLevel}`),
+                })}
+              </p>
+              {!dossier.evidenceThresholds.canCallTopLead ? (
+                <p className="mt-1 text-warning-ink">
+                  {tf("dossier.notTopLead")}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         {countdown}
 
         {item.kind === "permit" && intelligence && (
@@ -283,6 +324,16 @@ export function LeadCard({
 
         {ranking && expanded ? (
           <div className="mt-3 border-t border-line pt-3 text-xs text-muted">
+            {dossier?.whyRanked.length ? (
+              <div className="mb-3">
+                <p className="font-medium text-ink">{tf("dossier.why")}</p>
+                <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                  {dossier.whyRanked.slice(0, 4).map((why) => (
+                    <li key={why}>{why}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             <dl className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
               <div>
                 <dt>{tf("rankScore")}</dt>
@@ -338,6 +389,18 @@ export function LeadCard({
                   </div>
                 ) : null}
               </>
+            ) : null}
+            {dossier?.limitations.length ? (
+              <div className="mt-3">
+                <p className="font-medium text-ink">
+                  {tf("dossier.limitations")}
+                </p>
+                <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                  {dossier.limitations.slice(0, 5).map((limitation) => (
+                    <li key={limitation}>{limitation}</li>
+                  ))}
+                </ul>
+              </div>
             ) : null}
           </div>
         ) : null}

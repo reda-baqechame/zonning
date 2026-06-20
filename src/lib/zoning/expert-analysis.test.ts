@@ -36,6 +36,8 @@ describe("zoning expert analysis", () => {
     expect(result.status).toBe("unavailable");
     expect(result.confidence).toBe(0);
     expect(result.evidence).toEqual([]);
+    expect(result.expertNextChecks.length).toBeGreaterThan(0);
+    expect(result.expertNextChecks[0].action).toContain("Confirm");
   });
 
   it("does not mark overlays partial from empty proximity results", () => {
@@ -71,5 +73,6 @@ describe("zoning expert analysis", () => {
     expect(result.decision).toBe("not_determined");
     expect(result.checks.find((check) => check.id === "parcel_identity")?.status).toBe("verified");
     expect(result.checks.find((check) => check.id === "permitted_use")?.status).toBe("missing");
+    expect(result.expertNextChecks.map((check) => check.id)).toContain("permitted_use");
   });
 });

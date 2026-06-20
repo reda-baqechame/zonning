@@ -9,6 +9,13 @@ import type { ZoningProjectInput } from "@/lib/zoning/expert-analysis";
 import type { ZoningExpertAnalysis } from "@/lib/zoning/expert-analysis";
 import { addressMatchesCandidate } from "@/lib/geocode";
 import { normalizeAddress } from "@/lib/datasets/parser";
+import { assessPermitQuality } from "@/lib/permits/quality";
+import { computePipelineScore } from "@/lib/pipeline-score";
+import { computeTenderScore } from "@/lib/tender-score";
+import {
+  buildPermitOpportunityDossier,
+  buildTenderOpportunityDossier,
+} from "@/lib/opportunities/dossier";
 
 export const API_VERSION = "v2";
 
@@ -240,12 +247,26 @@ export async function buildOpportunities(limit = 25): Promise<Opportunity[]> {
     }),
   ]);
 
-  const permitOps: Opportunity[] = permits.map((p) => {
+  const permitOps: Opportunity[] = await Promise.all(permits.map(async (p) => {
+    const dataQuality = assessPermitQuality(p);
+    const pipeline = await computePipelineScore(
+      p,
+      {},
+      undefined,
+      { dataQualityScore: dataQuality.score },
+    );
     const timingScore = p.issueDate ? 0.8 : 0.45;
     const valueScore = p.estimatedCost ? Math.min(1, p.estimatedCost / 1_000_000) : 0.25;
     const tradeFitScore = p.requiredRbqClasses ? 0.75 : 0.35;
-    const confidence = p.sourceUrl ? 0.75 : 0.4;
+    const confidence = pipeline.confidence / 100;
     const total = timingScore + valueScore + tradeFitScore + confidence;
+    const dossier = buildPermitOpportunityDossier({
+      permit: p,
+      score: pipeline.score,
+      signals: [],
+      pipeline,
+      dataQuality,
+    });
     const source = {
       id: "permit",
       title: "Municipal permit",
@@ -273,7 +294,7 @@ export async function buildOpportunities(limit = 25): Promise<Opportunity[]> {
       valueScore,
       tradeFitScore,
       confidence,
-      recommendedNextAction: "Verify scope, RBQ class fit, applicant and comparable permit value before outreach.",
+      recommendedNextAction: dossier.nextAction,
       newSince: p.issueDate?.toISOString() ?? p.createdAt.toISOString(),
       contacts: p.applicantName
         ? [{ role: "applicant", name: p.applicantName, confidence: 0.66 }]
@@ -282,17 +303,29 @@ export async function buildOpportunities(limit = 25): Promise<Opportunity[]> {
       permitChecklist: checklist,
       crmReady: Boolean(p.sourceUrl && (p.applicantName || p.city)),
       source,
-      limitations: ["Permit stage and participant fields vary by municipality."],
+      limitations: dossier.limitations,
+      opportunityDossier: dossier,
     };
-  });
+  }));
 
   const tenderOps: Opportunity[] = tenders.map((t) => {
+    const ranking = computeTenderScore(t, {
+      trades: [],
+      regions: [],
+      ampAuthorized: false,
+    });
     const daysLeft = t.closesAt ? Math.ceil((t.closesAt.getTime() - now.getTime()) / 86_400_000) : null;
     const timingScore = t.closesAt ? (daysLeft != null && daysLeft <= 7 ? 0.95 : 0.82) : 0.4;
     const valueScore = t.estimatedValue ? Math.min(1, t.estimatedValue / 1_500_000) : 0.35;
     const tradeFitScore = t.unspsc ? 0.65 : 0.4;
-    const confidence = t.sourceUrl ? 0.8 : 0.45;
+    const confidence = ranking.confidence / 100;
     const total = timingScore + valueScore + tradeFitScore + confidence;
+    const dossier = buildTenderOpportunityDossier({
+      tender: t,
+      score: ranking.score,
+      signals: [],
+      ranking,
+    });
     const source = {
       id: "seao",
       title: "SEAO tender",
@@ -314,7 +347,7 @@ export async function buildOpportunities(limit = 25): Promise<Opportunity[]> {
       valueScore,
       tradeFitScore,
       confidence,
-      recommendedNextAction: t.closesAt ? "Review SEAO documents, confirm addenda, assign estimator, and decide bid/no-bid." : "Monitor amendments and buyer documents.",
+      recommendedNextAction: dossier.nextAction,
       newSince: t.publishedAt?.toISOString() ?? null,
       contacts: t.organization
         ? [{ role: "buyer", name: t.organization, confidence: 0.78 }]
@@ -328,7 +361,8 @@ export async function buildOpportunities(limit = 25): Promise<Opportunity[]> {
       ],
       crmReady: Boolean(t.sourceUrl && t.organization),
       source,
-      limitations: ["SEAO documents and addenda should be checked on the official source before action."],
+      limitations: dossier.limitations,
+      opportunityDossier: dossier,
     };
   });
 

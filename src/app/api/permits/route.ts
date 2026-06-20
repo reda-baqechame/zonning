@@ -16,6 +16,7 @@ import {
 } from "@/lib/scoring/batch";
 import { computeLeadSignals } from "@/lib/lead-signals";
 import { assessPermitQuality } from "@/lib/permits/quality";
+import { buildPermitOpportunityDossier } from "@/lib/opportunities/dossier";
 
 async function loadGtcSites() {
   return prisma.contaminatedSite.findMany({
@@ -137,6 +138,14 @@ export async function GET(req: NextRequest) {
             rbqVerified: user?.rbqVerified,
           },
         );
+        const opportunityDossier = buildPermitOpportunityDossier({
+          permit: p,
+          score: pipeline.score,
+          signals,
+          pipeline,
+          dataQuality,
+          intelligence,
+        });
         return {
           ...p,
           requiredRbqClasses: required,
@@ -146,6 +155,7 @@ export async function GET(req: NextRequest) {
           pipeline,
           signals,
           dataQuality,
+          opportunityDossier,
         };
       }),
     );
