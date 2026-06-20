@@ -122,7 +122,8 @@ export function evaluateQuality(input: {
     rules?.dropPercentThreshold &&
     input.priorMedianIngested &&
     input.priorMedianIngested > 0 &&
-    input.rowsIngested > 0
+    input.rowsIngested > 0 &&
+    !input.isIncrementalSync
   ) {
     const drop =
       ((input.priorMedianIngested - input.rowsIngested) / input.priorMedianIngested) * 100;

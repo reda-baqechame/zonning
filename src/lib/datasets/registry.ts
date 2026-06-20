@@ -261,9 +261,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
   transactions: {
     id: "transactions",
     label: "Transactions immobilières 2024",
-    ckanId: "vmtl-liste-des-transactions-immobilieres-2024",
+    ckanId: "d50c333b-b6d7-47ed-848e-4481439c3c55",
     sourceUrl:
-      "https://www.donneesquebec.ca/recherche/dataset/vmtl-liste-des-transactions-immobilieres-2024",
+      "https://www.donneesquebec.ca/recherche/dataset/d50c333b-b6d7-47ed-848e-4481439c3c55",
     preferredFormat: "CSV",
     defaultLimit: 800,
     productionLimit: 5000,
@@ -274,9 +274,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
   "transactions-2023": {
     id: "transactions-2023",
     label: "Transactions immobilières 2023",
-    ckanId: "vmtl-liste-des-transactions-immobilieres-2023",
+    ckanId: "d50c333b-b6d7-47ed-848e-4481439c3c55",
     sourceUrl:
-      "https://www.donneesquebec.ca/recherche/dataset/vmtl-liste-des-transactions-immobilieres-2023",
+      "https://www.donneesquebec.ca/recherche/dataset/d50c333b-b6d7-47ed-848e-4481439c3c55",
     preferredFormat: "CSV",
     defaultLimit: 800,
     productionLimit: 5000,
@@ -492,9 +492,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
   "transactions-2025": {
     id: "transactions-2025",
     label: "Transactions immobilières 2025",
-    ckanId: "vmtl-liste-des-transactions-immobilieres-2025",
+    ckanId: "d50c333b-b6d7-47ed-848e-4481439c3c55",
     sourceUrl:
-      "https://www.donneesquebec.ca/recherche/dataset/vmtl-liste-des-transactions-immobilieres-2025",
+      "https://www.donneesquebec.ca/recherche/dataset/d50c333b-b6d7-47ed-848e-4481439c3c55",
     preferredFormat: "CSV",
     defaultLimit: 800,
     productionLimit: 5000,
@@ -553,8 +553,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
   "roadworks-saguenay": {
     id: "roadworks-saguenay",
     label: "Chantiers 511 (Saguenay)",
-    ckanId: "chantiers-511",
-    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/chantiers-511",
+    ckanId: "221d146e-f285-4eb4-9f47-09b4b36cc429",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/221d146e-f285-4eb4-9f47-09b4b36cc429",
     preferredFormat: ["CSV", "GeoJSON"],
     defaultLimit: 300,
     productionLimit: 1500,
