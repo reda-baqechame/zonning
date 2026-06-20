@@ -581,7 +581,6 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     tier: "daily",
     syncSource: "ckan-contracts-boroughs",
     city: "Montréal",
-    bootstrapAllowlist: true,
   },
   "permits-sherbrooke": {
     id: "permits-sherbrooke",
