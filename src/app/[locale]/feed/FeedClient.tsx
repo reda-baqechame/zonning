@@ -7,10 +7,14 @@ import { Settings } from "lucide-react";
 import VerdictStamp from "@/components/VerdictStamp";
 import { LeadCard } from "@/components/LeadCard";
 import QuebecCoverageBar from "@/components/QuebecCoverageBar";
-import MissedOpportunityBanner, {
-  type FeedFomoMeta,
-} from "@/components/MissedOpportunityBanner";
-import LockedLeadTeasers from "@/components/LockedLeadTeasers";
+import {
+  ContractorBriefing,
+  type TriageFilter,
+} from "@/components/ContractorBriefing";
+import {
+  LeadPipelineEditor,
+  type PipelineStage,
+} from "@/components/LeadPipelineEditor";
 import { intelAccessForPlan } from "@/components/SiteIntelligencePanel";
 import type { PropertyIntelligence } from "@/lib/intelligence";
 import type { LeadSignal } from "@/lib/lead-signals";
@@ -45,6 +49,8 @@ type FeedItem =
       opportunityDossier?: OpportunityDossier;
       saved?: boolean;
       savedNote?: string | null;
+      savedStage?: PipelineStage | null;
+      savedNextActionAt?: string | null;
       permit: {
         id: string;
         address: string;
@@ -72,6 +78,8 @@ type FeedItem =
       opportunityDossier?: OpportunityDossier;
       saved?: boolean;
       savedNote?: string | null;
+      savedStage?: PipelineStage | null;
+      savedNextActionAt?: string | null;
       tender: {
         id: string;
         title: string;
@@ -99,7 +107,7 @@ export default function FeedClient({
   const c = useTranslations("common");
   const locale = useLocale();
   const { error: toastError, success } = useToast();
-  const [tab, setTab] = useState("permits");
+  const [tab, setTab] = useState("all");
   const [items, setItems] = useState<FeedItem[]>([]);
   const [profile, setProfile] = useState<{
     trades: string[];
@@ -107,23 +115,14 @@ export default function FeedClient({
     ampAuthorized?: boolean;
   } | null>(null);
   const [complianceEntitled, setComplianceEntitled] = useState(false);
-  const [fomoMeta, setFomoMeta] = useState<FeedFomoMeta | null>(null);
-  const [lockedTeasers, setLockedTeasers] = useState<
-    {
-      id: string;
-      kind: "permit" | "tender";
-      label: string;
-      borough?: string | null;
-      score: number;
-      valueLabel?: string;
-    }[]
-  >([]);
   const [userPlan, setUserPlan] = useState<string>("FREE");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [signalFilter, setSignalFilter] = useState<
     "urgent" | "rbq" | "high_value" | "risks" | null
   >(null);
+  const [triageFilter, setTriageFilter] = useState<TriageFilter>(null);
+  const [visibleCount, setVisibleCount] = useState(25);
   const [verdictAddress, setVerdictAddress] = useState("");
   const [verdictBorough, setVerdictBorough] = useState("");
   const [verdictResult, setVerdictResult] = useState<{
@@ -133,16 +132,18 @@ export default function FeedClient({
     slug: string;
   } | null>(null);
   const [verdictLoading, setVerdictLoading] = useState(false);
-  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
-  const [savingNote, setSavingNote] = useState<string | null>(null);
+  const [pipelineDrafts, setPipelineDrafts] = useState<
+    Record<string, { note: string; stage: PipelineStage; nextActionAt: string }>
+  >({});
+  const [savingPipeline, setSavingPipeline] = useState<string | null>(null);
 
-  const apiTab = tab === "verdict" ? "permits" : tab;
+  const apiTab = tab === "watchlist" ? "watchlist" : "all";
 
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const res = await fetch(`/api/feed?tab=${apiTab}`);
+      const res = await fetch(`/api/feed?tab=${apiTab}&locale=${locale}`);
       const data = await res.json();
       if (!res.ok) {
         setLoadError(data.error ?? c("error"));
@@ -151,42 +152,37 @@ export default function FeedClient({
       }
       const loadedItems = (data.items ?? []) as FeedItem[];
       setItems(loadedItems);
-      setNoteDrafts(
+      setPipelineDrafts(
         Object.fromEntries(
           loadedItems.map((item) => [
             `${item.kind}:${item.id}`,
-            item.savedNote ?? "",
+            {
+              note: item.savedNote ?? "",
+              stage: item.savedStage ?? "new",
+              nextActionAt: item.savedNextActionAt?.slice(0, 10) ?? "",
+            },
           ]),
         ),
       );
       setProfile(data.profile ?? null);
       setComplianceEntitled(data.complianceEntitled ?? false);
       setUserPlan(data.plan ?? "FREE");
-      setFomoMeta(data.meta ?? null);
-      if (
-        data.meta &&
-        data.meta.plan !== "PRO" &&
-        data.meta.plan !== "EQUIPE"
-      ) {
-        fetch("/api/stats/preview")
-          .then((r) => r.json())
-          .then((d) => setLockedTeasers(d.leads ?? []))
-          .catch(() => {});
-      } else {
-        setLockedTeasers([]);
-      }
     } catch {
       setLoadError(c("error"));
     } finally {
       setLoading(false);
     }
-  }, [apiTab, c]);
+  }, [apiTab, c, locale]);
 
   useEffect(() => {
     queueMicrotask(() => void load());
   }, [load]);
 
   const toggleSave = async (item: FeedItem) => {
+    const dossier = item.opportunityDossier ??
+      (item.kind === "permit"
+        ? item.permit.opportunityDossier
+        : item.tender.opportunityDossier);
     const res = item.saved
       ? await fetch(`/api/leads/saved?kind=${item.kind}&itemId=${item.id}`, {
           method: "DELETE",
@@ -194,23 +190,57 @@ export default function FeedClient({
       : await fetch("/api/leads/saved", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ kind: item.kind, itemId: item.id }),
+          body: JSON.stringify({
+            kind: item.kind,
+            itemId: item.id,
+            stage: dossier?.triage.recommendedStage ?? "new",
+            nextActionAt: dossier?.triage.actionBy ?? null,
+          }),
         });
     if (!res.ok) {
       toastError(c("error"));
       return;
     }
+    if (item.saved && tab === "watchlist") {
+      setItems((current) =>
+        current.filter(
+          (candidate) =>
+            candidate.kind !== item.kind || candidate.id !== item.id,
+        ),
+      );
+    } else {
+      setItems((current) =>
+        current.map((candidate) =>
+          candidate.kind === item.kind && candidate.id === item.id
+            ? {
+                ...candidate,
+                saved: !item.saved,
+                savedStage: item.saved
+                  ? null
+                  : (dossier?.triage.recommendedStage ?? "new"),
+                savedNextActionAt: item.saved
+                  ? null
+                  : (dossier?.triage.actionBy ?? null),
+              }
+            : candidate,
+        ),
+      );
+    }
     success(c("success"));
-    void load();
   };
 
   const permits = items.filter((i) => i.kind === "permit");
   const tenders = items.filter((i) => i.kind === "tender");
   const savedItems = items.filter((i) => i.saved);
 
-  const saveNote = async (item: FeedItem) => {
+  const savePipeline = async (item: FeedItem) => {
     const key = `${item.kind}:${item.id}`;
-    setSavingNote(key);
+    const draft = pipelineDrafts[key] ?? {
+      note: "",
+      stage: "new" as const,
+      nextActionAt: "",
+    };
+    setSavingPipeline(key);
     try {
       const res = await fetch("/api/leads/saved", {
         method: "PATCH",
@@ -218,24 +248,45 @@ export default function FeedClient({
         body: JSON.stringify({
           kind: item.kind,
           itemId: item.id,
-          notes: noteDrafts[key] ?? "",
+          notes: draft.note,
+          stage: draft.stage,
+          nextActionAt: draft.nextActionAt
+            ? `${draft.nextActionAt}T12:00:00.000Z`
+            : null,
         }),
       });
       if (!res.ok) {
         toastError(t("noteSaveError"));
         return;
       }
-      success(t("noteSaved"));
+      const savedNextActionAt = draft.nextActionAt
+        ? `${draft.nextActionAt}T12:00:00.000Z`
+        : null;
+      setItems((current) =>
+        current.map((candidate) =>
+          candidate.kind === item.kind && candidate.id === item.id
+            ? {
+                ...candidate,
+                savedNote: draft.note,
+                savedStage: draft.stage,
+                savedNextActionAt,
+              }
+            : candidate,
+        ),
+      );
+      success(t("pipeline.saved"));
     } catch {
       toastError(t("noteSaveError"));
     } finally {
-      setSavingNote(null);
+      setSavingPipeline(null);
     }
   };
 
   const displayed = useMemo(() => {
     let list: FeedItem[] =
-      tab === "permits"
+      tab === "all"
+        ? items
+        : tab === "permits"
         ? permits
         : tab === "tenders"
           ? tenders
@@ -248,8 +299,17 @@ export default function FeedClient({
         signalFilter,
       );
     }
+    if (triageFilter) {
+      list = list.filter((item) => {
+        const dossier = item.opportunityDossier ??
+          (item.kind === "permit"
+            ? item.permit.opportunityDossier
+            : item.tender.opportunityDossier);
+        return dossier?.triage.recommendation === triageFilter;
+      });
+    }
     return list;
-  }, [tab, signalFilter, permits, tenders, savedItems]);
+  }, [tab, signalFilter, triageFilter, permits, tenders, savedItems, items]);
 
   const tradesLabel = profile?.trades?.length
     ? profile.trades.join(", ")
@@ -308,6 +368,7 @@ export default function FeedClient({
   const intelAccess = intelAccessForPlan(userPlan);
 
   const tabs = [
+    { id: "all", label: t("tab.priority"), count: items.length },
     { id: "permits", label: t("tab.permits"), count: permits.length },
     { id: "tenders", label: t("tab.tenders"), count: tenders.length },
     { id: "watchlist", label: t("tab.watchlist"), count: savedItems.length },
@@ -320,6 +381,27 @@ export default function FeedClient({
     { id: "high_value", label: t("filterHighValue") },
     { id: "risks", label: t("filterRisks") },
   ];
+
+  const briefing = useMemo(() => {
+    const recommendation = (item: FeedItem) =>
+      (item.opportunityDossier ??
+        (item.kind === "permit"
+          ? item.permit.opportunityDossier
+          : item.tender.opportunityDossier))?.triage.recommendation;
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return {
+      actNow: items.filter((item) => recommendation(item) === "act_now").length,
+      verifyFirst: items.filter((item) => recommendation(item) === "verify_first").length,
+      watch: items.filter((item) => recommendation(item) === "watch").length,
+      due: items.filter(
+        (item) =>
+          item.savedNextActionAt &&
+          new Date(item.savedNextActionAt).getTime() <= today.getTime() &&
+          !["won", "lost", "archived"].includes(item.savedStage ?? ""),
+      ).length,
+    };
+  }, [items]);
   const emptyCopy =
     tab === "watchlist"
       ? { title: t("noWatchlist"), description: t("noWatchlistHint") }
@@ -357,9 +439,27 @@ export default function FeedClient({
       <Tabs
         tabs={tabs}
         active={tab}
-        onChange={setTab}
+        onChange={(nextTab) => {
+          setTab(nextTab);
+          setVisibleCount(25);
+          setTriageFilter(null);
+        }}
         className="sticky top-[57px] z-40 bg-bg/95 py-2 backdrop-blur"
       />
+
+      {tab === "all" ? (
+        <ContractorBriefing
+          actNow={briefing.actNow}
+          verifyFirst={briefing.verifyFirst}
+          watch={briefing.watch}
+          due={briefing.due}
+          activeFilter={triageFilter}
+          onFilter={(filter) => {
+            setTriageFilter(filter);
+            setVisibleCount(25);
+          }}
+        />
+      ) : null}
 
       {tab !== "verdict" && (
         <div className="mt-4 flex flex-wrap gap-2">
@@ -368,7 +468,10 @@ export default function FeedClient({
               key={chip.id ?? "all"}
               type="button"
               onClick={() =>
-                setSignalFilter(signalFilter === chip.id ? null : chip.id)
+                {
+                  setSignalFilter(signalFilter === chip.id ? null : chip.id);
+                  setVisibleCount(25);
+                }
               }
               className={`rounded-full px-3 py-1 text-xs ${
                 signalFilter === chip.id
@@ -379,12 +482,6 @@ export default function FeedClient({
               {chip.label}
             </button>
           ))}
-        </div>
-      )}
-
-      {tab !== "verdict" && tab !== "watchlist" && fomoMeta && (
-        <div className="mt-4">
-          <MissedOpportunityBanner meta={fomoMeta} />
         </div>
       )}
 
@@ -468,7 +565,7 @@ export default function FeedClient({
               }
             />
           ) : (
-            displayed.map((item) => {
+            displayed.slice(0, visibleCount).map((item) => {
               const noteKey = `${item.kind}:${item.id}`;
               return (
                 <StaggerItem key={noteKey}>
@@ -542,51 +639,61 @@ export default function FeedClient({
                     />
                   )}
                   {tab === "watchlist" ? (
-                    <div className="mx-3 border-x border-b border-line bg-white px-4 pb-4 pt-3">
-                      <FieldLabel htmlFor={`note-${item.kind}-${item.id}`}>
-                        {t("watchlistNote")}
-                      </FieldLabel>
-                      <textarea
-                        id={`note-${item.kind}-${item.id}`}
-                        value={noteDrafts[noteKey] ?? ""}
-                        maxLength={2000}
-                        rows={2}
-                        onChange={(event) =>
-                          setNoteDrafts((current) => ({
-                            ...current,
-                            [noteKey]: event.target.value,
-                          }))
-                        }
-                        placeholder={t("watchlistNotePlaceholder")}
-                        className="mt-1 w-full resize-y rounded-md border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-ring"
-                      />
-                      <div className="mt-2 flex items-center justify-between gap-3">
-                        <span className="text-xs text-subtle">
-                          {(noteDrafts[noteKey] ?? "").length}/2000
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          disabled={savingNote === noteKey}
-                          onClick={() => void saveNote(item)}
-                        >
-                          {savingNote === noteKey
-                            ? c("loading")
-                            : t("saveNote")}
-                        </Button>
-                      </div>
-                    </div>
+                    <LeadPipelineEditor
+                      id={noteKey}
+                      stage={pipelineDrafts[noteKey]?.stage ?? "new"}
+                      nextActionAt={pipelineDrafts[noteKey]?.nextActionAt ?? ""}
+                      note={pipelineDrafts[noteKey]?.note ?? ""}
+                      saving={savingPipeline === noteKey}
+                      onStageChange={(stage) =>
+                        setPipelineDrafts((current) => ({
+                          ...current,
+                          [noteKey]: {
+                            ...(current[noteKey] ?? { note: "", nextActionAt: "" }),
+                            stage,
+                          },
+                        }))
+                      }
+                      onDateChange={(nextActionAt) =>
+                        setPipelineDrafts((current) => ({
+                          ...current,
+                          [noteKey]: {
+                            ...(current[noteKey] ?? { note: "", stage: "new" }),
+                            nextActionAt,
+                          },
+                        }))
+                      }
+                      onNoteChange={(note) =>
+                        setPipelineDrafts((current) => ({
+                          ...current,
+                          [noteKey]: {
+                            ...(current[noteKey] ?? {
+                              stage: "new",
+                              nextActionAt: "",
+                            }),
+                            note,
+                          },
+                        }))
+                      }
+                      onSave={() => void savePipeline(item)}
+                    />
                   ) : null}
                 </StaggerItem>
               );
             })
           )}
-          {tab !== "watchlist" &&
-            fomoMeta &&
-            fomoMeta.plan !== "PRO" &&
-            fomoMeta.plan !== "EQUIPE" && (
-              <LockedLeadTeasers teasers={lockedTeasers} />
-            )}
+          {displayed.length > visibleCount ? (
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="secondary"
+                onClick={() => setVisibleCount((count) => count + 25)}
+              >
+                {t("showMore", {
+                  count: Math.min(25, displayed.length - visibleCount),
+                })}
+              </Button>
+            </div>
+          ) : null}
         </StaggerList>
       )}
     </FadeIn>

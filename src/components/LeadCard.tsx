@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { formatDistanceToNow } from "date-fns";
 import { fr, enCA } from "date-fns/locale";
-import { Star } from "lucide-react";
+import { ChevronDown, ExternalLink, FolderPlus, Star } from "lucide-react";
 import { Badge, Button, Card } from "@/components/ui";
 import type { LeadSignal } from "@/lib/lead-signals";
 import { formatCad } from "@/lib/format-cad";
@@ -130,6 +130,7 @@ export function LeadCard({
   const dateLocale = locale === "fr" ? fr : enCA;
   const ranking = item.kind === "permit" ? item.pipeline : item.ranking;
   const dossier = item.opportunityDossier;
+  const triage = dossier?.triage;
   const topLeadAllowed =
     dossier?.evidenceThresholds.canCallTopLead ??
     (item.score >= 80 && (ranking?.confidence ?? 0) >= 65);
@@ -150,6 +151,18 @@ export function LeadCard({
           locale: dateLocale,
         })
       : null;
+  const actionBy = triage?.actionBy
+    ? new Intl.DateTimeFormat(locale === "fr" ? "fr-CA" : "en-CA", {
+        month: "short",
+        day: "numeric",
+      }).format(new Date(triage.actionBy))
+    : null;
+  const triageTone =
+    triage?.recommendation === "act_now"
+      ? "border-success bg-success-soft"
+      : triage?.recommendation === "verify_first"
+        ? "border-warning bg-warning-soft"
+        : "border-line-strong bg-slate-50";
 
   return (
     <Card
@@ -275,6 +288,26 @@ export function LeadCard({
                 {tf(`rankingReasons.${reason.id}`)}
               </Badge>
             ))}
+          </div>
+        ) : null}
+
+        {triage ? (
+          <div className={`mt-3 border-l-4 px-3 py-2.5 ${triageTone}`}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-ink">
+                {tf(`triage.${triage.recommendation}`)}
+              </p>
+              <div className="flex items-center gap-3 text-xs text-muted">
+                <span>{tf(`effort.${triage.effort}`)}</span>
+                {actionBy ? <span>{tf("actionBy", { date: actionBy })}</span> : null}
+              </div>
+            </div>
+            <p className="mt-1 text-sm text-muted">{triage.reason}</p>
+            {triage.blockers.length ? (
+              <p className="mt-1 text-xs text-warning-ink">
+                {tf("blockers", { count: triage.blockers.length })}
+              </p>
+            ) : null}
           </div>
         ) : null}
 
@@ -415,9 +448,26 @@ export function LeadCard({
                 setExpanded(!expanded);
               }}
             >
-              {expanded ? "−" : "+"} {tf("whyRank")}
+              <ChevronDown
+                className={`h-4 w-4 transition ${expanded ? "rotate-180" : ""}`}
+                aria-hidden="true"
+              />
+              {tf("whyRank")}
             </Button>
           )}
+          {onSave && !saved ? (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={(event) => {
+                event.stopPropagation();
+                onSave();
+              }}
+            >
+              <FolderPlus className="h-4 w-4" aria-hidden="true" />
+              {tf("addPipeline")}
+            </Button>
+          ) : null}
           {item.kind === "permit" && item.sourceUrl && (
             <a
               href={item.sourceUrl}
@@ -426,6 +476,7 @@ export function LeadCard({
               onClick={(e) => e.stopPropagation()}
             >
               <Button variant="ghost" size="sm">
+                <ExternalLink className="h-4 w-4" aria-hidden="true" />
                 {item.dataQuality?.sourceScope === "record"
                   ? tf("recordSource")
                   : tf("datasetSource")}
@@ -440,7 +491,8 @@ export function LeadCard({
               onClick={(e) => e.stopPropagation()}
             >
               <Button variant="ghost" size="sm">
-                SEAO →
+                <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                SEAO
               </Button>
             </a>
           )}

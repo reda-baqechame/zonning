@@ -151,6 +151,14 @@ export type OpportunityDossier = {
     minimumConfidence: number;
     missingEvidence: string[];
   };
+  triage: {
+    recommendation: "act_now" | "verify_first" | "watch" | "deprioritize";
+    reason: string;
+    effort: "light" | "moderate" | "heavy";
+    actionBy?: string | null;
+    blockers: string[];
+    recommendedStage: "new" | "researching" | "pursuing";
+  };
   siteIntelligence?: {
     confirmedFacts: string[];
     inferredContext: string[];

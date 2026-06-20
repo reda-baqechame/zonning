@@ -76,6 +76,8 @@ describe("OpportunityDossier", () => {
 
     expect(dossier.evidenceThresholds.canCallTopLead).toBe(true);
     expect(dossier.confidenceLevel).toBe("high");
+    expect(dossier.triage.recommendation).toBe("act_now");
+    expect(dossier.triage.recommendedStage).toBe("pursuing");
     expect(dossier.nextAction).toContain("Open the municipal source");
   });
 
@@ -102,6 +104,44 @@ describe("OpportunityDossier", () => {
 
     expect(dossier.evidenceThresholds.canCallTopLead).toBe(false);
     expect(dossier.confidenceLevel).toBe("low");
+    expect(dossier.triage.recommendation).not.toBe("act_now");
+    expect(dossier.triage.blockers).toEqual([
+      "trade_profile",
+      "region_profile",
+      "value_or_budget",
+    ]);
     expect(dossier.whyRanked.join(" ")).toContain("not high enough");
+  });
+
+  it("localizes contractor actions without changing the evidence gate", () => {
+    const dossier = buildPermitOpportunityDossier({
+      locale: "fr",
+      permit: {
+        id: "permit-fr",
+        permitType: "Rénovation",
+        address: "100 rue Test",
+        city: "Montréal",
+        estimatedCost: 750_000,
+        issueDate: new Date(),
+        applicantName: "Client Test",
+        sourceUrl: "https://donneesquebec.ca/recherche/dataset/test",
+        sourceFetchedAt: new Date(),
+      },
+      score: 86,
+      signals: [],
+      pipeline: strongPipeline,
+      dataQuality: {
+        score: 90,
+        grade: "high",
+        usable: true,
+        officialSource: true,
+        sourceScope: "record",
+        issues: [],
+      },
+    });
+
+    expect(dossier.evidenceThresholds.canCallTopLead).toBe(true);
+    expect(dossier.nextAction).toContain("Ouvrir la source municipale");
+    expect(dossier.sourceLabel).toBe("Dossier municipal de permis");
   });
 });
