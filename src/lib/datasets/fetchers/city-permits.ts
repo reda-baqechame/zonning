@@ -8,6 +8,7 @@ import {
   parseFloatSafe,
 } from "../parser";
 import type { PermitRecord } from "./permits";
+import { assessPermitQuality, buildPermitExternalId } from "@/lib/permits/quality";
 
 export type CityPermitDatasetId =
   | "permits-laval"
@@ -29,93 +30,105 @@ function resolveCkanId(datasetId: CityPermitDatasetId): string {
   return DATASETS[datasetId].ckanId;
 }
 
-function parsePermitRows(
+export function parsePermitRows(
   datasetId: CityPermitDatasetId,
   rows: Record<string, string>[],
   cap: number,
-  options?: FetchCityPermitOptions
+  options?: FetchCityPermitOptions,
 ): PermitRecord[] {
   const cfg = DATASETS[datasetId];
   const maxAgeDays = options?.maxAgeDays ?? 365;
-  const minDate = options?.minIssueDate;
-  const cutoff = minDate
-    ? minDate.getTime()
+  const cutoff = options?.minIssueDate
+    ? options.minIssueDate.getTime()
     : Date.now() - maxAgeDays * 86400000;
-
-  const parsed: PermitRecord[] = [];
+  const parsed = new Map<string, { permit: PermitRecord; qualityScore: number }>();
 
   for (const row of rows) {
-    const lat = parseFloatSafe(pick(row, "latitude", "lat", "y", "LATITUDE"));
-    const lng = parseFloatSafe(pick(row, "longitude", "long", "x", "lon", "LONGITUDE"));
-    const externalId =
-      pick(
-        row,
-        "no_demande",
-        "id_permis",
-        "numero",
-        "numero_permis",
-        "NUMERO_PERMIS",
-        "no_permis",
-        "id"
-      ) || `${datasetId}-${parsed.length}`;
-
     const address =
       pick(row, "emplacement", "adresse", "adresse_travaux", "ADRESSE", "adresse_complete") ||
-      `${pick(row, "no_civique", "nocivique")} ${pick(row, "nom_rue", "rue")}`.trim() ||
-      (cfg.city ?? "Québec");
-
-    parsed.push({
-      externalId: `${datasetId}-${externalId}`,
-      permitNumber: pick(row, "id_permis", "numero_permis", "NUMERO_PERMIS"),
-      permitType:
-        pick(
-          row,
-          "type_travaux",
-          "nature_travaux",
-          "type",
-          "description",
-          "TYPE_PERMIS",
-          "description_type_demande"
-        ) || "Construction",
-      workType: pick(row, "nature_travaux", "description", "DESCRIPTION"),
-      borough: pick(row, "arrondissement", "secteur", "quartier", "ARRONDISSEMENT"),
-      address,
-      latitude: lat,
-      longitude: lng,
-      estimatedCost: parseMoney(
-        pick(row, "cout_estime", "cout", "montant", "COUT_ESTIME", "valeur_travaux")
-      ),
-      issueDate: parseDate(
-        pick(
-          row,
-          "date_emission",
-          "date_delivrance",
-          "date_permis",
-          "DATE_DELIVRANCE",
-          "date"
-        )
-      ),
-      applicantName: pick(
+      `${pick(row, "no_civique", "nocivique")} ${pick(row, "nom_rue", "rue")}`.trim();
+    const permitType = pick(
+      row,
+      "type_travaux",
+      "nature_travaux",
+      "type",
+      "description",
+      "TYPE_PERMIS",
+      "description_type_demande",
+    );
+    const issueDate = parseDate(
+      pick(
         row,
-        "demandeur",
-        "entrepreneur",
-        "nom_demandeur",
-        "ENTREPRENEUR",
-        "nom_entrepreneur"
+        "date_emission",
+        "date_delivrance",
+        "date_permis",
+        "DATE_DELIVRANCE",
+        "date",
       ),
-      sourceUrl: cfg.sourceUrl,
+    );
+    if (!issueDate) continue;
+
+    const issueTime = issueDate.getTime();
+    if (issueTime < cutoff) continue;
+    if (options?.maxIssueDate && issueTime >= options.maxIssueDate.getTime()) continue;
+
+    const sourceId = pick(
+      row,
+      "no_demande",
+      "id_permis",
+      "numero",
+      "numero_permis",
+      "NUMERO_PERMIS",
+      "no_permis",
+      "id",
+    );
+    const rawExternalId = buildPermitExternalId(datasetId, sourceId, {
+      address,
+      permitType,
+      issueDate,
       city: cfg.city,
     });
+    if (!rawExternalId) continue;
+    const externalId = rawExternalId.startsWith("derived:")
+      ? rawExternalId
+      : `${datasetId}-${rawExternalId}`;
+
+    const permit: PermitRecord = {
+      externalId,
+      permitNumber: pick(row, "id_permis", "numero_permis", "NUMERO_PERMIS") || undefined,
+      permitType,
+      workType: pick(row, "nature_travaux", "description", "DESCRIPTION") || undefined,
+      borough: pick(row, "arrondissement", "secteur", "quartier", "ARRONDISSEMENT") || undefined,
+      address,
+      latitude: parseFloatSafe(pick(row, "latitude", "lat", "y", "LATITUDE")),
+      longitude: parseFloatSafe(pick(row, "longitude", "long", "x", "lon", "LONGITUDE")),
+      estimatedCost: parseMoney(
+        pick(row, "cout_estime", "cout", "montant", "COUT_ESTIME", "valeur_travaux"),
+      ),
+      issueDate,
+      applicantName:
+        pick(
+          row,
+          "demandeur",
+          "entrepreneur",
+          "nom_demandeur",
+          "ENTREPRENEUR",
+          "nom_entrepreneur",
+        ) || undefined,
+      sourceUrl: cfg.sourceUrl,
+      city: cfg.city,
+    };
+    const quality = assessPermitQuality(permit);
+    if (!quality.usable) continue;
+
+    const existing = parsed.get(externalId);
+    if (!existing || quality.score > existing.qualityScore) {
+      parsed.set(externalId, { permit, qualityScore: quality.score });
+    }
   }
 
-  return parsed
-    .filter((p) => {
-      if (!p.issueDate) return true;
-      const t = p.issueDate.getTime();
-      if (t < cutoff) return false;
-      if (options?.maxIssueDate && t >= options.maxIssueDate.getTime()) return false;
-      return true;
-    })
+  return [...parsed.values()]
+    .map(({ permit }) => permit)
     .sort((a, b) => (b.issueDate?.getTime() ?? 0) - (a.issueDate?.getTime() ?? 0))
     .slice(0, cap);
 }

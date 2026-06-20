@@ -3,11 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 
-const demoSchema = z.object({
-  interviewerName: z.string().min(1),
-  companyName: z.string().min(1),
-  role: z.string().min(1),
-  q1Pipeline: z.string().optional(),
+const requestSchema = z.object({
+  interviewerName: z.string().trim().min(1).max(120),
+  companyName: z.string().trim().min(1).max(180),
+  role: z.string().trim().min(1).max(120),
+  q1Pipeline: z.string().trim().max(3000).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -16,12 +16,12 @@ export async function POST(req: NextRequest) {
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   try {
-    const body = demoSchema.parse(await req.json());
+    const body = requestSchema.parse(await req.json());
     const interview = await prisma.validationInterview.create({
       data: {
         ...body,
-        urgencyScore: 3,
-        notes: "Demo request (public form)",
+        urgencyScore: null,
+        notes: "Public demo request; urgency has not been assessed.",
       },
     });
     return NextResponse.json({ ok: true, id: interview.id });

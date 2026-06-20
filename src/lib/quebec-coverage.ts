@@ -1,7 +1,10 @@
 import {
   COVERAGE_CITIES,
   DATASETS,
+  getDatasetCoverageStatus,
+  isDatasetSyncEnabled,
   type DatasetId,
+  type DatasetCoverageStatus,
 } from "@/lib/datasets/registry";
 
 /** Montréal métropolitain — highest refresh priority. */
@@ -66,7 +69,7 @@ export const QUEBEC_REALTIME_BUNDLE: DatasetId[] = [
   ...QUEBEC_PERMIT_DATASET_IDS,
   ...RGM_REALTIME_IDS.filter((id) => !QUEBEC_PERMIT_DATASET_IDS.includes(id)),
   ...QUEBEC_INTEL_REFRESH_IDS,
-];
+].filter((id, index, self) => self.indexOf(id) === index && isDatasetSyncEnabled(id));
 
 export const CITY_TO_PERMIT_DATASET: Record<(typeof COVERAGE_CITIES)[number], DatasetId | null> =
   {
@@ -118,6 +121,46 @@ export function getIntelLayersForCity(city: string): DatasetId[] {
   return permitId ? [permitId] : ["permits"];
 }
 
+export function getDatasetStatusLabel(status: DatasetCoverageStatus): string {
+  const labels: Record<DatasetCoverageStatus, string> = {
+    authoritative: "Authoritative indexed source",
+    partial: "Partial indexed coverage",
+    document_only: "Official document/link only",
+    licensed_required: "Licensed feed required",
+    unavailable: "Unavailable",
+    stale: "Stale or needs review",
+  };
+  return labels[status];
+}
+
+export function getPermitCoverageStatusForCity(city: string): {
+  datasetId: DatasetId | null;
+  status: DatasetCoverageStatus;
+  label: string;
+  note: string | null;
+  sourceUrl: string | null;
+} {
+  const datasetId = Object.entries(CITY_TO_PERMIT_DATASET).find(([c]) => c === city)?.[1] ?? null;
+  if (!datasetId) {
+    return {
+      datasetId: null,
+      status: "unavailable",
+      label: getDatasetStatusLabel("unavailable"),
+      note: "No municipal permit source has been registered for this city yet.",
+      sourceUrl: null,
+    };
+  }
+  const cfg = DATASETS[datasetId];
+  const status = getDatasetCoverageStatus(datasetId);
+  return {
+    datasetId,
+    status,
+    label: getDatasetStatusLabel(status),
+    note: cfg.coverageNote ?? null,
+    sourceUrl: cfg.sourceUrl,
+  };
+}
+
 export function isRgmCity(city: string): city is RgmCity {
   return (RGM_CITIES as readonly string[]).includes(city);
 }
@@ -165,11 +208,13 @@ export function getCityLabel(city: string, locale: "fr" | "en" = "fr"): string {
 export function describeQuebecEngine(): {
   cities: number;
   datasets: number;
+  searchableMunicipalities: number;
   rgm: string[];
 } {
   return {
     cities: COVERAGE_CITIES.length,
     datasets: QUEBEC_REALTIME_BUNDLE.length,
+    searchableMunicipalities: COVERAGE_CITIES.length,
     rgm: [...RGM_CITIES],
   };
 }

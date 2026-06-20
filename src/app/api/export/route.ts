@@ -10,14 +10,7 @@ import { matchesEssentielProfile, parseJsonArray } from "@/lib/usage";
 import { createIntelligenceCache } from "@/lib/scoring/batch";
 import { subDays } from "date-fns";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
-
-function escapeCsv(value: string | number | boolean | null | undefined): string {
-  const s = String(value ?? "");
-  if (s.includes(",") || s.includes('"') || s.includes("\n")) {
-    return `"${s.replace(/"/g, '""')}"`;
-  }
-  return s;
-}
+import { escapeCsvCell } from "@/lib/csv";
 
 export async function GET(req: NextRequest) {
   const ip = clientIp(req);
@@ -29,7 +22,10 @@ export async function GET(req: NextRequest) {
     const user = await requireUser();
     const limits = getPlanLimits(user.plan);
     if (user.plan === "FREE") {
-      return NextResponse.json({ error: "Export requires Essentiel plan or higher" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Export requires Essentiel plan or higher" },
+        { status: 403 },
+      );
     }
 
     const type = req.nextUrl.searchParams.get("type") ?? "permits";
@@ -46,14 +42,14 @@ export async function GET(req: NextRequest) {
         matchesEssentielProfile(user.plan, userTrades, userRegions, {
           title: t.title,
           region: t.region ?? undefined,
-        })
+        }),
       );
       const header =
         "title,organization,region,closesAt,estimatedValue,requiresAmp,sourceUrl\n";
       const rows = filtered
         .map(
           (t) =>
-            `${escapeCsv(t.title)},${escapeCsv(t.organization)},${escapeCsv(t.region)},${escapeCsv(t.closesAt?.toISOString())},${escapeCsv(t.estimatedValue)},${escapeCsv(t.requiresAmp)},${escapeCsv(t.sourceUrl)}`
+            `${escapeCsvCell(t.title)},${escapeCsvCell(t.organization)},${escapeCsvCell(t.region)},${escapeCsvCell(t.closesAt?.toISOString())},${escapeCsvCell(t.estimatedValue)},${escapeCsvCell(t.requiresAmp)},${escapeCsvCell(t.sourceUrl)}`,
         )
         .join("\n");
       return new NextResponse(header + rows, {
@@ -70,7 +66,8 @@ export async function GET(req: NextRequest) {
     });
 
     const getIntel = limits.intelligenceFull ? createIntelligenceCache() : null;
-    const eligibleOnly = req.nextUrl.searchParams.get("eligibleOnly") === "true";
+    const eligibleOnly =
+      req.nextUrl.searchParams.get("eligibleOnly") === "true";
 
     const enriched = await Promise.all(
       permits.map(async (p) => {
@@ -79,7 +76,7 @@ export async function GET(req: NextRequest) {
           user.rbqLicenseNumber,
           user.rbqVerified,
           p.permitType,
-          p.workType
+          p.workType,
         );
         const intelligence = getIntel ? await getIntel(p) : undefined;
         const pipeline = await computePipelineScore(
@@ -91,7 +88,7 @@ export async function GET(req: NextRequest) {
             minProjectCost: user.minProjectCost,
             maxProjectCost: user.maxProjectCost,
           },
-          intelligence
+          intelligence,
         );
         const signals = computeLeadSignals(
           {
@@ -112,10 +109,10 @@ export async function GET(req: NextRequest) {
             minProjectCost: user.minProjectCost,
             maxProjectCost: user.maxProjectCost,
             rbqVerified: user.rbqVerified,
-          }
+          },
         );
         return { p, fit, pipeline, signals, intelligence };
-      })
+      }),
     );
 
     const filtered = enriched.filter(({ p, fit }) => {
@@ -132,22 +129,27 @@ export async function GET(req: NextRequest) {
     const rows = filtered
       .map(({ p, fit, pipeline, signals, intelligence }) =>
         [
-          escapeCsv(p.permitType),
-          escapeCsv(p.address),
-          escapeCsv(p.borough),
-          escapeCsv(p.city),
-          escapeCsv(p.estimatedCost),
-          escapeCsv(p.issueDate?.toISOString()),
-          escapeCsv(pipeline.score),
-          escapeCsv(fit.score),
-          escapeCsv(fit.eligible),
-          escapeCsv(signals.slice(0, 3).map((s) => s.id).join("|")),
-          escapeCsv(intelligence?.contamination?.gtcNearby ?? false),
-          escapeCsv(intelligence?.heritage?.nearby ?? false),
-          escapeCsv(intelligence?.rbqInfraction?.found ?? false),
-          escapeCsv(intelligence?.municipalInspection?.found ?? false),
-          escapeCsv(p.sourceUrl),
-        ].join(",")
+          escapeCsvCell(p.permitType),
+          escapeCsvCell(p.address),
+          escapeCsvCell(p.borough),
+          escapeCsvCell(p.city),
+          escapeCsvCell(p.estimatedCost),
+          escapeCsvCell(p.issueDate?.toISOString()),
+          escapeCsvCell(pipeline.score),
+          escapeCsvCell(fit.score),
+          escapeCsvCell(fit.eligible),
+          escapeCsvCell(
+            signals
+              .slice(0, 3)
+              .map((s) => s.id)
+              .join("|"),
+          ),
+          escapeCsvCell(intelligence?.contamination?.gtcNearby ?? false),
+          escapeCsvCell(intelligence?.heritage?.nearby ?? false),
+          escapeCsvCell(intelligence?.rbqInfraction?.found ?? false),
+          escapeCsvCell(intelligence?.municipalInspection?.found ?? false),
+          escapeCsvCell(p.sourceUrl),
+        ].join(","),
       )
       .join("\n");
 

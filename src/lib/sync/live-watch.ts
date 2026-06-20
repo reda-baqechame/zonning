@@ -3,6 +3,8 @@ import {
   ALL_DATASET_IDS,
   DATASETS,
   getActiveDatasetIds,
+  getSyncEnabledDatasetIds,
+  isDatasetSyncEnabled,
   TIER_DATASETS,
   type DatasetId,
 } from "@/lib/datasets/registry";
@@ -23,7 +25,7 @@ function computeStaleRatio(
 }
 
 /** Revenue-critical datasets polled every live cron (5 min). */
-export const LIVE_WATCH_IDS: DatasetId[] = TIER_DATASETS.fast;
+export const LIVE_WATCH_IDS: DatasetId[] = TIER_DATASETS.fast.filter(isDatasetSyncEnabled);
 
 export function getSyncBatchSize(): number {
   const n = parseInt(process.env.SYNC_BATCH_SIZE ?? "8", 10);
@@ -67,7 +69,7 @@ export async function findDatasetsWithSourceChanges(
     })
   );
 
-  return checks.filter((id): id is DatasetId => id !== null);
+  return checks.filter((id): id is DatasetId => id !== null && isDatasetSyncEnabled(id));
 }
 
 /** Datasets that have never completed a successful sync. */
@@ -138,7 +140,7 @@ export async function findStaleLiveDatasets(): Promise<DatasetId[]> {
   return sortByPriority(stale);
 }
 
-/** RGM trio + SEAO — sync even at 50% of refresh interval for tighter real-time. */
+/** RGM trio + SEAO — poll at half the configured refresh interval for lower scheduled latency. */
 export async function findRgmDueForSync(): Promise<DatasetId[]> {
   const states = await prisma.syncState.findMany({
     where: { datasetId: { in: RGM_REALTIME_IDS } },
@@ -162,7 +164,7 @@ export async function findRgmDueForSync(): Promise<DatasetId[]> {
 }
 
 /** Datasets on bootstrap allowlist — probe CKAN each live cycle for newly published resources. */
-export const CKAN_PROBE_ALLOWLIST: DatasetId[] = [
+export const CKAN_PROBE_ALLOWLIST: DatasetId[] = ([
   "permits-laval",
   "permits-longueuil",
   "permits-gatineau",
@@ -186,18 +188,19 @@ export const CKAN_PROBE_ALLOWLIST: DatasetId[] = [
   "zoning-laval",
   "zoning-longueuil",
   "toronto-permits",
-];
+] as DatasetId[]).filter(isDatasetSyncEnabled);
 
 /** Returns allowlisted datasets whose CKAN resource is now available (was empty). */
 export async function findAllowlistedSourcesNowLive(): Promise<DatasetId[]> {
   const { fetchCkanResourceUrl } = await import("@/lib/datasets/client");
+  const probeIds = CKAN_PROBE_ALLOWLIST.filter((id) => getSyncEnabledDatasetIds().includes(id));
   const states = await prisma.syncState.findMany({
-    where: { datasetId: { in: CKAN_PROBE_ALLOWLIST } },
+    where: { datasetId: { in: probeIds } },
   });
   const stateMap = new Map(states.map((s) => [s.datasetId, s]));
 
   const live: DatasetId[] = [];
-  for (const datasetId of CKAN_PROBE_ALLOWLIST) {
+  for (const datasetId of probeIds) {
     const cfg = DATASETS[datasetId];
     if (datasetId === "permits-levis" && process.env.LEVIS_PERMITS_URL) {
       live.push(datasetId);

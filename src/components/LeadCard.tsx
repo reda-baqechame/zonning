@@ -12,6 +12,9 @@ import SiteIntelligencePanel, {
   type IntelAccess,
 } from "@/components/SiteIntelligencePanel";
 import type { PropertyIntelligence } from "@/lib/intelligence";
+import type { PipelineScoreResult, RankingReason } from "@/lib/pipeline-score";
+import type { TenderScoreResult } from "@/lib/tender-score";
+import type { PermitDataQuality } from "@/lib/permits/quality";
 
 export type LeadCardPermit = {
   kind: "permit";
@@ -26,13 +29,10 @@ export type LeadCardPermit = {
   summaryFr?: string | null;
   summaryEn?: string | null;
   rbqFit?: { eligible: boolean; score: number };
-  pipeline?: {
-    breakdown?: { rbqFit: number; costFit: number; competition: number; intelligence: number; zoning: number };
-    densityGapLabelFr?: string;
-    densityGapLabelEn?: string;
-  };
+  pipeline?: PipelineScoreResult;
   sourceUrl?: string;
   applicantName?: string | null;
+  dataQuality?: PermitDataQuality;
 };
 
 export type LeadCardTender = {
@@ -49,6 +49,7 @@ export type LeadCardTender = {
   plainSummary?: string;
   sourceUrl: string;
   amendmentCount?: number;
+  ranking?: TenderScoreResult;
 };
 
 export type LeadCardProps = {
@@ -63,19 +64,46 @@ export type LeadCardProps = {
   countdown?: React.ReactNode;
   intelligence?: PropertyIntelligence | null;
   intelAccess?: IntelAccess;
+  testData?: boolean;
 };
 
-function ScoreBar({ score }: { score: number }) {
+function ScoreBar({
+  score,
+  scoreLabel,
+  confidenceText,
+}: {
+  score: number;
+  scoreLabel: string;
+  confidenceText?: string;
+}) {
   const color =
-    score >= 75 ? "bg-emerald-500" : score >= 50 ? "bg-sky-500" : "bg-amber-500";
+    score >= 75 ? "bg-success" : score >= 50 ? "bg-brand" : "bg-warning";
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-800">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${score}%` }} />
+      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-200">
+        <div
+          className={`h-full rounded-full ${color}`}
+          style={{ width: `${score}%` }}
+        />
       </div>
-      <span className="text-sm font-medium text-slate-200">{score}</span>
+      <span className="text-sm font-medium text-ink" aria-label={scoreLabel}>
+        {score}
+      </span>
+      {confidenceText ? (
+        <span className="text-[11px] text-subtle">{confidenceText}</span>
+      ) : null}
     </div>
   );
+}
+
+function reasonVariant(reason: RankingReason) {
+  if (reason.impact === "positive") return "success" as const;
+  if (reason.impact === "warning") return "warning" as const;
+  return "default" as const;
+}
+
+function factorValue(value: number | null | undefined): string {
+  return value == null ? "—" : String(value);
 }
 
 export function LeadCard({
@@ -90,15 +118,17 @@ export function LeadCard({
   countdown,
   intelligence,
   intelAccess = "full",
+  testData = false,
 }: LeadCardProps) {
   const t = useTranslations("leadSignals");
   const tf = useTranslations("feed");
   const tFomo = useTranslations("fomo");
   const [expanded, setExpanded] = useState(false);
   const dateLocale = locale === "fr" ? fr : enCA;
+  const ranking = item.kind === "permit" ? item.pipeline : item.ranking;
 
   const urgent = item.signals.some(
-    (s) => s.id === "urgent_close" || s.id === "thursday_seao"
+    (s) => s.id === "urgent_close" || s.id === "thursday_seao",
   );
 
   const isHighValue =
@@ -108,58 +138,81 @@ export function LeadCard({
 
   const freshness =
     item.kind === "permit" && item.issueDate
-      ? formatDistanceToNow(new Date(item.issueDate), { addSuffix: true, locale: dateLocale })
+      ? formatDistanceToNow(new Date(item.issueDate), {
+          addSuffix: true,
+          locale: dateLocale,
+        })
       : null;
 
   return (
     <Card
       className={`cursor-pointer transition ${
-        selected ? "border-sky-500 ring-1 ring-sky-500/40" : urgent ? "border-amber-500/40" : ""
+        selected
+          ? "border-brand ring-1 ring-ring"
+          : urgent
+            ? "border-warning/40"
+            : ""
       }`}
       hover
     >
-      <div onClick={onSelect} role={onSelect ? "button" : undefined} tabIndex={onSelect ? 0 : undefined}>
+      <div
+        onClick={onSelect}
+        role={onSelect ? "button" : undefined}
+        tabIndex={onSelect ? 0 : undefined}
+      >
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             {item.kind === "permit" ? (
               <>
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-semibold text-white">{item.permitType}</p>
+                  <p className="font-semibold text-ink">{item.permitType}</p>
                   {isHighValue && item.estimatedCost != null && (
-                    <span className="rounded-md bg-emerald-500/15 px-2 py-0.5 text-xs font-bold text-emerald-300">
-                      {formatCad(item.estimatedCost, locale)}
+                    <span className="rounded-md bg-success-soft px-2 py-0.5 text-xs font-bold text-success-ink">
+                      {tf("declaredValue", {
+                        value: formatCad(item.estimatedCost, locale),
+                      })}
                     </span>
                   )}
                   {freshness && (
-                    <span className="text-xs text-slate-500">{freshness}</span>
+                    <span className="text-xs text-subtle">{freshness}</span>
                   )}
                 </div>
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-muted">
                   {item.address}
                   {item.borough ? ` · ${item.borough}` : ""}
                 </p>
-                <p className="mt-2 line-clamp-2 text-sm text-slate-300">
+                <p className="mt-2 line-clamp-2 text-sm text-muted">
                   {(locale === "fr" ? item.summaryFr : item.summaryEn) ||
                     `${item.permitType}${item.borough ? ` · ${item.borough}` : ""}`}
                 </p>
               </>
             ) : (
               <>
-                <p className="font-semibold text-white">{item.title}</p>
-                <p className="text-sm text-slate-400">{item.organization}</p>
+                <p className="font-semibold text-ink">{item.title}</p>
+                <p className="text-sm text-muted">{item.organization}</p>
                 {item.plainSummary && (
-                  <p className="mt-2 line-clamp-2 text-sm text-slate-300">{item.plainSummary}</p>
+                  <p className="mt-2 line-clamp-2 text-sm text-muted">
+                    {item.plainSummary}
+                  </p>
                 )}
               </>
             )}
           </div>
           <div className="flex flex-col items-end gap-2">
-            {item.score >= 75 && (
-              <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-300">
-                {tFomo("topLead")}
+            {item.score >= 80 && (ranking?.confidence ?? 0) >= 65 && (
+              <span className="rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success-ink">
+                {testData ? tf("testRank") : tFomo("topLead")}
               </span>
             )}
-            <ScoreBar score={item.score} />
+            <ScoreBar
+              score={item.score}
+              scoreLabel={tf("rankCompact", { value: item.score })}
+              confidenceText={
+                ranking
+                  ? tf("confidenceCompact", { value: ranking.confidence })
+                  : undefined
+              }
+            />
             {onSave && (
               <button
                 type="button"
@@ -167,16 +220,25 @@ export function LeadCard({
                   e.stopPropagation();
                   onSave();
                 }}
-                className="text-slate-500 hover:text-amber-400"
-                aria-label="Save"
+                className="text-subtle hover:text-warning-ink"
+                aria-label={
+                  saved ? tf("removeFromWatchlist") : tf("addToWatchlist")
+                }
               >
-                <Star className={`h-4 w-4 ${saved ? "fill-amber-400 text-amber-400" : ""}`} />
+                <Star
+                  className={`h-4 w-4 ${saved ? "fill-warning text-warning-ink" : ""}`}
+                />
               </button>
             )}
           </div>
         </div>
 
         <div className="mt-3 flex flex-wrap gap-1.5">
+          {item.kind === "permit" && item.dataQuality ? (
+            <Badge variant={item.dataQuality.grade === "low" ? "warning" : "default"}>
+              {tf(`dataQuality.${item.dataQuality.grade}`)}
+            </Badge>
+          ) : null}
           {item.signals.map((s) => (
             <Badge
               key={s.id}
@@ -196,6 +258,19 @@ export function LeadCard({
           ) : null}
         </div>
 
+        {ranking?.reasons.length ? (
+          <div
+            className="mt-2 flex flex-wrap gap-1.5"
+            aria-label={tf("rankingReasonsLabel")}
+          >
+            {ranking.reasons.map((reason) => (
+              <Badge key={reason.id} variant={reasonVariant(reason)}>
+                {tf(`rankingReasons.${reason.id}`)}
+              </Badge>
+            ))}
+          </div>
+        ) : null}
+
         {countdown}
 
         {item.kind === "permit" && intelligence && (
@@ -206,23 +281,69 @@ export function LeadCard({
           />
         )}
 
-        {item.kind === "permit" && item.pipeline?.breakdown && expanded && (
-          <dl className="mt-3 grid grid-cols-2 gap-1 text-xs text-slate-400">
-            <dt>RBQ</dt>
-            <dd>{item.pipeline.breakdown.rbqFit}</dd>
-            <dt>Coût</dt>
-            <dd>{item.pipeline.breakdown.costFit}</dd>
-            <dt>Compétition</dt>
-            <dd>{item.pipeline.breakdown.competition}</dd>
-            <dt>Intel</dt>
-            <dd>{item.pipeline.breakdown.intelligence}</dd>
-            <dt>Zonage</dt>
-            <dd>{item.pipeline.breakdown.zoning}</dd>
-          </dl>
-        )}
+        {ranking && expanded ? (
+          <div className="mt-3 border-t border-line pt-3 text-xs text-muted">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
+              <div>
+                <dt>{tf("rankScore")}</dt>
+                <dd className="font-medium text-ink">{ranking.score}</dd>
+              </div>
+              <div>
+                <dt>{tf("fitScore")}</dt>
+                <dd className="font-medium text-ink">{ranking.fitScore}</dd>
+              </div>
+              <div>
+                <dt>{tf("confidenceLabel")}</dt>
+                <dd className="font-medium text-ink">{ranking.confidence}%</dd>
+              </div>
+            </dl>
+            {item.kind === "permit" ? (
+              <>
+                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
+                <div>
+                  <dt>{tf("factorRbq")}</dt>
+                  <dd>{factorValue(item.pipeline?.breakdown.rbqFit)}</dd>
+                </div>
+                <div>
+                  <dt>{tf("factorCost")}</dt>
+                  <dd>{factorValue(item.pipeline?.breakdown.costFit)}</dd>
+                </div>
+                <div>
+                  <dt>{tf("factorMarket")}</dt>
+                  <dd>
+                    {factorValue(item.pipeline?.breakdown.marketActivity)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>{tf("factorFreshness")}</dt>
+                  <dd>{factorValue(item.pipeline?.breakdown.freshness)}</dd>
+                </div>
+                <div>
+                  <dt>{tf("factorIntel")}</dt>
+                  <dd>{factorValue(item.pipeline?.breakdown.intelligence)}</dd>
+                </div>
+                <div>
+                  <dt>{tf("factorZoning")}</dt>
+                  <dd>{factorValue(item.pipeline?.breakdown.zoning)}</dd>
+                </div>
+                </dl>
+                {item.dataQuality?.issues.length ? (
+                  <div className="mt-3">
+                    <p className="font-medium text-ink">{tf("dataQuality.limitations")}</p>
+                    <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                      {item.dataQuality.issues.map((issue) => (
+                        <li key={issue}>{tf(`dataQuality.issues.${issue}`)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="mt-3 flex flex-wrap gap-2">
-          {item.kind === "permit" && item.pipeline?.breakdown && (
+          {ranking && (
             <Button
               variant="ghost"
               size="sm"
@@ -231,18 +352,30 @@ export function LeadCard({
                 setExpanded(!expanded);
               }}
             >
-              {expanded ? "−" : "+"} Score
+              {expanded ? "−" : "+"} {tf("whyRank")}
             </Button>
           )}
           {item.kind === "permit" && item.sourceUrl && (
-            <a href={item.sourceUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+            <a
+              href={item.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+            >
               <Button variant="ghost" size="sm">
-                {tf("source")}
+                {item.dataQuality?.sourceScope === "record"
+                  ? tf("recordSource")
+                  : tf("datasetSource")}
               </Button>
             </a>
           )}
           {item.kind === "tender" && (
-            <a href={item.sourceUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+            <a
+              href={item.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+            >
               <Button variant="ghost" size="sm">
                 SEAO →
               </Button>

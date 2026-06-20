@@ -15,10 +15,15 @@ import {
   getCompetitionFromMap,
 } from "@/lib/scoring/batch";
 import { computeLeadSignals } from "@/lib/lead-signals";
+import { assessPermitQuality } from "@/lib/permits/quality";
 
 async function loadGtcSites() {
   return prisma.contaminatedSite.findMany({
-    where: { sourceLayer: "gtc", latitude: { not: null }, longitude: { not: null } },
+    where: {
+      sourceLayer: "gtc",
+      latitude: { not: null },
+      longitude: { not: null },
+    },
     select: { latitude: true, longitude: true },
     take: 8000,
   });
@@ -27,14 +32,14 @@ async function loadGtcSites() {
 function isNearGtc(
   lat: number | null | undefined,
   lng: number | null | undefined,
-  gtcSites: { latitude: number | null; longitude: number | null }[]
+  gtcSites: { latitude: number | null; longitude: number | null }[],
 ) {
   if (lat == null || lng == null) return false;
   return gtcSites.some(
     (s) =>
       s.latitude != null &&
       s.longitude != null &&
-      haversineKm(lat, lng, s.latitude, s.longitude) < 0.5
+      haversineKm(lat, lng, s.latitude, s.longitude) < 0.5,
   );
 }
 
@@ -83,6 +88,7 @@ export async function GET(req: NextRequest) {
 
     return Promise.all(
       permits.map(async (p) => {
+        const dataQuality = assessPermitQuality(p);
         const required = p.requiredRbqClasses
           ? (JSON.parse(p.requiredRbqClasses) as string[])
           : [];
@@ -91,10 +97,14 @@ export async function GET(req: NextRequest) {
           user?.rbqLicenseNumber,
           user?.rbqVerified ?? false,
           p.permitType,
-          p.workType
+          p.workType,
         );
         const intelligence = getIntel ? await getIntel(p) : undefined;
-        const competitionCount = getCompetitionFromMap(competitionMap, p.permitType, p.borough);
+        const competitionCount = getCompetitionFromMap(
+          competitionMap,
+          p.permitType,
+          p.borough,
+        );
         const pipeline = await computePipelineScore(
           p,
           {
@@ -105,7 +115,7 @@ export async function GET(req: NextRequest) {
             maxProjectCost: user?.maxProjectCost,
           },
           intelligence,
-          { competitionCount }
+          { competitionCount, dataQualityScore: dataQuality.score },
         );
         const signals = computeLeadSignals(
           {
@@ -125,7 +135,7 @@ export async function GET(req: NextRequest) {
           {
             minProjectCost: user?.minProjectCost,
             rbqVerified: user?.rbqVerified,
-          }
+          },
         );
         return {
           ...p,
@@ -135,18 +145,21 @@ export async function GET(req: NextRequest) {
           pipelineScore: pipeline.score,
           pipeline,
           signals,
+          dataQuality,
         };
-      })
+      }),
     );
   })();
 
-  let filtered = enriched.filter((p) =>
-    matchesEssentielProfile(user?.plan, userTrades, userRegions, {
-      trade: p.permitType,
-      region: p.borough ?? p.city ?? undefined,
-      borough: p.borough ?? undefined,
-      title: p.workType ?? undefined,
-    })
+  let filtered = enriched.filter(
+    (p) =>
+      p.dataQuality.usable &&
+      matchesEssentielProfile(user?.plan, userTrades, userRegions, {
+        trade: p.permitType,
+        region: p.borough ?? p.city ?? undefined,
+        borough: p.borough ?? undefined,
+        title: p.workType ?? undefined,
+      }),
   );
 
   if (eligibleOnly) {
@@ -154,11 +167,23 @@ export async function GET(req: NextRequest) {
   }
 
   if (noGtc) {
-    filtered = filtered.filter((p) => !isNearGtc(p.latitude, p.longitude, gtcSites));
+    filtered = filtered.filter(
+      (p) => !isNearGtc(p.latitude, p.longitude, gtcSites),
+    );
   }
 
   if (sort === "pipeline") {
-    filtered.sort((a, b) => b.pipelineScore - a.pipelineScore);
+    filtered.sort((a, b) => {
+      const scoreDifference = b.pipelineScore - a.pipelineScore;
+      if (scoreDifference) return scoreDifference;
+      const confidenceDifference =
+        b.pipeline.confidence - a.pipeline.confidence;
+      if (confidenceDifference) return confidenceDifference;
+      const dateDifference =
+        (b.issueDate?.getTime() ?? 0) - (a.issueDate?.getTime() ?? 0);
+      if (dateDifference) return dateDifference;
+      return a.id.localeCompare(b.id);
+    });
   }
 
   return NextResponse.json({

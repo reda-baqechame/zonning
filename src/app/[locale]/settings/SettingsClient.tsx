@@ -61,7 +61,7 @@ export default function SettingsClient() {
     resend?: boolean;
     twilio?: boolean;
     stripe?: boolean;
-    stripeDemo?: boolean;
+    stripeDisabled?: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -159,7 +159,7 @@ export default function SettingsClient() {
           <ul className="mt-2 space-y-1">
             <li>Courriel (Resend): {integrations.resend ? "✓" : "—"}</li>
             <li>SMS (Twilio): {integrations.twilio ? "✓" : "—"}</li>
-            <li>Stripe: {integrations.stripe ? (integrations.stripeDemo ? "démo" : "✓") : "—"}</li>
+            <li>Stripe: {integrations.stripe ? "✓" : "désactivé"}</li>
           </ul>
         </div>
       )}

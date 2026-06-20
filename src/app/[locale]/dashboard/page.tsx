@@ -11,7 +11,9 @@ import { getLatestQualityByDataset } from "@/lib/sync/quality";
 import { isSyncAutomationEnabled, getIntegrationStatus } from "@/lib/env";
 import SyncDatasetButton from "@/components/SyncDatasetButton";
 import AdminConciergePanel from "@/components/AdminConciergePanel";
+import { AdminEmailTestButton } from "@/components/AdminEmailTestButton";
 import { isAdminEmail } from "@/lib/admin";
+import { emailFromDomain } from "@/lib/email/templates";
 
 function datasetHealth(
   state: {
@@ -182,9 +184,10 @@ export default async function DashboardPage({
         <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-400">
           <span className={integrations.resend ? "text-emerald-400" : "text-slate-500"}>
             Resend {integrations.resend ? "✓" : "—"}
+            {emailFromDomain() ? ` · ${emailFromDomain()}` : ""}
           </span>
-          <span className={integrations.stripe ? "text-emerald-400" : integrations.stripeDemo ? "text-amber-400" : "text-slate-500"}>
-            Stripe {integrations.stripe ? "✓" : integrations.stripeDemo ? "demo" : "—"}
+          <span className={integrations.stripe ? "text-emerald-400" : "text-slate-500"}>
+            Stripe {integrations.stripe ? "✓" : "disabled"}
           </span>
           <span className={integrations.upstash ? "text-emerald-400" : "text-slate-500"}>
             Upstash {integrations.upstash ? "✓" : "—"}
@@ -193,6 +196,7 @@ export default async function DashboardPage({
             Twilio {integrations.twilio ? "✓" : "—"}
           </span>
         </div>
+        <AdminEmailTestButton locale={locale} />
       </div>
 
       <div className="mt-8 grid gap-4 md:grid-cols-4">

@@ -3,8 +3,47 @@ import { montrealCkan } from "./adapters/MontrealCkanAdapter";
 import { parseGeoJsonCentroids, type GeoFeatureWithProps } from "./geo";
 import type { DatasetId } from "./registry";
 import { DATASETS } from "./registry";
+import proj4 from "proj4";
 
-type GeoCollection = { features?: GeoFeatureWithProps[] };
+type GeoCollection = {
+  features?: GeoFeatureWithProps[];
+  crs?: { properties?: { name?: string } };
+};
+
+proj4.defs(
+  "EPSG:32188",
+  "+proj=tmerc +lat_0=0 +lon_0=-73.5 +k=0.9999 +x_0=304800 +y_0=0 +datum=NAD83 +units=m +no_defs",
+);
+
+function transformCoordinates(value: unknown): unknown {
+  if (!Array.isArray(value)) return value;
+  if (
+    value.length >= 2 &&
+    typeof value[0] === "number" &&
+    typeof value[1] === "number"
+  ) {
+    return proj4("EPSG:32188", "EPSG:4326", [value[0], value[1]]);
+  }
+  return value.map(transformCoordinates);
+}
+
+export function reprojectGeoJsonFeatures(
+  features: GeoFeatureWithProps[],
+  crsName?: string,
+): GeoFeatureWithProps[] {
+  if (!crsName?.includes("32188")) return features;
+  return features.map((feature) => ({
+    ...feature,
+    geometry: feature.geometry
+      ? {
+          ...feature.geometry,
+          coordinates: transformCoordinates(feature.geometry.coordinates) as NonNullable<
+            GeoFeatureWithProps["geometry"]
+          >["coordinates"],
+        }
+      : undefined,
+  }));
+}
 
 export async function fetchDatasetGeoJson(
   datasetId: DatasetId,
@@ -22,7 +61,8 @@ export async function fetchDatasetGeoJson(
   if (!resourceUrl) return [];
 
   const data = await fetchJson<GeoCollection>(resourceUrl);
-  return (data?.features ?? []).slice(0, maxFeatures);
+  const features = (data?.features ?? []).slice(0, maxFeatures);
+  return reprojectGeoJsonFeatures(features, data?.crs?.properties?.name);
 }
 
 export function mapGeoFeatures<T extends Record<string, unknown>>(

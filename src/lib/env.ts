@@ -24,7 +24,7 @@ export function getIntegrationStatus() {
   return {
     resend: has("RESEND_API_KEY"),
     stripe: has("STRIPE_SECRET_KEY") && has("STRIPE_WEBHOOK_SECRET"),
-    stripeDemo: !has("STRIPE_SECRET_KEY"),
+    stripeDisabled: !has("STRIPE_SECRET_KEY"),
     stripeMisconfigured: stripePartial && !has("STRIPE_SECRET_KEY"),
     upstash: Boolean(resolveUpstashRestUrl() && resolveUpstashRestToken()),
     twilio:
@@ -108,8 +108,16 @@ export function collectEnvIssues(): EnvIssue[] {
   if (isProd && !process.env.RESEND_API_KEY) {
     issues.push({
       key: "RESEND_API_KEY",
-      message: "Required for email alerts and digests",
-      severity: "warn",
+      message: "Required for email alerts, digests, and intelligence snapshots",
+      severity: "error",
+    });
+  }
+
+  if (isProd && process.env.RESEND_API_KEY && !process.env.EMAIL_FROM?.trim()) {
+    issues.push({
+      key: "EMAIL_FROM",
+      message: "Required when Resend is configured (e.g. ZONNING <onboarding@resend.dev>)",
+      severity: "error",
     });
   }
 
@@ -179,7 +187,7 @@ export function collectEnvIssues(): EnvIssue[] {
   if (!integrations.stripe && !integrations.stripeMisconfigured) {
     issues.push({
       key: "STRIPE",
-      message: "Not configured — demo billing active until keys added",
+      message: "Not configured — billing is disabled and no plan changes are allowed",
       severity: "info",
     });
   }
@@ -255,15 +263,4 @@ export function validateProductionEnv(): void {
 
 export function isSyncAutomationEnabled(): boolean {
   return process.env.SYNC_ENABLED !== "false";
-}
-
-/** True when Stripe is absent and demo plan upgrades are allowed. */
-export function isStripeDemoMode(): boolean {
-  const integrations = getIntegrationStatus();
-  if (integrations.stripeMisconfigured) return false;
-  if (!integrations.stripeDemo) return false;
-  if (process.env.NODE_ENV === "production" && process.env.ALLOW_STRIPE_DEMO !== "true") {
-    return false;
-  }
-  return true;
 }

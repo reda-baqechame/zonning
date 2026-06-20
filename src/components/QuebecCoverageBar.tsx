@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatDistanceToNow } from "date-fns";
 import { fr, enCA } from "date-fns/locale";
-import { MapPin, Radio } from "lucide-react";
+import { Database, MapPin } from "lucide-react";
 import type { CityPulseRow } from "@/lib/market-pulse";
 
 type QuebecStats = {
@@ -30,6 +30,8 @@ type QuebecStats = {
     companies?: number;
     awards?: number;
   };
+  registeredSources?: number;
+  searchableMunicipalities?: number;
   updatedAt: string;
 };
 
@@ -56,52 +58,48 @@ export default function QuebecCoverageBar({ compact }: { compact?: boolean }) {
   const otherCities = stats.cityBreakdown.filter((c) => !c.isRgm && c.totalPermits > 0);
 
   if (compact) {
-    const top = rgmCities.find((c) => c.permitsToday > 0) ?? rgmCities[0];
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-sky-500/25 bg-sky-950/20 px-3 py-2 text-xs text-sky-100">
-        <Radio className="h-3.5 w-3.5 shrink-0 text-sky-400" />
+      <div className="flex items-center gap-2 rounded-lg border border-brand-border bg-brand-soft px-3 py-2 text-xs text-brand">
+        <Database className="h-3.5 w-3.5 shrink-0" />
         <span className="truncate">
-          {t("rgmLive", {
-            today: stats.rgm.permitsToday,
-            city: top.city,
-            count: top.permitsToday,
+          {t("compactCoverage", {
+            datasets: stats.datasetCount,
+            municipalities: stats.searchableMunicipalities ?? 0,
           })}
         </span>
       </div>
     );
   }
 
-  const layerTotal =
-    stats.dataLayers.permits +
-    stats.dataLayers.tenders +
-    stats.dataLayers.zoning +
-    stats.dataLayers.transactions;
+  const layerTotal = Object.values(stats.dataLayers).reduce(
+    (total, count) => total + (count ?? 0),
+    0,
+  );
 
   return (
-    <section className="border-b border-slate-800 bg-slate-950/80">
+    <section className="border-b border-line bg-white">
       <div className="mx-auto max-w-7xl px-4 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-sky-400">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
               {t("engineEyebrow")}
             </p>
-            <h2 className="text-sm font-semibold text-white md:text-base">
-              {t("engineTitle", { cities: stats.coverageCities })}
+            <h2 className="text-sm font-semibold text-ink md:text-base">
+              {t("coverageTitle", {
+                municipalities: stats.searchableMunicipalities ?? 0,
+              })}
             </h2>
-            <p className="mt-0.5 text-xs text-slate-500">
-              {t("engineMeta", {
+            <p className="mt-0.5 text-xs text-muted">
+              {t("coverageMeta", {
                 datasets: stats.datasetCount,
-                cities: stats.coverageCities,
+                sources: stats.registeredSources ?? stats.datasetCount,
                 records: formatCount(layerTotal, locale),
               })}
             </p>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/30 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            </span>
-            {t("syncLive")}
+          <div className="flex items-center gap-2 rounded-full border border-success/20 bg-success-soft px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-success-ink">
+            <Database className="h-3 w-3" />
+            {t("databaseBacked")}
           </div>
         </div>
 
@@ -109,24 +107,24 @@ export default function QuebecCoverageBar({ compact }: { compact?: boolean }) {
           {rgmCities.map((city) => (
             <div
               key={city.city}
-              className="rounded-xl border border-sky-500/30 bg-gradient-to-br from-sky-950/40 to-slate-900/60 p-3"
+              className="rounded-xl border border-line bg-surface p-3 shadow-[var(--shadow-1)]"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 text-sky-400" />
-                  <span className="text-sm font-semibold text-white">{city.city}</span>
+                  <MapPin className="h-3.5 w-3.5 text-brand" />
+                  <span className="text-sm font-semibold text-ink">{city.city}</span>
                 </div>
                 {city.permitsToday > 0 && (
-                  <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-200">
+                  <span className="rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-bold text-warning-ink">
                     +{city.permitsToday}
                   </span>
                 )}
               </div>
-              <p className="mt-2 text-lg font-bold text-sky-200">
+              <p className="mt-2 text-lg font-bold text-brand">
                 {formatCount(city.totalPermits, locale)}
-                <span className="ml-1 text-xs font-normal text-slate-500">{t("permitsIndexed")}</span>
+                <span className="ml-1 text-xs font-normal text-muted">{t("permitsIndexed")}</span>
               </p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted">
                 {t("weekCount", { count: city.permitsWeek })}
                 {city.totalPermits > 0 && (
                   <>
@@ -155,18 +153,18 @@ export default function QuebecCoverageBar({ compact }: { compact?: boolean }) {
             {otherCities.map((city) => (
               <span
                 key={city.city}
-                className="rounded-lg border border-slate-800 bg-slate-900/50 px-2.5 py-1 text-[11px] text-slate-400"
+                className="rounded-lg border border-line bg-surface px-2.5 py-1 text-[11px] text-muted"
               >
                 {city.city}: {formatCount(city.totalPermits, locale)}
                 {city.permitsToday > 0 && (
-                  <span className="ml-1 text-amber-300">+{city.permitsToday}</span>
+                  <span className="ml-1 text-warning-ink">+{city.permitsToday}</span>
                 )}
               </span>
             ))}
           </div>
         )}
 
-        <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-slate-500 sm:grid-cols-4 lg:grid-cols-12">
+        <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-muted sm:grid-cols-4 lg:grid-cols-12">
           {[
             { label: t("layerPermits"), value: stats.dataLayers.permits },
             { label: t("layerTenders"), value: stats.dataLayers.tenders },
@@ -181,8 +179,8 @@ export default function QuebecCoverageBar({ compact }: { compact?: boolean }) {
             { label: t("layerAwards"), value: stats.dataLayers.awards ?? 0 },
             { label: t("layerCompanies"), value: stats.dataLayers.companies ?? 0 },
           ].map((layer) => (
-            <div key={layer.label} className="rounded border border-slate-800/80 px-2 py-1">
-              <span className="block text-slate-300">{formatCount(layer.value, locale)}</span>
+            <div key={layer.label} className="rounded border border-line bg-surface px-2 py-1">
+              <span className="block text-ink">{formatCount(layer.value, locale)}</span>
               {layer.label}
             </div>
           ))}

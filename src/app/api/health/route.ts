@@ -6,10 +6,10 @@ import {
   getMissingRequiredEnv,
   isSyncAutomationEnabled,
 } from "@/lib/env";
+import { emailFromDomain } from "@/lib/email/templates";
 import { getDatasetCount, getBootstrapAllowlist } from "@/lib/datasets/registry";
 import { isSyncAuthorized } from "@/lib/sync/auth";
 import { enforceRateLimit, jsonWithRequestId } from "@/lib/api-guard";
-import { getDataModeStatus } from "@/lib/sync/demo-fallback";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +29,6 @@ export async function GET(req: NextRequest) {
     dbError = e instanceof Error ? e.message.slice(0, 120) : "Database unavailable";
   }
 
-  const dataMode = dbOk
-    ? await getDataModeStatus().catch(() => null)
-    : null;
-
   const authorized = isSyncAuthorized(req);
   const envIssues = collectEnvIssues();
   const errors = envIssues.filter((i) => i.severity === "error");
@@ -46,7 +42,6 @@ export async function GET(req: NextRequest) {
         ok: ready,
         ready,
         db: dbOk,
-        dataMode: dataMode?.mode,
         missing: missing.length > 0 ? missing : undefined,
         dbError: !dbOk ? dbError : undefined,
         version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
@@ -69,11 +64,12 @@ export async function GET(req: NextRequest) {
       dbError: !dbOk ? dbError : undefined,
       version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
       syncAutomation: isSyncAutomationEnabled(),
-      dataMode: dataMode ?? undefined,
       integrations: {
         resend: integrations.resend,
+        resendConfigured: integrations.resend && Boolean(process.env.EMAIL_FROM?.trim()),
+        emailFromDomain: emailFromDomain(),
         stripe: integrations.stripe,
-        stripeDemo: integrations.stripeDemo,
+        stripeDisabled: integrations.stripeDisabled,
         upstash: integrations.upstash,
         twilio: integrations.twilio,
         openai: integrations.openai,

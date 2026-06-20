@@ -87,12 +87,17 @@ export function evaluateQuality(input: {
     return { status: "ok" };
   }
 
+  if (input.source === "unchanged") {
+    return { status: "ok" };
+  }
+
   const rules = QUALITY_RULES[input.datasetId];
 
   if (
     input.hadPriorSuccess &&
     input.rowsIngested === 0 &&
     input.source === "empty" &&
+    !input.isIncrementalSync &&
     !rules?.allowEmpty
   ) {
     return {

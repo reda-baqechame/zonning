@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseGeoJsonCentroids, haversineKm } from "../geo";
+import { centroidFromGeometry, parseGeoJsonCentroids, haversineKm } from "../geo";
+import { reprojectGeoJsonFeatures } from "../geo-fetch";
 
 const PUM2050_FIXTURE = {
   type: "FeatureCollection",
@@ -57,6 +58,21 @@ const LPC_FIXTURE = {
 };
 
 describe("GeoJSON centroid parsing for government datasets", () => {
+  it("reprojects Montreal EPSG:32188 geometry before spatial matching", () => {
+    const [feature] = reprojectGeoJsonFeatures(
+      [
+        {
+          geometry: { type: "Point", coordinates: [304800, 5_040_000] },
+          properties: {},
+        },
+      ],
+      "urn:ogc:def:crs:EPSG::32188",
+    );
+    const centroid = centroidFromGeometry(feature.geometry);
+    expect(centroid?.longitude).toBeCloseTo(-73.5, 2);
+    expect(centroid?.latitude).toBeGreaterThan(45);
+    expect(centroid?.latitude).toBeLessThan(46);
+  });
   it("extracts PUM 2050 polygon centroids with borough", () => {
     const rows = parseGeoJsonCentroids(
       PUM2050_FIXTURE.features,

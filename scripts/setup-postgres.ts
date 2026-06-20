@@ -23,7 +23,7 @@ async function main() {
   ensureDbProvider(url);
 
   console.log("Pushing Prisma schema to Postgres (direct connection)...");
-  execSync("npx prisma db push --accept-data-loss", { stdio: "inherit", env: process.env });
+  execSync("npx prisma db push", { stdio: "inherit", env: process.env });
 
   if (process.env.SKIP_POSTGIS === "1") {
     console.log("\n✓ Postgres schema ready (PostGIS skipped — set POSTGIS later via npm run db:postgis)");

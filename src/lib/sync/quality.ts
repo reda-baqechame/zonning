@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { escapeHtml } from "@/lib/email/html";
 import type { DatasetId } from "@/lib/datasets/registry";
 
 const INCREMENTAL_CURSOR_DATASETS: DatasetId[] = [
@@ -155,7 +156,7 @@ export async function alertIfQualityAnomalies(): Promise<void> {
     await sendEmail({
       to,
       subject: `[ZONNING] ${anomalies.length} dataset quality anomaly(ies)`,
-      html: `<p>Data quality checks flagged issues:</p><pre>${lines}</pre>`,
+      html: `<p>Data quality checks flagged issues:</p><pre>${escapeHtml(lines)}</pre>`,
     });
   }
 }

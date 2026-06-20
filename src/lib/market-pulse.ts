@@ -3,10 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { HIGH_VALUE_THRESHOLD } from "@/lib/format-cad";
 import {
   CITY_TO_PERMIT_DATASET,
+  getPermitCoverageStatusForCity,
   RGM_CITIES,
   QUEBEC_INTEL_REFRESH_IDS,
 } from "@/lib/quebec-coverage";
-import { COVERAGE_CITIES, getDatasetCount } from "@/lib/datasets/registry";
+import {
+  COVERAGE_CITIES,
+  getDatasetCount,
+  getRegisteredSourceCount,
+  type DatasetCoverageStatus,
+} from "@/lib/datasets/registry";
 
 export type CityPulseRow = {
   city: string;
@@ -17,6 +23,10 @@ export type CityPulseRow = {
   lastSyncAt: string | null;
   datasetId: string | null;
   isRgm: boolean;
+  coverageStatus: DatasetCoverageStatus;
+  coverageLabel: string;
+  coverageNote: string | null;
+  sourceUrl: string | null;
 };
 
 export type DataLayerCounts = {
@@ -49,6 +59,8 @@ export type MarketPulseStats = {
   permitsLastSuccessAt: string | null;
   datasetCount: number;
   coverageCities: number;
+  registeredSources: number;
+  searchableMunicipalities: number;
   cities: string[];
   rgm: {
     permitsToday: number;
@@ -76,6 +88,7 @@ async function fetchCityBreakdown(
 
   return Promise.all(
     COVERAGE_CITIES.map(async (city) => {
+      const coverage = getPermitCoverageStatusForCity(city);
       const [permitsToday, permitsWeek, totalPermits, mappablePermits] = await Promise.all([
         prisma.permit.count({ where: { city, issueDate: { gte: todayStart } } }),
         prisma.permit.count({ where: { city, issueDate: { gte: weekStart } } }),
@@ -95,6 +108,10 @@ async function fetchCityBreakdown(
         lastSyncAt: state?.lastSuccessAt?.toISOString() ?? null,
         datasetId,
         isRgm: (RGM_CITIES as readonly string[]).includes(city),
+        coverageStatus: coverage.status,
+        coverageLabel: coverage.label,
+        coverageNote: coverage.note,
+        sourceUrl: coverage.sourceUrl,
       };
     })
   );
@@ -226,6 +243,8 @@ export async function fetchMarketPulseStats(): Promise<MarketPulseStats> {
     permitsLastSuccessAt: permitState?.lastSuccessAt?.toISOString() ?? null,
     datasetCount: getDatasetCount(),
     coverageCities: COVERAGE_CITIES.length,
+    registeredSources: getRegisteredSourceCount(),
+    searchableMunicipalities: cityBreakdown.filter((city) => city.totalPermits > 0).length,
     cities: [...COVERAGE_CITIES],
     rgm: {
       permitsToday: rgmRows.reduce((s, c) => s + c.permitsToday, 0),

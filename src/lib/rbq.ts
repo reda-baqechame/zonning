@@ -1,5 +1,9 @@
 export const RBQ_LICENSE_CLASSES = [
-  { code: "1.1.1", labelFr: "Entrepreneur général", labelEn: "General contractor" },
+  {
+    code: "1.1.1",
+    labelFr: "Entrepreneur général",
+    labelEn: "General contractor",
+  },
   { code: "1.2.1", labelFr: "Petits travaux", labelEn: "Small works" },
   { code: "4.1", labelFr: "Électricité", labelEn: "Electrical" },
   { code: "5.1", labelFr: "Plomberie", labelEn: "Plumbing" },
@@ -12,37 +16,43 @@ export const RBQ_LICENSE_CLASSES = [
 ] as const;
 
 const PERMIT_TYPE_TO_RBQ: Record<string, string[]> = {
-  électrique: ["4.1", "1.1.1"],
-  electrical: ["4.1", "1.1.1"],
-  plomberie: ["5.1", "1.1.1"],
-  plumbing: ["5.1", "1.1.1"],
-  chauffage: ["6.1", "1.1.1"],
-  hvac: ["6.1", "1.1.1"],
-  climatisation: ["6.1", "1.1.1"],
-  maçonnerie: ["7.1", "1.1.1"],
-  masonry: ["7.1", "1.1.1"],
-  charpente: ["8.1", "1.1.1"],
-  couverture: ["9.1", "1.1.1"],
-  roofing: ["9.1", "1.1.1"],
-  béton: ["10.1", "1.1.1"],
-  concrete: ["10.1", "1.1.1"],
-  rénovation: ["1.2.1", "1.1.1"],
+  electri: ["4.1"],
+  plumbing: ["5.1"],
+  plomber: ["5.1"],
+  chauff: ["6.1"],
+  hvac: ["6.1"],
+  climatis: ["6.1"],
+  maconner: ["7.1"],
+  masonry: ["7.1"],
+  charpent: ["8.1"],
+  couvert: ["9.1"],
+  toiture: ["9.1"],
+  roofing: ["9.1"],
+  beton: ["10.1"],
+  concrete: ["10.1"],
+  peintur: ["11.1"],
   renovation: ["1.2.1", "1.1.1"],
   construction: ["1.1.1"],
-  démolition: ["1.1.1", "1.2.1"],
   demolition: ["1.1.1", "1.2.1"],
   commercial: ["1.1.1"],
   industriel: ["1.1.1"],
   industrial: ["1.1.1"],
-  résidentiel: ["1.2.1", "1.1.1"],
+  residentiel: ["1.2.1", "1.1.1"],
   residential: ["1.2.1", "1.1.1"],
 };
 
+function normalizeTradeText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
 export function getRequiredRbqClasses(
   permitType: string,
-  workType?: string | null
+  workType?: string | null,
 ): string[] {
-  const haystack = `${permitType} ${workType ?? ""}`.toLowerCase();
+  const haystack = normalizeTradeText(`${permitType} ${workType ?? ""}`);
   const classes = new Set<string>();
 
   for (const [keyword, codes] of Object.entries(PERMIT_TYPE_TO_RBQ)) {
@@ -51,16 +61,12 @@ export function getRequiredRbqClasses(
     }
   }
 
-  if (classes.size === 0) {
-    classes.add("1.1.1");
-  }
-
   return [...classes];
 }
 
 export function computeRbqFitScore(
   userLicenseClass: string | null | undefined,
-  requiredClasses: string[]
+  requiredClasses: string[],
 ): { score: number; eligible: boolean; reasonFr: string; reasonEn: string } {
   if (!userLicenseClass) {
     return {
@@ -71,26 +77,31 @@ export function computeRbqFitScore(
     };
   }
 
-  if (userLicenseClass === "1.1.1") {
+  if (requiredClasses.length === 0) {
     return {
-      score: 100,
-      eligible: true,
-      reasonFr: "Licence générale — couvre ce type de mandat",
-      reasonEn: "General license — covers this project type",
+      score: 50,
+      eligible: false,
+      reasonFr: "Sous-classe requise non déterminée à partir du permis",
+      reasonEn: "Required subclass could not be inferred from the permit",
     };
   }
 
-  const eligible = requiredClasses.includes(userLicenseClass);
-  const score = eligible ? 95 : requiredClasses.includes("1.1.1") ? 25 : 15;
+  const userClasses = userLicenseClass.match(/\d+(?:\.\d+)*/g) ?? [
+    userLicenseClass.trim(),
+  ];
+  const eligible = userClasses.some((userClass) =>
+    requiredClasses.includes(userClass),
+  );
+  const score = eligible ? 95 : 20;
 
   return {
     score,
     eligible,
     reasonFr: eligible
-      ? `Votre licence ${userLicenseClass} couvre ce mandat`
-      : `Requis: ${requiredClasses.join(", ")} — votre licence: ${userLicenseClass}`,
+      ? `Sous-classe déclarée compatible: ${userLicenseClass}`
+      : `Correspondance attendue: ${requiredClasses.join(", ")} — profil: ${userLicenseClass}`,
     reasonEn: eligible
-      ? `Your license ${userLicenseClass} covers this project`
-      : `Required: ${requiredClasses.join(", ")} — yours: ${userLicenseClass}`,
+      ? `Declared subclass match: ${userLicenseClass}`
+      : `Expected match: ${requiredClasses.join(", ")} — profile: ${userLicenseClass}`,
   };
 }

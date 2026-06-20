@@ -3,6 +3,7 @@ import { getRequiredRbqClasses } from "@/lib/rbq";
 import {
   DATASETS,
   getSyncLimit,
+  isDatasetSyncEnabled,
   type DatasetId,
 } from "@/lib/datasets/registry";
 import { fetchPermitsPaginated } from "@/lib/datasets/fetchers/permits";
@@ -153,7 +154,7 @@ export type SyncResult = {
   dataset: DatasetId;
   ok: boolean;
   processed: number;
-  source: "live" | "empty" | "skipped" | "error";
+  source: "live" | "unchanged" | "empty" | "skipped" | "error";
   error?: string;
 };
 
@@ -197,23 +198,24 @@ async function acquireLock(datasetId: DatasetId): Promise<boolean> {
 
 async function releaseLock(
   datasetId: DatasetId,
-  result: { ok: boolean; processed: number; error?: string }
+  result: { ok: boolean; processed: number; source: SyncResult["source"]; error?: string },
 ) {
   running.delete(datasetId);
+  const freshnessConfirmed = result.ok && !["empty", "skipped"].includes(result.source);
   await prisma.syncState.upsert({
     where: { datasetId },
     create: {
       datasetId,
       status: result.ok ? "idle" : "error",
       lastRunAt: new Date(),
-      lastSuccessAt: result.ok ? new Date() : undefined,
+      lastSuccessAt: freshnessConfirmed ? new Date() : undefined,
       recordsProcessed: result.processed,
       lastError: result.error ?? null,
     },
     update: {
       status: result.ok ? "idle" : "error",
       lastRunAt: new Date(),
-      ...(result.ok ? { lastSuccessAt: new Date() } : {}),
+      ...(freshnessConfirmed ? { lastSuccessAt: new Date() } : {}),
       recordsProcessed: result.processed,
       lastError: result.error ?? null,
     },
@@ -320,8 +322,10 @@ async function upsertPermitRecords(
       const { dispatchPermitCreatedEvents, dispatchHighScoreLeadEvents } = await import(
         "@/lib/webhooks/dispatcher"
       );
-      void dispatchPermitCreatedEvents(newIds.slice(0, 50));
-      void dispatchHighScoreLeadEvents(newIds.slice(0, 50));
+      await Promise.all([
+        dispatchPermitCreatedEvents(newIds.slice(0, 50)),
+        dispatchHighScoreLeadEvents(newIds.slice(0, 50)),
+      ]);
       try {
         const { schedulePermitIngestAlerts } = await import("@/lib/alerts/permit-ingest");
         schedulePermitIngestAlerts(newIds);
@@ -338,17 +342,6 @@ async function upsertPermitRecords(
     scheduleGeocodeAfterPermitIngest(city);
   } catch {
     /* geocode optional */
-  }
-
-  if (processed > 0) {
-    // Live data has landed — drop the demo-fallback flag so the UI stops
-    // showing the demo banner.
-    try {
-      const { clearDemoFallbackMarker } = await import("./demo-fallback");
-      void clearDemoFallbackMarker();
-    } catch {
-      /* fallback marker optional */
-    }
   }
 
   return processed;
@@ -383,13 +376,14 @@ export async function syncPermits(limit?: number): Promise<SyncResult> {
         /* summaries optional */
       }
 
-      const status = remote.length > 0 ? "success" : "empty";
+      const source = remote.length > 0 ? "live" : minIssueDate ? "unchanged" : "empty";
+      const status = source === "live" ? "success" : source;
       await logSync(cfg.syncSource, status, processed);
       return {
         dataset: "permits",
         ok: true,
         processed,
-        source: remote.length > 0 ? "live" : "empty",
+        source,
       };
     } catch (e) {
       const message = e instanceof Error ? e.message : "Sync failed";
@@ -422,7 +416,8 @@ async function syncCityPermitsDataset(
       }
 
       await persistSourceMetadata(datasetId);
-      const status = remote.length > 0 ? "success" : "empty";
+      const source = remote.length > 0 ? "live" : minIssueDate ? "unchanged" : "empty";
+      const status = source === "live" ? "success" : source;
       await logSync(cfg.syncSource, status, processed);
 
       try {
@@ -436,7 +431,7 @@ async function syncCityPermitsDataset(
         dataset: datasetId,
         ok: true,
         processed,
-        source: remote.length > 0 ? "live" : "empty",
+        source,
       };
     } catch (e) {
       const message = e instanceof Error ? e.message : "Sync failed";
@@ -556,7 +551,7 @@ export async function syncTenders(limit?: number): Promise<SyncResult> {
       if (tenderIds.length > 0) {
         try {
           const { dispatchTenderCreatedEvents } = await import("@/lib/webhooks/dispatcher");
-          void dispatchTenderCreatedEvents(tenderIds.slice(0, 20));
+          await dispatchTenderCreatedEvents(tenderIds.slice(0, 20));
         } catch {
           /* webhooks optional */
         }
@@ -1173,6 +1168,17 @@ export async function syncZoning(): Promise<SyncResult> {
 async function upsertZoningPointBatch(
   remote: Awaited<ReturnType<typeof fetchPum2050Zoning>>
 ) {
+  if (remote.length > 0) {
+    await prisma.zoningPoint.deleteMany({
+      where: {
+        city: { in: [...new Set(remote.map((record) => record.city))] },
+        landUse: null,
+        intensificationLevel: null,
+        densityThreshold: null,
+        zoneCode: null,
+      },
+    });
+  }
   return transactionChunkUpsert(remote, 40, (z) =>
     prisma.zoningPoint.upsert({
       where: { externalId: z.externalId },
@@ -1222,9 +1228,27 @@ async function upsertHeritageGeoBatch(
 export async function syncPum2050Zoning(): Promise<SyncResult> {
   const cfg = DATASETS["pum2050-zoning"];
   return runSync("pum2050-zoning", async () => {
-    const skipped = await trySkipUnchangedWeekly("pum2050-zoning");
-    if (skipped) return skipped;
+    const invalidStoredCoordinates = await prisma.zoningPoint.count({
+      where: {
+        city: "Montréal",
+        OR: [
+          { latitude: { lt: 44 } },
+          { latitude: { gt: 63 } },
+          { longitude: { lt: -80 } },
+          { longitude: { gt: -57 } },
+        ],
+      },
+    });
+    if (invalidStoredCoordinates === 0) {
+      const skipped = await trySkipUnchangedWeekly("pum2050-zoning");
+      if (skipped) return skipped;
+    }
     const remote = await fetchPum2050Zoning();
+    if (remote.length > 0) {
+      await prisma.zoningPoint.deleteMany({
+        where: { externalId: { startsWith: "pum2050-" } },
+      });
+    }
     const { processed } = await upsertZoningPointBatch(remote);
     await persistSourceMetadata("pum2050-zoning");
     await logSync(cfg.syncSource, remote.length ? "success" : "empty", processed);
@@ -1862,7 +1886,7 @@ export async function syncTorontoPermitsScaffold(): Promise<SyncResult> {
   });
 }
 
-const SYNC_FNS: Record<DatasetId, (limit?: number) => Promise<SyncResult>> = {
+const SYNC_FNS: Partial<Record<DatasetId, (limit?: number) => Promise<SyncResult>>> = {
   permits: syncPermits,
   "permits-laval": () => syncPermitsLaval(),
   "permits-longueuil": () => syncPermitsLongueuil(),
@@ -1920,19 +1944,38 @@ const SYNC_FNS: Record<DatasetId, (limit?: number) => Promise<SyncResult>> = {
 };
 
 export async function syncDataset(datasetId: DatasetId): Promise<SyncResult> {
-  return SYNC_FNS[datasetId]();
+  if (!isDatasetSyncEnabled(datasetId)) {
+    return {
+      dataset: datasetId,
+      ok: true,
+      processed: 0,
+      source: "skipped",
+      error: "Dataset is registered for coverage only and is not sync-enabled.",
+    };
+  }
+  const fn = SYNC_FNS[datasetId];
+  if (!fn) {
+    return {
+      dataset: datasetId,
+      ok: false,
+      processed: 0,
+      source: "error",
+      error: "No sync adapter registered for dataset.",
+    };
+  }
+  return fn();
 }
 
 export async function syncAll(
   datasets?: DatasetId[]
 ): Promise<{ results: SyncResult[]; totalProcessed: number }> {
-  const ids = datasets ?? (Object.keys(SYNC_FNS) as DatasetId[]);
+  const ids = datasets ?? (Object.keys(SYNC_FNS) as DatasetId[]).filter(isDatasetSyncEnabled);
   const results: SyncResult[] = [];
   const batchSize = 4;
 
   for (let i = 0; i < ids.length; i += batchSize) {
     const batch = ids.slice(i, i + batchSize);
-    const batchResults = await Promise.all(batch.map((id) => SYNC_FNS[id]()));
+    const batchResults = await Promise.all(batch.map((id) => syncDataset(id)));
     results.push(...batchResults);
   }
 

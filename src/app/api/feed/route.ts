@@ -16,25 +16,8 @@ import {
 import { computeLeadSignals } from "@/lib/lead-signals";
 import { HIGH_VALUE_THRESHOLD } from "@/lib/format-cad";
 import { getSimilarAwards } from "@/lib/datasets/fetchers/awards";
-
-function tenderMatchScore(
-  userTrades: string[],
-  userRegions: string[],
-  userAmp: boolean,
-  tender: { category?: string | null; region?: string | null; title: string; requiresAmp?: boolean }
-) {
-  let score = 50;
-  const title = tender.title.toLowerCase();
-  const region = (tender.region ?? "").toLowerCase();
-  for (const trade of userTrades) {
-    if (title.includes(trade.toLowerCase())) score += 15;
-  }
-  for (const r of userRegions) {
-    if (region.includes(r.toLowerCase())) score += 20;
-  }
-  if (tender.requiresAmp) score += userAmp ? 15 : -20;
-  return Math.min(100, Math.max(0, score));
-}
+import { computeTenderScore } from "@/lib/tender-score";
+import { assessPermitQuality } from "@/lib/permits/quality";
 
 export async function GET(req: NextRequest) {
   const ip = clientIp(req);
@@ -47,6 +30,7 @@ export async function GET(req: NextRequest) {
   const user = await getSessionUser();
   const limits = getPlanLimits(user?.plan);
   const tab = req.nextUrl.searchParams.get("tab") ?? "all";
+  const isWatchlist = tab === "watchlist";
   const since = subDays(new Date(), 90);
   const userTrades = parseJsonArray(user?.trades);
   const userRegions = parseJsonArray(user?.regions);
@@ -57,44 +41,69 @@ export async function GET(req: NextRequest) {
     ampAuthorized: user?.ampAuthorized,
   };
 
-  const [permitsRaw, tendersRaw, savedRows] = await Promise.all([
+  const savedRows = user
+    ? await prisma.savedLead.findMany({
+        where: { userId: user.id },
+        select: { kind: true, itemId: true, notes: true, createdAt: true },
+      })
+    : [];
+  const savedPermitIds = savedRows
+    .filter((row) => row.kind === "permit")
+    .map((row) => row.itemId);
+  const savedTenderIds = savedRows
+    .filter((row) => row.kind === "tender")
+    .map((row) => row.itemId);
+
+  const [permitsRaw, tendersRaw] = await Promise.all([
     tab === "tenders"
       ? []
       : prisma.permit.findMany({
-          where: { issueDate: { gte: since } },
+          where: isWatchlist
+            ? { id: { in: savedPermitIds } }
+            : { issueDate: { gte: since } },
           orderBy: { issueDate: "desc" },
-          take: limits.maxPermits * 2,
+          ...(isWatchlist ? {} : { take: limits.maxPermits * 2 }),
         }),
     tab === "permits"
       ? []
       : prisma.tender.findMany({
-          where: {
-            closesAt: { gte: new Date() },
-            OR: [{ status: null }, { status: { not: "closed" } }],
-          },
+          where: isWatchlist
+            ? { id: { in: savedTenderIds } }
+            : {
+                closesAt: { gte: new Date() },
+                OR: [{ status: null }, { status: { not: "closed" } }],
+              },
           orderBy: { closesAt: "asc" },
-          take: limits.maxTenders * 2,
+          ...(isWatchlist ? {} : { take: limits.maxTenders * 2 }),
         }),
-    user
-      ? prisma.savedLead.findMany({ where: { userId: user.id }, select: { kind: true, itemId: true } })
-      : [],
   ]);
 
   const savedIds = new Set(savedRows.map((s) => `${s.kind}:${s.itemId}`));
+  const savedByKey = new Map(
+    savedRows.map((row) => [
+      `${row.kind}:${row.itemId}`,
+      { notes: row.notes, createdAt: row.createdAt },
+    ]),
+  );
   const competitionMap = await batchCompetitionCounts(permitsRaw);
   const getIntel = limits.intelligenceFull ? createIntelligenceCache() : null;
 
-  const permits = await Promise.all(
+  const permitsEnriched = await Promise.all(
     permitsRaw.map(async (p) => {
+      const dataQuality = assessPermitQuality(p);
       const fit = computeVerifiedRbqFit(
         user?.rbqLicenseClass,
         user?.rbqLicenseNumber,
         user?.rbqVerified ?? false,
         p.permitType,
-        p.workType
+        p.workType,
       );
       const intelligence = getIntel ? await getIntel(p) : undefined;
-      const competitionCount = getCompetitionFromMap(competitionMap, p.permitType, p.borough);
+      const competitionCount = getCompetitionFromMap(
+        competitionMap,
+        p.permitType,
+        p.borough,
+      );
       const pipeline = await computePipelineScore(
         p,
         {
@@ -105,7 +114,7 @@ export async function GET(req: NextRequest) {
           maxProjectCost: user?.maxProjectCost,
         },
         intelligence,
-        { competitionCount }
+        { competitionCount, dataQualityScore: dataQuality.score },
       );
       const signals = computeLeadSignals(
         {
@@ -122,7 +131,7 @@ export async function GET(req: NextRequest) {
           pipeline,
           intelligence,
         },
-        userCtx
+        userCtx,
       );
       return {
         kind: "permit" as const,
@@ -130,27 +139,45 @@ export async function GET(req: NextRequest) {
         score: pipeline.score,
         signals,
         saved: savedIds.has(`permit:${p.id}`),
+        savedNote: savedByKey.get(`permit:${p.id}`)?.notes ?? null,
         permit: {
           ...p,
           rbqFit: fit,
           pipelineScore: pipeline.score,
           pipeline,
           intelligence,
+          dataQuality,
         },
       };
-    })
+    }),
+  );
+  const permits = permitsEnriched.filter(
+    (item) => isWatchlist || item.permit.dataQuality.usable,
   );
 
   const tenders = await Promise.all(
     tendersRaw.map(async (t) => {
-      const daysLeft = t.closesAt ? differenceInDays(t.closesAt, new Date()) : null;
-      const score = tenderMatchScore(userTrades, userRegions, user?.ampAuthorized ?? false, t);
+      const daysLeft = t.closesAt
+        ? differenceInDays(t.closesAt, new Date())
+        : null;
       const [similarAwards, amendmentCount] = await Promise.all([
-        limits.maxTenders > 5 ? getSimilarAwards(t.unspsc, t.category, 3) : Promise.resolve([]),
+        limits.maxTenders > 5
+          ? getSimilarAwards(t.unspsc, t.category, 3)
+          : Promise.resolve([]),
         t.externalId
-          ? prisma.seaoAmendment.count({ where: { tenderExternalId: t.externalId } })
+          ? prisma.seaoAmendment.count({
+              where: { tenderExternalId: t.externalId },
+            })
           : Promise.resolve(0),
       ]);
+      const ranking = computeTenderScore(t, {
+        trades: userTrades,
+        regions: userRegions,
+        ampAuthorized: user?.ampAuthorized ?? false,
+        minProjectCost: user?.minProjectCost,
+        maxProjectCost: user?.maxProjectCost,
+      });
+      const score = ranking.score;
       const hasSimilarAwards = similarAwards.length > 0;
       const signals = computeLeadSignals(
         {
@@ -165,11 +192,12 @@ export async function GET(req: NextRequest) {
           urgent: daysLeft !== null && daysLeft <= 7,
           requiresAmp: t.requiresAmp,
           matchScore: score,
+          ranking,
           plainSummary: t.aiSummary || t.summary || undefined,
           sourceUrl: t.sourceUrl,
           hasSimilarAwards,
         },
-        userCtx
+        userCtx,
       );
       return {
         kind: "tender" as const,
@@ -177,45 +205,85 @@ export async function GET(req: NextRequest) {
         score,
         signals,
         saved: savedIds.has(`tender:${t.id}`),
+        savedNote: savedByKey.get(`tender:${t.id}`)?.notes ?? null,
         tender: {
           ...t,
           daysLeft,
           isThursday: t.closesAt ? getDay(t.closesAt) === 4 : false,
           urgent: daysLeft !== null && daysLeft <= 7,
           matchScore: score,
+          ranking,
           plainSummary: t.aiSummary || t.summary || undefined,
           amendmentCount,
           similarAwards: limits.maxTenders > 5 ? similarAwards : undefined,
         },
       };
-    })
+    }),
   );
 
   let items = [...permits, ...tenders];
-  items = items.filter((item) => {
-    if (item.kind === "permit") {
+  if (!isWatchlist) {
+    items = items.filter((item) => {
+      if (item.kind === "permit") {
+        return matchesEssentielProfile(user?.plan, userTrades, userRegions, {
+          trade: item.permit.permitType,
+          region: item.permit.borough ?? item.permit.city ?? undefined,
+          borough: item.permit.borough ?? undefined,
+        });
+      }
       return matchesEssentielProfile(user?.plan, userTrades, userRegions, {
-        trade: item.permit.permitType,
-        region: item.permit.borough ?? item.permit.city ?? undefined,
-        borough: item.permit.borough ?? undefined,
+        title: item.tender.title,
+        region: item.tender.region ?? undefined,
       });
-    }
-    return matchesEssentielProfile(user?.plan, userTrades, userRegions, {
-      title: item.tender.title,
-      region: item.tender.region ?? undefined,
     });
+  }
+
+  items.sort((a, b) => {
+    if (!isWatchlist) {
+      const scoreDifference = b.score - a.score;
+      if (scoreDifference) return scoreDifference;
+      const aConfidence =
+        a.kind === "permit"
+          ? a.permit.pipeline.confidence
+          : a.tender.ranking.confidence;
+      const bConfidence =
+        b.kind === "permit"
+          ? b.permit.pipeline.confidence
+          : b.tender.ranking.confidence;
+      const confidenceDifference = bConfidence - aConfidence;
+      if (confidenceDifference) return confidenceDifference;
+      const aDate =
+        a.kind === "permit"
+          ? a.permit.issueDate?.getTime()
+          : a.tender.closesAt?.getTime();
+      const bDate =
+        b.kind === "permit"
+          ? b.permit.issueDate?.getTime()
+          : b.tender.closesAt?.getTime();
+      const dateDifference = (bDate ?? 0) - (aDate ?? 0);
+      if (dateDifference) return dateDifference;
+      return a.id.localeCompare(b.id);
+    }
+    const aSavedAt =
+      savedByKey.get(`${a.kind}:${a.id}`)?.createdAt.getTime() ?? 0;
+    const bSavedAt =
+      savedByKey.get(`${b.kind}:${b.id}`)?.createdAt.getTime() ?? 0;
+    return bSavedAt - aSavedAt;
   });
 
-  items.sort((a, b) => b.score - a.score);
-
-  const maxItems = limits.maxPermits + limits.maxTenders;
+  const maxItems = isWatchlist
+    ? items.length
+    : limits.maxPermits + limits.maxTenders;
   const sliced = items.slice(0, maxItems);
   const hidden = items.slice(maxItems);
 
   const [poolPermits, poolHighValue, poolUrgentTenders] = await Promise.all([
     prisma.permit.count({ where: { issueDate: { gte: since } } }),
     prisma.permit.count({
-      where: { issueDate: { gte: since }, estimatedCost: { gte: HIGH_VALUE_THRESHOLD } },
+      where: {
+        issueDate: { gte: since },
+        estimatedCost: { gte: HIGH_VALUE_THRESHOLD },
+      },
     }),
     prisma.tender.count({
       where: {
@@ -226,23 +294,28 @@ export async function GET(req: NextRequest) {
   ]);
 
   const hiddenHighValue = hidden.filter(
-    (i) => i.kind === "permit" && (i.permit.estimatedCost ?? 0) >= HIGH_VALUE_THRESHOLD
+    (i) =>
+      i.kind === "permit" &&
+      (i.permit.estimatedCost ?? 0) >= HIGH_VALUE_THRESHOLD,
   ).length;
   const hiddenUrgent = hidden.filter(
     (i) =>
       i.kind === "tender" &&
       i.tender.daysLeft != null &&
-      i.tender.daysLeft <= 7
+      i.tender.daysLeft <= 7,
   ).length;
   const estimatedValueHidden = hidden.reduce((sum, i) => {
-    if (i.kind === "permit" && i.permit.estimatedCost) return sum + i.permit.estimatedCost;
+    if (i.kind === "permit" && i.permit.estimatedCost)
+      return sum + i.permit.estimatedCost;
     return sum;
   }, 0);
 
   const shownPermits = sliced.filter((i) => i.kind === "permit").length;
   const shownTenders = sliced.filter((i) => i.kind === "tender").length;
   const shownHighValue = sliced.filter(
-    (i) => i.kind === "permit" && (i.permit.estimatedCost ?? 0) >= HIGH_VALUE_THRESHOLD
+    (i) =>
+      i.kind === "permit" &&
+      (i.permit.estimatedCost ?? 0) >= HIGH_VALUE_THRESHOLD,
   ).length;
 
   return NextResponse.json({
@@ -254,7 +327,10 @@ export async function GET(req: NextRequest) {
       poolUrgentTenders,
       shownPermits,
       shownTenders,
-      hiddenHighValue: Math.max(hiddenHighValue, poolHighValue - shownHighValue),
+      hiddenHighValue: Math.max(
+        hiddenHighValue,
+        poolHighValue - shownHighValue,
+      ),
       hiddenUrgent: Math.max(hiddenUrgent, poolUrgentTenders - shownTenders),
       estimatedValueHidden,
     },

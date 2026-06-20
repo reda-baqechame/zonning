@@ -6,7 +6,6 @@ import { useLocale, useTranslations } from "next-intl";
 import { Settings } from "lucide-react";
 import VerdictStamp from "@/components/VerdictStamp";
 import { LeadCard } from "@/components/LeadCard";
-import MarketPulseBar from "@/components/MarketPulseBar";
 import QuebecCoverageBar from "@/components/QuebecCoverageBar";
 import MissedOpportunityBanner, {
   type FeedFomoMeta,
@@ -16,7 +15,11 @@ import { intelAccessForPlan } from "@/components/SiteIntelligencePanel";
 import type { PropertyIntelligence } from "@/lib/intelligence";
 import type { LeadSignal } from "@/lib/lead-signals";
 import { filterItemsBySignal } from "@/lib/lead-signals";
+import type { RuntimeDataMode } from "@/lib/data-mode";
 import type { VerdictTier } from "@/lib/verdict/compute-verdict";
+import type { PipelineScoreResult } from "@/lib/pipeline-score";
+import type { TenderScoreResult } from "@/lib/tender-score";
+import type { PermitDataQuality } from "@/lib/permits/quality";
 import {
   PageHeader,
   Tabs,
@@ -39,6 +42,7 @@ type FeedItem =
       score: number;
       signals: LeadSignal[];
       saved?: boolean;
+      savedNote?: string | null;
       permit: {
         id: string;
         address: string;
@@ -50,17 +54,10 @@ type FeedItem =
         summaryFr?: string | null;
         summaryEn?: string | null;
         rbqFit: { eligible: boolean; score: number };
-        pipeline?: {
-          breakdown?: {
-            rbqFit: number;
-            costFit: number;
-            competition: number;
-            intelligence: number;
-            zoning: number;
-          };
-        };
+        pipeline?: PipelineScoreResult;
         sourceUrl?: string;
         applicantName?: string | null;
+        dataQuality?: PermitDataQuality;
         intelligence?: PropertyIntelligence | null;
       };
     }
@@ -70,6 +67,7 @@ type FeedItem =
       score: number;
       signals: LeadSignal[];
       saved?: boolean;
+      savedNote?: string | null;
       tender: {
         id: string;
         title: string;
@@ -83,10 +81,15 @@ type FeedItem =
         plainSummary?: string;
         sourceUrl: string;
         amendmentCount?: number;
+        ranking?: TenderScoreResult;
       };
     };
 
-export default function FeedClient() {
+export default function FeedClient({
+  dataMode,
+}: {
+  dataMode: RuntimeDataMode;
+}) {
   const t = useTranslations("feed");
   const c = useTranslations("common");
   const locale = useLocale();
@@ -101,7 +104,14 @@ export default function FeedClient() {
   const [complianceEntitled, setComplianceEntitled] = useState(false);
   const [fomoMeta, setFomoMeta] = useState<FeedFomoMeta | null>(null);
   const [lockedTeasers, setLockedTeasers] = useState<
-    { id: string; kind: "permit" | "tender"; label: string; borough?: string | null; score: number; valueLabel?: string }[]
+    {
+      id: string;
+      kind: "permit" | "tender";
+      label: string;
+      borough?: string | null;
+      score: number;
+      valueLabel?: string;
+    }[]
   >([]);
   const [userPlan, setUserPlan] = useState<string>("FREE");
   const [loading, setLoading] = useState(true);
@@ -118,8 +128,10 @@ export default function FeedClient() {
     slug: string;
   } | null>(null);
   const [verdictLoading, setVerdictLoading] = useState(false);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [savingNote, setSavingNote] = useState<string | null>(null);
 
-  const apiTab = tab === "watchlist" ? "all" : tab === "verdict" ? "permits" : tab;
+  const apiTab = tab === "verdict" ? "permits" : tab;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -132,12 +144,25 @@ export default function FeedClient() {
         setItems([]);
         return;
       }
-      setItems(data.items ?? []);
+      const loadedItems = (data.items ?? []) as FeedItem[];
+      setItems(loadedItems);
+      setNoteDrafts(
+        Object.fromEntries(
+          loadedItems.map((item) => [
+            `${item.kind}:${item.id}`,
+            item.savedNote ?? "",
+          ]),
+        ),
+      );
       setProfile(data.profile ?? null);
       setComplianceEntitled(data.complianceEntitled ?? false);
       setUserPlan(data.plan ?? "FREE");
       setFomoMeta(data.meta ?? null);
-      if (data.meta && data.meta.plan !== "PRO" && data.meta.plan !== "EQUIPE") {
+      if (
+        data.meta &&
+        data.meta.plan !== "PRO" &&
+        data.meta.plan !== "EQUIPE"
+      ) {
         fetch("/api/stats/preview")
           .then((r) => r.json())
           .then((d) => setLockedTeasers(d.leads ?? []))
@@ -157,21 +182,18 @@ export default function FeedClient() {
   }, [load]);
 
   const toggleSave = async (item: FeedItem) => {
-    if (item.saved) {
-      await fetch(
-        `/api/leads/saved?kind=${item.kind}&itemId=${item.id}`,
-        { method: "DELETE" }
-      );
-    } else {
-      const res = await fetch("/api/leads/saved", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: item.kind, itemId: item.id }),
-      });
-      if (!res.ok) {
-        toastError(c("error"));
-        return;
-      }
+    const res = item.saved
+      ? await fetch(`/api/leads/saved?kind=${item.kind}&itemId=${item.id}`, {
+          method: "DELETE",
+        })
+      : await fetch("/api/leads/saved", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ kind: item.kind, itemId: item.id }),
+        });
+    if (!res.ok) {
+      toastError(c("error"));
+      return;
     }
     success(c("success"));
     void load();
@@ -181,22 +203,55 @@ export default function FeedClient() {
   const tenders = items.filter((i) => i.kind === "tender");
   const savedItems = items.filter((i) => i.saved);
 
+  const saveNote = async (item: FeedItem) => {
+    const key = `${item.kind}:${item.id}`;
+    setSavingNote(key);
+    try {
+      const res = await fetch("/api/leads/saved", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: item.kind,
+          itemId: item.id,
+          notes: noteDrafts[key] ?? "",
+        }),
+      });
+      if (!res.ok) {
+        toastError(t("noteSaveError"));
+        return;
+      }
+      success(t("noteSaved"));
+    } catch {
+      toastError(t("noteSaveError"));
+    } finally {
+      setSavingNote(null);
+    }
+  };
+
   const displayed = useMemo(() => {
     let list: FeedItem[] =
-      tab === "permits" ? permits : tab === "tenders" ? tenders : tab === "watchlist" ? savedItems : [];
+      tab === "permits"
+        ? permits
+        : tab === "tenders"
+          ? tenders
+          : tab === "watchlist"
+            ? savedItems
+            : [];
     if (signalFilter) {
       list = filterItemsBySignal(
         list.map((i) => ({ ...i, signals: i.signals })),
-        signalFilter
+        signalFilter,
       );
     }
     return list;
   }, [tab, signalFilter, permits, tenders, savedItems]);
 
-  const tradesLabel =
-    profile?.trades?.length ? profile.trades.join(", ") : t("allTrades");
-  const regionsLabel =
-    profile?.regions?.length ? profile.regions.join(", ") : t("allRegions");
+  const tradesLabel = profile?.trades?.length
+    ? profile.trades.join(", ")
+    : t("allTrades");
+  const regionsLabel = profile?.regions?.length
+    ? profile.regions.join(", ")
+    : t("allRegions");
 
   const runVerdict = async () => {
     if (!verdictAddress.trim()) return;
@@ -204,7 +259,10 @@ export default function FeedClient() {
     const res = await fetch("/api/verdict", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ address: verdictAddress, borough: verdictBorough || undefined }),
+      body: JSON.stringify({
+        address: verdictAddress,
+        borough: verdictBorough || undefined,
+      }),
     });
     const data = await res.json();
     setVerdictLoading(false);
@@ -259,8 +317,7 @@ export default function FeedClient() {
   ];
 
   return (
-    <FadeIn className="mx-auto max-w-4xl px-4 py-8">
-      <MarketPulseBar compact />
+    <FadeIn className="mx-auto max-w-7xl px-4 py-8 text-ink">
       <div className="mb-4">
         <QuebecCoverageBar compact />
       </div>
@@ -270,22 +327,27 @@ export default function FeedClient() {
         action={
           <Link
             href="/settings"
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-sky-500 hover:text-white"
+            className="inline-flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm text-muted shadow-sm transition hover:border-brand-border hover:text-brand"
           >
             <Settings className="h-4 w-4" />
             {t("settings")}
           </Link>
         }
       />
-      <p className="-mt-4 mb-6 text-sm text-slate-500">
+      <p className="-mt-4 mb-6 text-sm text-muted">
         {regionsLabel} · {tradesLabel}
       </p>
+      {dataMode === "local" ? (
+        <p className="-mt-3 mb-6 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          {t("localDataNotice")}
+        </p>
+      ) : null}
 
       <Tabs
         tabs={tabs}
         active={tab}
         onChange={setTab}
-        className="sticky top-[57px] z-40 bg-slate-950/95 py-2 backdrop-blur"
+        className="sticky top-[57px] z-40 bg-bg/95 py-2 backdrop-blur"
       />
 
       {tab !== "verdict" && (
@@ -299,8 +361,8 @@ export default function FeedClient() {
               }
               className={`rounded-full px-3 py-1 text-xs ${
                 signalFilter === chip.id
-                  ? "bg-sky-500 text-white"
-                  : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                  ? "bg-brand text-white"
+                  : "border border-line bg-white text-muted hover:border-brand-border hover:text-brand"
               }`}
             >
               {chip.label}
@@ -309,16 +371,21 @@ export default function FeedClient() {
         </div>
       )}
 
-      {tab !== "verdict" && fomoMeta && (
+      {tab !== "verdict" && tab !== "watchlist" && fomoMeta && (
         <div className="mt-4">
           <MissedOpportunityBanner meta={fomoMeta} />
         </div>
       )}
 
       {loadError && (
-        <div className="mt-4 rounded-lg border border-red-500/40 bg-red-950/30 p-4 text-sm text-red-200">
+        <div className="mt-4 rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger-ink">
           {loadError}
-          <Button variant="secondary" size="sm" className="mt-2" onClick={() => void load()}>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="mt-2"
+            onClick={() => void load()}
+          >
             {c("retry")}
           </Button>
         </div>
@@ -328,10 +395,12 @@ export default function FeedClient() {
         <SkeletonList count={4} />
       ) : tab === "verdict" ? (
         <Card className="mt-6 space-y-4">
-          <p className="text-sm text-slate-400">{t("verdictHint")}</p>
+          <p className="text-sm text-muted">{t("verdictHint")}</p>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <FieldLabel htmlFor="v-address">{t("addressPlaceholder")}</FieldLabel>
+              <FieldLabel htmlFor="v-address">
+                {t("addressPlaceholder")}
+              </FieldLabel>
               <Input
                 id="v-address"
                 value={verdictAddress}
@@ -339,7 +408,9 @@ export default function FeedClient() {
               />
             </div>
             <div>
-              <FieldLabel htmlFor="v-borough">{t("boroughPlaceholder")}</FieldLabel>
+              <FieldLabel htmlFor="v-borough">
+                {t("boroughPlaceholder")}
+              </FieldLabel>
               <Input
                 id="v-borough"
                 value={verdictBorough}
@@ -347,18 +418,25 @@ export default function FeedClient() {
               />
             </div>
           </div>
-          <Button variant="success" onClick={runVerdict} disabled={verdictLoading}>
+          <Button
+            variant="success"
+            onClick={runVerdict}
+            disabled={verdictLoading}
+          >
             {verdictLoading ? c("loading") : t("runVerdict")}
           </Button>
           {verdictResult && (
-            <div className="space-y-4 border-t border-slate-800 pt-4">
+            <div className="space-y-4 border-t border-line pt-4">
               <VerdictStamp
                 tier={verdictResult.tier}
                 label={verdictResult.label}
                 address={verdictAddress}
               />
-              <p className="text-sm text-slate-300">{verdictResult.summary}</p>
-              <Link href={`/verdict/${verdictResult.slug}`} className="text-sm text-sky-400">
+              <p className="text-sm text-muted">{verdictResult.summary}</p>
+              <Link
+                href={`/verdict/${verdictResult.slug}`}
+                className="text-sm text-brand"
+              >
                 {t("shareLink")} →
               </Link>
             </div>
@@ -369,7 +447,9 @@ export default function FeedClient() {
           {displayed.length === 0 ? (
             <EmptyState
               title={tab === "watchlist" ? t("noWatchlist") : t("noPermits")}
-              description={t("noPermitsHint")}
+              description={
+                tab === "watchlist" ? t("noWatchlistHint") : t("noPermitsHint")
+              }
               action={
                 <Link href="/settings">
                   <Button variant="secondary" size="sm">
@@ -379,73 +459,119 @@ export default function FeedClient() {
               }
             />
           ) : (
-            displayed.map((item) => (
-              <StaggerItem key={`${item.kind}-${item.id}`}>
-                {item.kind === "permit" ? (
-                  <LeadCard
-                    locale={locale}
-                    item={{
-                      kind: "permit",
-                      id: item.id,
-                      score: item.score,
-                      signals: item.signals,
-                      permitType: item.permit.permitType,
-                      address: item.permit.address,
-                      borough: item.permit.borough,
-                      estimatedCost: item.permit.estimatedCost,
-                      issueDate: item.permit.issueDate,
-                      summaryFr: item.permit.summaryFr,
-                      summaryEn: item.permit.summaryEn,
-                      rbqFit: item.permit.rbqFit,
-                      pipeline: item.permit.pipeline,
-                      sourceUrl: item.permit.sourceUrl,
-                      applicantName: item.permit.applicantName,
-                    }}
-                    saved={item.saved}
-                    complianceEnabled={complianceEntitled}
-                    onSave={() => void toggleSave(item)}
-                    onCompliance={() => createCompliance(item.permit)}
-                    intelligence={item.permit.intelligence}
-                    intelAccess={intelAccess}
-                  />
-                ) : (
-                  <LeadCard
-                    locale={locale}
-                    item={{
-                      kind: "tender",
-                      id: item.id,
-                      score: item.score,
-                      signals: item.signals,
-                      title: item.tender.title,
-                      organization: item.tender.organization,
-                      daysLeft: item.tender.daysLeft,
-                      isThursday: item.tender.isThursday,
-                      urgent: item.tender.urgent,
-                      requiresAmp: item.tender.requiresAmp,
-                      plainSummary: item.tender.plainSummary,
-                      sourceUrl: item.tender.sourceUrl,
-                      amendmentCount: item.tender.amendmentCount,
-                    }}
-                    saved={item.saved}
-                    onSave={() => void toggleSave(item)}
-                    countdown={
-                      item.tender.daysLeft != null ? (
-                        <p
-                          className={`mt-2 text-xs ${item.tender.urgent ? "text-red-300" : "text-slate-400"}`}
+            displayed.map((item) => {
+              const noteKey = `${item.kind}:${item.id}`;
+              return (
+                <StaggerItem key={noteKey}>
+                  {item.kind === "permit" ? (
+                    <LeadCard
+                      locale={locale}
+                      item={{
+                        kind: "permit",
+                        id: item.id,
+                        score: item.score,
+                        signals: item.signals,
+                        permitType: item.permit.permitType,
+                        address: item.permit.address,
+                        borough: item.permit.borough,
+                        estimatedCost: item.permit.estimatedCost,
+                        issueDate: item.permit.issueDate,
+                        summaryFr: item.permit.summaryFr,
+                        summaryEn: item.permit.summaryEn,
+                        rbqFit: item.permit.rbqFit,
+                        pipeline: item.permit.pipeline,
+                        sourceUrl: item.permit.sourceUrl,
+                        applicantName: item.permit.applicantName,
+                        dataQuality: item.permit.dataQuality,
+                      }}
+                      saved={item.saved}
+                      complianceEnabled={complianceEntitled}
+                      onSave={() => void toggleSave(item)}
+                      onCompliance={() => createCompliance(item.permit)}
+                      intelligence={item.permit.intelligence}
+                      intelAccess={intelAccess}
+                      testData={dataMode === "local"}
+                    />
+                  ) : (
+                    <LeadCard
+                      locale={locale}
+                      item={{
+                        kind: "tender",
+                        id: item.id,
+                        score: item.score,
+                        signals: item.signals,
+                        title: item.tender.title,
+                        organization: item.tender.organization,
+                        daysLeft: item.tender.daysLeft,
+                        isThursday: item.tender.isThursday,
+                        urgent: item.tender.urgent,
+                        requiresAmp: item.tender.requiresAmp,
+                        plainSummary: item.tender.plainSummary,
+                        sourceUrl: item.tender.sourceUrl,
+                        amendmentCount: item.tender.amendmentCount,
+                        ranking: item.tender.ranking,
+                      }}
+                      saved={item.saved}
+                      onSave={() => void toggleSave(item)}
+                      testData={dataMode === "local"}
+                      countdown={
+                        item.tender.daysLeft != null ? (
+                          <p
+                            className={`mt-2 text-xs ${item.tender.urgent ? "text-red-300" : "text-slate-400"}`}
+                          >
+                            {t("closesIn")} {item.tender.daysLeft}j
+                            {item.tender.isThursday && ` · ${t("thursday")}`}
+                          </p>
+                        ) : undefined
+                      }
+                    />
+                  )}
+                  {tab === "watchlist" ? (
+                    <div className="mx-3 border-x border-b border-line bg-white px-4 pb-4 pt-3">
+                      <FieldLabel htmlFor={`note-${item.kind}-${item.id}`}>
+                        {t("watchlistNote")}
+                      </FieldLabel>
+                      <textarea
+                        id={`note-${item.kind}-${item.id}`}
+                        value={noteDrafts[noteKey] ?? ""}
+                        maxLength={2000}
+                        rows={2}
+                        onChange={(event) =>
+                          setNoteDrafts((current) => ({
+                            ...current,
+                            [noteKey]: event.target.value,
+                          }))
+                        }
+                        placeholder={t("watchlistNotePlaceholder")}
+                        className="mt-1 w-full resize-y rounded-md border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-ring"
+                      />
+                      <div className="mt-2 flex items-center justify-between gap-3">
+                        <span className="text-xs text-subtle">
+                          {(noteDrafts[noteKey] ?? "").length}/2000
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={savingNote === noteKey}
+                          onClick={() => void saveNote(item)}
                         >
-                          {t("closesIn")} {item.tender.daysLeft}j
-                          {item.tender.isThursday && ` · ${t("thursday")}`}
-                        </p>
-                      ) : undefined
-                    }
-                  />
-                )}
-              </StaggerItem>
-            ))
+                          {savingNote === noteKey
+                            ? c("loading")
+                            : t("saveNote")}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+                </StaggerItem>
+              );
+            })
           )}
-          {fomoMeta && fomoMeta.plan !== "PRO" && fomoMeta.plan !== "EQUIPE" && (
-            <LockedLeadTeasers teasers={lockedTeasers} />
-          )}
+          {tab !== "watchlist" &&
+            fomoMeta &&
+            fomoMeta.plan !== "PRO" &&
+            fomoMeta.plan !== "EQUIPE" && (
+              <LockedLeadTeasers teasers={lockedTeasers} />
+            )}
         </StaggerList>
       )}
     </FadeIn>

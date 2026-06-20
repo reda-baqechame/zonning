@@ -98,6 +98,7 @@ export async function getSessionUser() {
       trades: true,
       regions: true,
       phone: true,
+      phoneVerified: true,
       ampAuthorized: true,
       minProjectCost: true,
       maxProjectCost: true,

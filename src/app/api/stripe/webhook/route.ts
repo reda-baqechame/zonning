@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import type { Plan } from "@/generated/prisma/client";
 import { auditLog } from "@/lib/audit";
@@ -41,6 +41,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId;
   const planKey = session.metadata?.plan;
   if (!userId) return;
+
+  if (session.mode === "payment" && session.payment_status !== "paid") return;
 
   if (planKey === "concierge") {
     await prisma.conciergeRequest.upsert({
@@ -112,15 +114,6 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
   }
 }
 
-async function handlePaymentFailed(invoice: Stripe.Invoice) {
-  const customerId =
-    typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
-  if (!customerId) return;
-  const user = await prisma.user.findFirst({ where: { stripeCustomerId: customerId } });
-  if (!user) return;
-  await updateUserPlan(user.id, "FREE", customerId, null);
-}
-
 async function handleAsyncPaymentFailed(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId;
   if (!userId) return;
@@ -128,6 +121,7 @@ async function handleAsyncPaymentFailed(session: Stripe.Checkout.Session) {
 }
 
 export async function POST(req: NextRequest) {
+  const stripe = getStripe();
   if (!stripe) {
     return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
   }
@@ -149,30 +143,33 @@ export async function POST(req: NextRequest) {
   }
 
   const requestId = getRequestId(req);
-  const existing = await prisma.processedStripeEvent.findUnique({ where: { id: event.id } });
-  if (existing) {
-    return NextResponse.json({ received: true, duplicate: true });
+  try {
+    await prisma.processedStripeEvent.create({
+      data: { id: event.id, type: event.type },
+    });
+  } catch (error) {
+    const existing = await prisma.processedStripeEvent.findUnique({ where: { id: event.id } });
+    if (existing) return NextResponse.json({ received: true, duplicate: true });
+    throw error;
   }
 
-  switch (event.type) {
-    case "checkout.session.completed":
-      await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
-      break;
-    case "customer.subscription.updated":
-    case "customer.subscription.deleted":
-      await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
-      break;
-    case "invoice.payment_failed":
-      await handlePaymentFailed(event.data.object as Stripe.Invoice);
-      break;
-    case "checkout.session.async_payment_failed":
-      await handleAsyncPaymentFailed(event.data.object as Stripe.Checkout.Session);
-      break;
+  try {
+    switch (event.type) {
+      case "checkout.session.completed":
+        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+        break;
+      case "customer.subscription.updated":
+      case "customer.subscription.deleted":
+        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+        break;
+      case "checkout.session.async_payment_failed":
+        await handleAsyncPaymentFailed(event.data.object as Stripe.Checkout.Session);
+        break;
+    }
+  } catch (error) {
+    await prisma.processedStripeEvent.deleteMany({ where: { id: event.id } });
+    throw error;
   }
-
-  await prisma.processedStripeEvent.create({
-    data: { id: event.id, type: event.type },
-  });
 
   auditLog({
     action: "stripe.webhook",

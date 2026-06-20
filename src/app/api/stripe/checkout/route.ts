@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
-import { stripe, PLANS } from "@/lib/stripe";
-import { prisma } from "@/lib/prisma";
-import { isStripeDemoMode, getIntegrationStatus } from "@/lib/env";
+import { getStripe, PLANS } from "@/lib/stripe";
+import { getIntegrationStatus } from "@/lib/env";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
+import { z } from "zod";
+
+const requestSchema = z.object({
+  plan: z.enum(["essentiel", "pro", "equipe", "concierge"]),
+  locale: z.enum(["fr", "en"]).optional(),
+});
 
 export async function POST(req: NextRequest) {
   const ip = clientIp(req);
@@ -12,7 +17,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const user = await requireUser();
-    const body = (await req.json()) as { plan: keyof typeof PLANS; locale?: string };
+    const body = requestSchema.parse(await req.json());
     const { plan } = body;
     const locale = body.locale === "en" ? "en" : "fr";
 
@@ -29,28 +34,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const stripe = getStripe();
     if (!stripe || !planConfig.priceId) {
-      if (!isStripeDemoMode()) {
-        return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
-      }
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          plan:
-            plan === "essentiel"
-              ? "ESSENTIEL"
-              : plan === "pro"
-                ? "PRO"
-                : plan === "equipe"
-                  ? "EQUIPE"
-                  : user.plan,
-        },
-      });
-      return NextResponse.json({
-        ok: true,
-        demo: true,
-        message: "Stripe not configured — plan activated in demo mode",
-      });
+      return NextResponse.json(
+        { error: "Billing is not available. No plan change was made." },
+        { status: 503 }
+      );
     }
 
     const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -69,7 +58,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: session.url });
   } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: "Invalid checkout request" }, { status: 400 });
+    }
     const message = e instanceof Error ? e.message : "Checkout failed";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const status = message === "UNAUTHORIZED" ? 401 : 400;
+    return NextResponse.json({ error: message }, { status });
   }
 }

@@ -5,10 +5,20 @@ import { subDays, nextThursday, isThursday, format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email/resend";
+import { escapeHtml, safeEmailHref } from "@/lib/email/html";
 import {
   matchesEssentielProfile,
   parseJsonArray,
 } from "@/lib/usage";
+
+function parseAlertFilters(value: string): Record<string, unknown> {
+  try {
+    const parsed = JSON.parse(value || "{}");
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
 
 export async function sendAlertEmails(): Promise<{
   sent: number;
@@ -74,7 +84,7 @@ export async function sendAlertEmailsForWindow(options: {
     const user = sub.user;
     if (!user?.email && !user?.phone) continue;
 
-    const filters = JSON.parse(sub.filters || "{}") as {
+    const filters = parseAlertFilters(sub.filters) as {
       borough?: string;
       minCost?: string;
       eligibleOnly?: boolean;
@@ -141,11 +151,11 @@ export async function sendAlertEmailsForWindow(options: {
               ]
                 .filter(Boolean)
                 .join(" · ");
-              return `<li><strong>${p.permitType}</strong> — ${p.address} (${p.city ?? "Montréal"})${flags ? ` <em>[${flags}]</em>` : ""}</li>`;
+              return `<li><strong>${escapeHtml(p.permitType)}</strong> — ${escapeHtml(p.address)} (${escapeHtml(p.city ?? "Montréal")})${flags ? ` <em>[${escapeHtml(flags)}]</em>` : ""}</li>`;
             })
             .join("")}
         </ul>
-        <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/fr/feed">Voir le fil ZONNING</a></p>
+        <p><a href="${safeEmailHref(`${process.env.NEXT_PUBLIC_APP_URL ?? "https://zonning.vercel.app"}/fr/feed`)}">Voir le fil ZONNING</a></p>
       `;
 
       const smsBody = `ZONNING: ${matches.length} permis — ${top[0]?.address?.slice(0, 40) ?? "voir app"}`;
@@ -178,7 +188,7 @@ export async function sendAlertEmailsForWindow(options: {
     }
 
     if (sub.module === "marches_qc") {
-      const filters = JSON.parse(sub.filters || "{}") as {
+      const filters = parseAlertFilters(sub.filters) as {
         category?: string;
         region?: string;
         q?: string;
@@ -221,11 +231,11 @@ export async function sendAlertEmailsForWindow(options: {
             .slice(0, 10)
             .map(
               (t) =>
-                `<li><strong>${t.title}</strong> — ${t.organization ?? "SEAO"} (clôture ${t.closesAt?.toLocaleDateString("fr-CA") ?? "?"})</li>`
+                `<li><strong>${escapeHtml(t.title)}</strong> — ${escapeHtml(t.organization ?? "SEAO")} (clôture ${escapeHtml(t.closesAt?.toLocaleDateString("fr-CA") ?? "?")})</li>`
             )
             .join("")}
         </ul>
-        <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/fr/marches-qc">Voir sur ZONNING</a></p>
+        <p><a href="${safeEmailHref(`${process.env.NEXT_PUBLIC_APP_URL ?? "https://zonning.vercel.app"}/fr/marches-qc`)}">Voir sur ZONNING</a></p>
       `;
 
       const result = await dispatchAlert({
@@ -298,13 +308,13 @@ export async function sendThursdayCloseAlerts(): Promise<{
 
     const html = `
       <h2>⚠ Clôture jeudi — ${tenders.length} appel(s) SEAO</h2>
-      <p>31% des soumissions SEAO se ferment un jeudi. Ne manquez pas ces échéances:</p>
+      <p>Ces avis SEAO atteignent leur échéance jeudi. Vérifiez les documents officiels et les addendas avant de soumissionner:</p>
       <ul>
         ${tenders
           .slice(0, 8)
           .map(
             (t) =>
-              `<li><strong>${t.title}</strong> — ${t.closesAt?.toLocaleDateString("fr-CA")}</li>`
+              `<li><strong>${escapeHtml(t.title)}</strong> — ${escapeHtml(t.closesAt?.toLocaleDateString("fr-CA") ?? "?")}</li>`
           )
           .join("")}
       </ul>
@@ -357,14 +367,14 @@ export async function sendWeeklyDigests(): Promise<{ sent: number; errors: strin
 
     const html = `
       <h2>Votre digest ZONNING — semaine en cours</h2>
-      <p>Bonjour ${user.name ?? ""},</p>
+      <p>Bonjour ${escapeHtml(user.name ?? "")},</p>
       <ul>
         <li><strong>${permitsWeek}</strong> nouveaux permis au Québec métropolitain</li>
         <li><strong>${tendersOpen}</strong> appels d'offres SEAO ouverts</li>
-        ${trades.length ? `<li>Vos métiers: ${trades.join(", ")}</li>` : ""}
-        ${regions.length ? `<li>Vos régions: ${regions.join(", ")}</li>` : ""}
+        ${trades.length ? `<li>Vos métiers: ${escapeHtml(trades.join(", "))}</li>` : ""}
+        ${regions.length ? `<li>Vos régions: ${escapeHtml(regions.join(", "))}</li>` : ""}
       </ul>
-      <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/fr/feed">Ouvrir ZONNING</a></p>
+      <p><a href="${safeEmailHref(`${process.env.NEXT_PUBLIC_APP_URL ?? "https://zonning.vercel.app"}/fr/feed`)}">Ouvrir ZONNING</a></p>
     `;
 
     const result = await sendEmail({
@@ -401,10 +411,10 @@ export async function sendWeeklyDigests(): Promise<{ sent: number; errors: strin
     });
 
     const html = `
-      <h2>Digest permis — ${sub.borough ?? "Grand Montréal"}</h2>
+      <h2>Digest permis — ${escapeHtml(sub.borough ?? "Grand Montréal")}</h2>
       <p>${permits.length} permis cette semaine</p>
-      <ul>${permits.map((p) => `<li>${p.permitType} — ${p.address}</li>`).join("")}</ul>
-      <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/fr/pricing">Passer à ZONNING Essentiel</a></p>
+      <ul>${permits.map((p) => `<li>${escapeHtml(p.permitType)} — ${escapeHtml(p.address)}</li>`).join("")}</ul>
+      <p><a href="${safeEmailHref(`${process.env.NEXT_PUBLIC_APP_URL ?? "https://zonning.vercel.app"}/fr/feed`)}">Ouvrir ZONNING</a></p>
     `;
 
     const result = await sendEmail({

@@ -5,13 +5,13 @@ import { cn } from "@/lib/cn";
 
 const variants = {
   primary:
-    "bg-sky-500 text-white hover:bg-sky-400 focus:ring-sky-500/40 active:scale-[0.98]",
+    "bg-brand text-brand-ink shadow-sm hover:bg-brand-hover focus:ring-ring active:scale-[0.98]",
   secondary:
-    "border border-slate-600 bg-slate-900/50 text-slate-200 hover:border-slate-500 hover:bg-slate-800 focus:ring-slate-500/30",
-  ghost: "text-slate-300 hover:bg-slate-800 hover:text-white focus:ring-slate-500/30",
+    "border border-line bg-surface text-ink shadow-sm hover:border-line-strong hover:bg-surface-hover focus:ring-ring",
+  ghost: "text-muted hover:bg-surface-hover hover:text-ink focus:ring-ring",
   success:
-    "border border-emerald-600/50 bg-emerald-950/30 text-emerald-300 hover:border-emerald-500 focus:ring-emerald-500/30",
-  destructive: "bg-red-600/90 text-white hover:bg-red-500 focus:ring-red-500/40",
+    "border border-success/20 bg-success-soft text-success-ink hover:border-success/40 focus:ring-success/30",
+  destructive: "bg-danger text-white hover:bg-red-600 focus:ring-danger/30",
 } as const;
 
 const sizes = {
