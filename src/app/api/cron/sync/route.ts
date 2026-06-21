@@ -16,7 +16,6 @@ import { runBootstrapBatches } from "@/lib/sync/bootstrap";
 import { getSyncBatchSize, sortByPriority } from "@/lib/sync/live-watch";
 import { isSyncAuthorized } from "@/lib/sync/auth";
 import { isSyncAutomationEnabled } from "@/lib/env";
-import { prisma } from "@/lib/prisma";
 
 export const maxDuration = 300;
 
@@ -160,22 +159,16 @@ export async function GET(req: NextRequest) {
   let totalProcessed = 0;
   const startedAt = Date.now();
 
-  // Load sync states once so a dataset whose last "successful" sync ingested 0
-  // rows (e.g. a fetcher bug that has since been fixed) is re-synced instead of
-  // skipped as "unchanged". Without this, RBQ stayed at 0 licenses forever.
-  const states = await prisma.syncState.findMany({
-    where: { datasetId: { in: ordered } },
-    select: { datasetId: true, recordsProcessed: true },
-  });
-  const hasRows = new Set(states.filter((s) => (s.recordsProcessed ?? 0) > 0).map((s) => s.datasetId));
-
+  // shouldSkipUnchangedSync already re-syncs datasets that ingested 0 rows or
+  // have a resumable offset in progress, so a fetcher fix (e.g. RBQ) actually
+  // takes effect instead of being skipped as "unchanged".
   for (let i = 0; i < ordered.length; i++) {
     if (Date.now() - startedAt > TIME_BUDGET_MS) {
       remaining.push(...ordered.slice(i));
       break;
     }
     const id = ordered[i];
-    if (hasRows.has(id) && (await shouldSkipUnchangedSync(id))) {
+    if (await shouldSkipUnchangedSync(id)) {
       results.push({ dataset: id, ok: true, processed: 0, source: "unchanged" });
       continue;
     }

@@ -25,47 +25,68 @@ export type RbqPageResult = {
 function mapRbqRow(row: Record<string, string>, sourceUrl: string): RbqLicenseRecord | null {
   const licenseNumber = pick(
     row,
+    "numero de licence",
+    "numéro de licence",
     "numerolicence",
     "no_licence",
     "numero_licence",
     "licence",
     "numerodelicence",
     "no_rbq",
-    "numerolicence",
     "NumeroLicence",
-    "NUMERO_LICENCE"
+    "NUMERO_LICENCE",
   );
   if (!licenseNumber) return null;
 
-  const statusRaw = pick(row, "statutlicence", "statut", "status", "StatutLicence").toLowerCase();
+  const statusRaw = pick(
+    row,
+    "statut de la licence",
+    "statutlicence",
+    "statut",
+    "status",
+    "StatutLicence",
+  ).toLowerCase();
 
   return {
     licenseNumber: licenseNumber.replace(/\s/g, ""),
     holderName: pick(
       row,
+      "nom de l'intervenant",
+      "nom de lintervenant",
       "nom",
       "nomtitulaire",
       "titulaire",
       "raisonsociale",
       "nomentreprise",
       "Nom",
-      "NomTitulaire"
+      "NomTitulaire",
     ),
     subclass: pick(
       row,
+      "sous-categories",
+      "sous categories",
       "sousclasse",
       "sous_classe",
       "subclasse",
       "categorie",
+      "type de licence",
       "classelicence",
-      "SousClasse"
+      "SousClasse",
     ),
     status:
       statusRaw.includes("actif") || statusRaw.includes("active") || !statusRaw
         ? "active"
         : statusRaw,
     expiryDate: parseDate(
-      pick(row, "dateexpiration", "date_expiration", "expiration", "fin", "DateExpiration")
+      pick(
+        row,
+        "date du paiement annuel",
+        "dateexpiration",
+        "date_expiration",
+        "expiration",
+        "fin",
+        "DateExpiration",
+      ),
     ),
     sourceUrl,
   };

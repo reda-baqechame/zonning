@@ -95,6 +95,14 @@ export async function shouldSkipUnchangedSync(
   const state = await prisma.syncState.findUnique({ where: { datasetId } });
   if (!state?.sourceModifiedAt || !state.lastSuccessAt) return false;
 
+  // Re-sync (don't skip) when the last "successful" run ingested 0 rows — the
+  // dataset may be stuck after a fetcher bug that has since been fixed (this is
+  // how RBQ recovered from rbqLicenses = 0). Also re-sync when a resumable
+  // offset is still in progress (syncOffset > 0) so large offset-paginated
+  // datasets keep populating instead of stalling at the first page.
+  if ((state.recordsProcessed ?? 0) === 0) return false;
+  if ((state.syncOffset ?? 0) > 0) return false;
+
   const { changed } = await checkSourceChanged(datasetId, state.sourceModifiedAt);
   return !changed;
 }
