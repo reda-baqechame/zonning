@@ -62,7 +62,7 @@ export function resolvePgPoolMax(): number {
     return configured;
   }
 
-  // Serverless instances multiply pool capacity quickly. Two connections keep
-  // Prisma's parallel reads moving without recreating a large pool per instance.
-  return process.env.VERCEL ? 2 : 10;
+  // Serverless instances multiply pool capacity quickly. Market reads are
+  // grouped and cached, so one connection per instance is sufficient.
+  return process.env.VERCEL ? 1 : 10;
 }

@@ -12,7 +12,7 @@ describe("resolvePgPoolMax", () => {
     process.env = { ...env, VERCEL: "1" };
     delete process.env.PG_POOL_MAX;
 
-    expect(resolvePgPoolMax()).toBe(2);
+    expect(resolvePgPoolMax()).toBe(1);
   });
 
   it("honours a bounded explicit override", () => {
@@ -23,9 +23,9 @@ describe("resolvePgPoolMax", () => {
 
   it("rejects unsafe or malformed overrides", () => {
     process.env = { ...env, VERCEL: "1", PG_POOL_MAX: "100" };
-    expect(resolvePgPoolMax()).toBe(2);
+    expect(resolvePgPoolMax()).toBe(1);
 
     process.env.PG_POOL_MAX = "not-a-number";
-    expect(resolvePgPoolMax()).toBe(2);
+    expect(resolvePgPoolMax()).toBe(1);
   });
 });
