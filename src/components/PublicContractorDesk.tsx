@@ -139,6 +139,7 @@ export default function PublicContractorDesk({
   const updatedLabel = new Intl.DateTimeFormat(locale === "fr" ? "fr-CA" : "en-CA", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "America/Toronto",
   }).format(new Date(updatedAt));
   const statValues = [
     stats.permitsWeek,
