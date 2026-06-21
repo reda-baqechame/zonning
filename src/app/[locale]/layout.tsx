@@ -9,7 +9,6 @@ import { DataModeBanner } from "@/components/DataModeBanner";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CookieConsent } from "@/components/CookieConsent";
 import { ToastProvider } from "@/components/ui";
-import { getSessionUser } from "@/lib/auth";
 import "@/app/globals.css";
 
 const ibmPlex = IBM_Plex_Sans({
@@ -47,7 +46,6 @@ export default async function LocaleLayout({
   if (!routing.locales.includes(locale as "fr" | "en")) notFound();
 
   const messages = await getMessages();
-  const user = await getSessionUser();
 
   return (
     <html lang={locale} className={`h-full ${ibmPlex.variable} ${spaceGrotesk.variable}`}>
@@ -55,7 +53,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <ToastProvider>
             <DataModeBanner />
-            <NavBar user={user} />
+            <NavBar />
             <main className="min-h-[calc(100vh-8rem)]">{children}</main>
             <SiteFooter />
             <CookieConsent />
