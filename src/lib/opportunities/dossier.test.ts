@@ -76,6 +76,8 @@ describe("OpportunityDossier", () => {
 
     expect(dossier.evidenceThresholds.canCallTopLead).toBe(true);
     expect(dossier.confidenceLevel).toBe("high");
+    expect(dossier.triage.recommendation).toBe("act_now");
+    expect(dossier.triage.recommendedStage).toBe("pursuing");
     expect(dossier.nextAction).toContain("Open the municipal source");
   });
 
@@ -102,6 +104,82 @@ describe("OpportunityDossier", () => {
 
     expect(dossier.evidenceThresholds.canCallTopLead).toBe(false);
     expect(dossier.confidenceLevel).toBe("low");
+    expect(dossier.triage.recommendation).not.toBe("act_now");
+    expect(dossier.triage.blockers).toEqual([
+      "trade_profile",
+      "region_profile",
+      "value_or_budget",
+    ]);
+    expect(dossier.limitations.join(" ")).toContain(
+      "target trades must be configured",
+    );
+    expect(dossier.limitations.join(" ")).not.toContain("trade_profile");
+    expect(dossier.limitations.join(" ")).not.toContain("value_or_budget");
     expect(dossier.whyRanked.join(" ")).toContain("not high enough");
+  });
+
+  it("keeps permit quality codes out of contractor-facing limitations", () => {
+    const dossier = buildPermitOpportunityDossier({
+      permit: {
+        id: "permit-partial",
+        permitType: "Renovation",
+        address: "200 rue Test",
+        city: "Montreal",
+        sourceUrl: "https://donnees.montreal.ca/dataset/permis",
+      },
+      score: 55,
+      signals: [],
+      pipeline: {
+        ...strongPipeline,
+        confidence: 45,
+        missingEvidence: ["cost_or_budget", "zoning"],
+      },
+      dataQuality: {
+        score: 55,
+        grade: "medium",
+        usable: true,
+        officialSource: true,
+        sourceScope: "dataset",
+        issues: ["dataset_level_source", "missing_cost"],
+      },
+    });
+
+    const limitations = dossier.limitations.join(" ");
+    expect(limitations).toContain("municipal dataset");
+    expect(limitations).toContain("parcel zone");
+    expect(limitations).not.toContain("dataset_level_source");
+    expect(limitations).not.toContain("cost_or_budget");
+  });
+
+  it("localizes contractor actions without changing the evidence gate", () => {
+    const dossier = buildPermitOpportunityDossier({
+      locale: "fr",
+      permit: {
+        id: "permit-fr",
+        permitType: "Rénovation",
+        address: "100 rue Test",
+        city: "Montréal",
+        estimatedCost: 750_000,
+        issueDate: new Date(),
+        applicantName: "Client Test",
+        sourceUrl: "https://donneesquebec.ca/recherche/dataset/test",
+        sourceFetchedAt: new Date(),
+      },
+      score: 86,
+      signals: [],
+      pipeline: strongPipeline,
+      dataQuality: {
+        score: 90,
+        grade: "high",
+        usable: true,
+        officialSource: true,
+        sourceScope: "record",
+        issues: [],
+      },
+    });
+
+    expect(dossier.evidenceThresholds.canCallTopLead).toBe(true);
+    expect(dossier.nextAction).toContain("Ouvrir la source municipale");
+    expect(dossier.sourceLabel).toBe("Dossier municipal de permis");
   });
 });

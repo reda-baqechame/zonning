@@ -54,16 +54,20 @@ model User {
 }
 
 model SavedLead {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kind      String
-  itemId    String
-  notes     String?
-  createdAt DateTime @default(now())
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind         String
+  itemId       String
+  notes        String?
+  stage        String    @default("new")
+  nextActionAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
 
   @@unique([userId, kind, itemId])
   @@index([userId])
+  @@index([userId, stage, nextActionAt])
 }
 
 model Organization {

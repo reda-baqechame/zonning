@@ -570,6 +570,10 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "vmtl-contrats-octroyes-par-les-fonctionnaires-des-arrondissements",
     sourceUrl:
       "https://www.donneesquebec.ca/recherche/dataset/vmtl-contrats-octroyes-par-les-fonctionnaires-des-arrondissements",
+    coverageStatus: "unavailable",
+    coverageNote:
+      "The previously registered aggregate CKAN package returns 404. Données Québec exposes individual borough/year contract datasets, so this source needs a dedicated adapter before it can be indexed honestly.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 500,
     productionLimit: 8000,
@@ -577,7 +581,6 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     tier: "daily",
     syncSource: "ckan-contracts-boroughs",
     city: "Montréal",
-    bootstrapAllowlist: true,
   },
   "permits-sherbrooke": {
     id: "permits-sherbrooke",

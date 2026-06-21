@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
   const user = await getSessionUser();
   const limits = getPlanLimits(user?.plan);
   const tab = req.nextUrl.searchParams.get("tab") ?? "all";
+  const locale = req.nextUrl.searchParams.get("locale") === "en" ? "en" : "fr";
   const isWatchlist = tab === "watchlist";
   const since = subDays(new Date(), 90);
   const userTrades = parseJsonArray(user?.trades);
@@ -48,7 +49,14 @@ export async function GET(req: NextRequest) {
   const savedRows = user
     ? await prisma.savedLead.findMany({
         where: { userId: user.id },
-        select: { kind: true, itemId: true, notes: true, createdAt: true },
+        select: {
+          kind: true,
+          itemId: true,
+          notes: true,
+          stage: true,
+          nextActionAt: true,
+          createdAt: true,
+        },
       })
     : [];
   const savedPermitIds = savedRows
@@ -66,7 +74,7 @@ export async function GET(req: NextRequest) {
             ? { id: { in: savedPermitIds } }
             : { issueDate: { gte: since } },
           orderBy: { issueDate: "desc" },
-          ...(isWatchlist ? {} : { take: limits.maxPermits * 2 }),
+          ...(isWatchlist ? {} : { take: Math.min(limits.maxPermits * 2, 60) }),
         }),
     tab === "permits"
       ? []
@@ -76,9 +84,9 @@ export async function GET(req: NextRequest) {
             : {
                 closesAt: { gte: new Date() },
                 OR: [{ status: null }, { status: { not: "closed" } }],
-              },
+          },
           orderBy: { closesAt: "asc" },
-          ...(isWatchlist ? {} : { take: limits.maxTenders * 2 }),
+          ...(isWatchlist ? {} : { take: Math.min(limits.maxTenders * 2, 30) }),
         }),
   ]);
 
@@ -86,40 +94,74 @@ export async function GET(req: NextRequest) {
   const savedByKey = new Map(
     savedRows.map((row) => [
       `${row.kind}:${row.itemId}`,
-      { notes: row.notes, createdAt: row.createdAt },
+      {
+        notes: row.notes,
+        stage: row.stage,
+        nextActionAt: row.nextActionAt,
+        createdAt: row.createdAt,
+      },
     ]),
   );
   const competitionMap = await batchCompetitionCounts(permitsRaw);
   const getIntel = limits.intelligenceFull ? createIntelligenceCache() : null;
+  const scoringProfile = {
+    rbqLicenseClass: user?.rbqLicenseClass,
+    rbqLicenseNumber: user?.rbqLicenseNumber,
+    rbqVerified: user?.rbqVerified,
+    minProjectCost: user?.minProjectCost,
+    maxProjectCost: user?.maxProjectCost,
+  };
 
-  const permitsEnriched = await Promise.all(
-    permitsRaw.map(async (p) => {
-      const dataQuality = assessPermitQuality(p);
+  const permitCandidates = await Promise.all(
+    permitsRaw.map(async (permit) => {
+      const dataQuality = assessPermitQuality(permit);
       const fit = computeVerifiedRbqFit(
         user?.rbqLicenseClass,
         user?.rbqLicenseNumber,
         user?.rbqVerified ?? false,
-        p.permitType,
-        p.workType,
+        permit.permitType,
+        permit.workType,
       );
-      const intelligence = getIntel ? await getIntel(p) : undefined;
       const competitionCount = getCompetitionFromMap(
         competitionMap,
-        p.permitType,
-        p.borough,
+        permit.permitType,
+        permit.borough,
       );
-      const pipeline = await computePipelineScore(
-        p,
-        {
-          rbqLicenseClass: user?.rbqLicenseClass,
-          rbqLicenseNumber: user?.rbqLicenseNumber,
-          rbqVerified: user?.rbqVerified,
-          minProjectCost: user?.minProjectCost,
-          maxProjectCost: user?.maxProjectCost,
-        },
-        intelligence,
+      const basePipeline = await computePipelineScore(
+        permit,
+        scoringProfile,
+        undefined,
         { competitionCount, dataQualityScore: dataQuality.score },
       );
+      return { permit, dataQuality, fit, competitionCount, basePipeline };
+    }),
+  );
+  const intelligenceCandidateIds = new Set(
+    [...permitCandidates]
+      .filter((candidate) => candidate.dataQuality.usable)
+      .sort((a, b) => b.basePipeline.score - a.basePipeline.score)
+      .slice(0, 12)
+      .map((candidate) => candidate.permit.id),
+  );
+
+  const permitsEnriched = await Promise.all(
+    permitCandidates.map(async ({
+      permit: p,
+      dataQuality,
+      fit,
+      competitionCount,
+      basePipeline,
+    }) => {
+      const intelligence =
+        getIntel && intelligenceCandidateIds.has(p.id)
+          ? await getIntel(p)
+          : undefined;
+      const pipeline = intelligence
+        ? await computePipelineScore(p, scoringProfile, intelligence, {
+            competitionCount,
+            dataQualityScore: dataQuality.score,
+          })
+        : basePipeline;
       const signals = computeLeadSignals(
         {
           kind: "permit",
@@ -144,6 +186,7 @@ export async function GET(req: NextRequest) {
         pipeline,
         dataQuality,
         intelligence,
+        locale,
       });
       return {
         kind: "permit" as const,
@@ -153,6 +196,9 @@ export async function GET(req: NextRequest) {
         opportunityDossier,
         saved: savedIds.has(`permit:${p.id}`),
         savedNote: savedByKey.get(`permit:${p.id}`)?.notes ?? null,
+        savedStage: savedByKey.get(`permit:${p.id}`)?.stage ?? null,
+        savedNextActionAt:
+          savedByKey.get(`permit:${p.id}`)?.nextActionAt?.toISOString() ?? null,
         permit: {
           ...p,
           rbqFit: fit,
@@ -219,6 +265,7 @@ export async function GET(req: NextRequest) {
         signals,
         ranking,
         hasSimilarAwards,
+        locale,
       });
       return {
         kind: "tender" as const,
@@ -228,6 +275,9 @@ export async function GET(req: NextRequest) {
         opportunityDossier,
         saved: savedIds.has(`tender:${t.id}`),
         savedNote: savedByKey.get(`tender:${t.id}`)?.notes ?? null,
+        savedStage: savedByKey.get(`tender:${t.id}`)?.stage ?? null,
+        savedNextActionAt:
+          savedByKey.get(`tender:${t.id}`)?.nextActionAt?.toISOString() ?? null,
         tender: {
           ...t,
           daysLeft,
@@ -361,8 +411,12 @@ export async function GET(req: NextRequest) {
       trades: userTrades,
       regions: userRegions,
       ampAuthorized: user?.ampAuthorized ?? false,
+      name: user?.name ?? null,
+      email: user?.email ?? null,
+      companyName: user?.companyName ?? null,
     },
     plan: user?.plan ?? "FREE",
     complianceEntitled: user ? getPlanLimits(user.plan).complianceVault : false,
+    generatedAt: new Date().toISOString(),
   });
 }

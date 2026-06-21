@@ -151,6 +151,14 @@ export type OpportunityDossier = {
     minimumConfidence: number;
     missingEvidence: string[];
   };
+  triage: {
+    recommendation: "act_now" | "verify_first" | "watch" | "deprioritize";
+    reason: string;
+    effort: "light" | "moderate" | "heavy";
+    actionBy?: string | null;
+    blockers: string[];
+    recommendedStage: "new" | "researching" | "pursuing";
+  };
   siteIntelligence?: {
     confirmedFacts: string[];
     inferredContext: string[];
@@ -169,6 +177,15 @@ export type OpportunityDossier = {
     fields: string[];
   };
 };
+
+export type PipelineStage =
+  | "new"
+  | "researching"
+  | "pursuing"
+  | "submitted"
+  | "won"
+  | "lost"
+  | "archived";
 
 export function evidence<T>(
   value: T,

@@ -295,7 +295,11 @@ async function upsertPermitRecords(
   remote: Awaited<ReturnType<typeof fetchPermitsPaginated>>,
   city = "Montréal"
 ) {
-  const chunkSize = 25;
+  const configuredChunkSize = Number(process.env.PERMIT_UPSERT_CHUNK_SIZE ?? 10);
+  const chunkSize =
+    Number.isFinite(configuredChunkSize) && configuredChunkSize > 0
+      ? Math.min(configuredChunkSize, 25)
+      : 10;
 
   const { processed, results } = await transactionChunkUpsert(remote, chunkSize, (p) => {
     const required = getRequiredRbqClasses(p.permitType, p.workType);

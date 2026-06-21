@@ -4,11 +4,46 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 
+const stageSchema = z.enum([
+  "new",
+  "researching",
+  "pursuing",
+  "submitted",
+  "won",
+  "lost",
+  "archived",
+]);
+
 const bodySchema = z.object({
   kind: z.enum(["permit", "tender"]),
   itemId: z.string().min(1),
   notes: z.string().trim().max(2000).nullable().optional(),
+  stage: stageSchema.optional(),
+  nextActionAt: z.string().datetime().nullable().optional(),
 });
+
+function savedLeadUpdate(body: z.infer<typeof bodySchema>) {
+  return {
+    ...(body.notes !== undefined ? { notes: body.notes || null } : {}),
+    ...(body.stage !== undefined ? { stage: body.stage } : {}),
+    ...(body.nextActionAt !== undefined
+      ? { nextActionAt: body.nextActionAt ? new Date(body.nextActionAt) : null }
+      : {}),
+  };
+}
+
+function savedLeadError(error: unknown) {
+  if (error instanceof z.ZodError) {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+  if (error instanceof Error && error.message === "UNAUTHORIZED") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  console.error("[api/leads/saved] request failed", {
+    error: error instanceof Error ? error.message : String(error),
+  });
+  return NextResponse.json({ error: "Could not update pipeline" }, { status: 500 });
+}
 
 async function leadExists(kind: "permit" | "tender", itemId: string) {
   if (kind === "permit") {
@@ -36,8 +71,8 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json({ saved: rows });
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch (error) {
+    return savedLeadError(error);
   }
 }
 
@@ -63,15 +98,14 @@ export async function POST(req: NextRequest) {
         kind: body.kind,
         itemId: body.itemId,
         notes: body.notes,
+        stage: body.stage ?? "new",
+        nextActionAt: body.nextActionAt ? new Date(body.nextActionAt) : null,
       },
-      update: { notes: body.notes },
+      update: savedLeadUpdate(body),
     });
     return NextResponse.json({ saved: row });
-  } catch (e) {
-    if (e instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
-    }
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch (error) {
+    return savedLeadError(error);
   }
 }
 
@@ -83,7 +117,7 @@ export async function PATCH(req: NextRequest) {
     const body = bodySchema.parse(await req.json());
     const result = await prisma.savedLead.updateMany({
       where: { userId: user.id, kind: body.kind, itemId: body.itemId },
-      data: { notes: body.notes || null },
+      data: savedLeadUpdate(body),
     });
     if (result.count === 0) {
       return NextResponse.json(
@@ -91,12 +125,14 @@ export async function PATCH(req: NextRequest) {
         { status: 404 },
       );
     }
-    return NextResponse.json({ ok: true, notes: body.notes || null });
-  } catch (e) {
-    if (e instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
-    }
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({
+      ok: true,
+      notes: body.notes || null,
+      stage: body.stage,
+      nextActionAt: body.nextActionAt,
+    });
+  } catch (error) {
+    return savedLeadError(error);
   }
 }
 
@@ -119,7 +155,7 @@ export async function DELETE(req: NextRequest) {
       where: { userId: user.id, kind: kind.data, itemId },
     });
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch (error) {
+    return savedLeadError(error);
   }
 }

@@ -1,594 +1,488 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback } from "react";
-import { Link } from "@/i18n/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Settings } from "lucide-react";
-import VerdictStamp from "@/components/VerdictStamp";
-import { LeadCard } from "@/components/LeadCard";
-import QuebecCoverageBar from "@/components/QuebecCoverageBar";
-import MissedOpportunityBanner, {
-  type FeedFomoMeta,
-} from "@/components/MissedOpportunityBanner";
-import LockedLeadTeasers from "@/components/LockedLeadTeasers";
-import { intelAccessForPlan } from "@/components/SiteIntelligencePanel";
-import type { PropertyIntelligence } from "@/lib/intelligence";
-import type { LeadSignal } from "@/lib/lead-signals";
-import { filterItemsBySignal } from "@/lib/lead-signals";
-import type { RuntimeDataMode } from "@/lib/data-mode";
-import type { VerdictTier } from "@/lib/verdict/compute-verdict";
-import type { PipelineScoreResult } from "@/lib/pipeline-score";
-import type { TenderScoreResult } from "@/lib/tender-score";
-import type { PermitDataQuality } from "@/lib/permits/quality";
-import type { OpportunityDossier } from "@/lib/domain/quebec";
+import { Building2, CheckCircle2, Clock3, RefreshCw, X } from "lucide-react";
+import { CockpitSidebar } from "@/components/CockpitSidebar";
+import { OpportunityDetailPanel } from "@/components/OpportunityDetailPanel";
 import {
-  PageHeader,
-  Tabs,
-  SkeletonList,
-  EmptyState,
-  Card,
-  Input,
-  FieldLabel,
-  Button,
-  useToast,
-  FadeIn,
-  StaggerList,
-  StaggerItem,
-} from "@/components/ui";
+  OpportunityTable,
+  type DecisionFilter,
+  type SourceFilter,
+} from "@/components/OpportunityTable";
+import { Button, useToast } from "@/components/ui";
+import type { RuntimeDataMode } from "@/lib/data-mode";
+import {
+  feedItemKey,
+  getFeedDossier,
+  getFeedLocation,
+  getFeedTitle,
+  type FeedItem,
+} from "@/lib/feed";
+import type { PipelineStage } from "@/lib/domain/quebec";
 
-type FeedItem =
-  | {
-      kind: "permit";
-      id: string;
-      score: number;
-      signals: LeadSignal[];
-      opportunityDossier?: OpportunityDossier;
-      saved?: boolean;
-      savedNote?: string | null;
-      permit: {
-        id: string;
-        address: string;
-        borough?: string | null;
-        permitType: string;
-        estimatedCost?: number | null;
-        issueDate?: string | null;
-        pipelineScore?: number;
-        summaryFr?: string | null;
-        summaryEn?: string | null;
-        rbqFit: { eligible: boolean; score: number };
-        pipeline?: PipelineScoreResult;
-        sourceUrl?: string;
-        applicantName?: string | null;
-        dataQuality?: PermitDataQuality;
-        intelligence?: PropertyIntelligence | null;
-        opportunityDossier?: OpportunityDossier;
-      };
-    }
-  | {
-      kind: "tender";
-      id: string;
-      score: number;
-      signals: LeadSignal[];
-      opportunityDossier?: OpportunityDossier;
-      saved?: boolean;
-      savedNote?: string | null;
-      tender: {
-        id: string;
-        title: string;
-        organization?: string | null;
-        closesAt?: string | null;
-        daysLeft?: number | null;
-        isThursday?: boolean;
-        urgent?: boolean;
-        matchScore?: number;
-        requiresAmp?: boolean;
-        plainSummary?: string;
-        sourceUrl: string;
-        amendmentCount?: number;
-        ranking?: TenderScoreResult;
-        opportunityDossier?: OpportunityDossier;
-      };
-    };
+type PipelineDraft = {
+  note: string;
+  stage: PipelineStage;
+  nextActionAt: string;
+};
 
-export default function FeedClient({
-  dataMode,
-}: {
-  dataMode: RuntimeDataMode;
-}) {
+type ContractorProfile = {
+  trades: string[];
+  regions: string[];
+  ampAuthorized?: boolean;
+  name?: string | null;
+  email?: string | null;
+  companyName?: string | null;
+};
+
+const PAGE_SIZE = 25;
+
+export default function FeedClient({ dataMode }: { dataMode: RuntimeDataMode }) {
   const t = useTranslations("feed");
-  const c = useTranslations("common");
+  const workspace = useTranslations("feed.workspace");
+  const common = useTranslations("common");
   const locale = useLocale();
   const { error: toastError, success } = useToast();
-  const [tab, setTab] = useState("permits");
   const [items, setItems] = useState<FeedItem[]>([]);
-  const [profile, setProfile] = useState<{
-    trades: string[];
-    regions: string[];
-    ampAuthorized?: boolean;
-  } | null>(null);
+  const [profile, setProfile] = useState<ContractorProfile | null>(null);
+  const [userPlan, setUserPlan] = useState("FREE");
   const [complianceEntitled, setComplianceEntitled] = useState(false);
-  const [fomoMeta, setFomoMeta] = useState<FeedFomoMeta | null>(null);
-  const [lockedTeasers, setLockedTeasers] = useState<
-    {
-      id: string;
-      kind: "permit" | "tender";
-      label: string;
-      borough?: string | null;
-      score: number;
-      valueLabel?: string;
-    }[]
-  >([]);
-  const [userPlan, setUserPlan] = useState<string>("FREE");
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
+  const [decisionFilter, setDecisionFilter] = useState<DecisionFilter>(null);
+  const [search, setSearch] = useState("");
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pipelineDrafts, setPipelineDrafts] = useState<Record<string, PipelineDraft>>({});
+  const [savingPipeline, setSavingPipeline] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [signalFilter, setSignalFilter] = useState<
-    "urgent" | "rbq" | "high_value" | "risks" | null
-  >(null);
-  const [verdictAddress, setVerdictAddress] = useState("");
-  const [verdictBorough, setVerdictBorough] = useState("");
-  const [verdictResult, setVerdictResult] = useState<{
-    tier: VerdictTier;
-    label: string;
-    summary: string;
-    slug: string;
-  } | null>(null);
-  const [verdictLoading, setVerdictLoading] = useState(false);
-  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
-  const [savingNote, setSavingNote] = useState<string | null>(null);
 
-  const apiTab = tab === "verdict" ? "permits" : tab;
+  const apiTab = sourceFilter === "saved" ? "watchlist" : "all";
 
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const res = await fetch(`/api/feed?tab=${apiTab}`);
-      const data = await res.json();
-      if (!res.ok) {
-        setLoadError(data.error ?? c("error"));
+      const response = await fetch(`/api/feed?tab=${apiTab}&locale=${locale}`);
+      const data = await response.json();
+      if (!response.ok) {
         setItems([]);
+        setLoadError(data.error ?? common("error"));
         return;
       }
-      const loadedItems = (data.items ?? []) as FeedItem[];
-      setItems(loadedItems);
-      setNoteDrafts(
+      const loaded = (data.items ?? []) as FeedItem[];
+      setItems(loaded);
+      setProfile(data.profile ?? null);
+      setUserPlan(data.plan ?? "FREE");
+      setComplianceEntitled(data.complianceEntitled ?? false);
+      setGeneratedAt(data.generatedAt ?? null);
+      setPipelineDrafts(
         Object.fromEntries(
-          loadedItems.map((item) => [
-            `${item.kind}:${item.id}`,
-            item.savedNote ?? "",
+          loaded.map((item) => [
+            feedItemKey(item),
+            {
+              note: item.savedNote ?? "",
+              stage: item.savedStage ?? "new",
+              nextActionAt: item.savedNextActionAt?.slice(0, 10) ?? "",
+            },
           ]),
         ),
       );
-      setProfile(data.profile ?? null);
-      setComplianceEntitled(data.complianceEntitled ?? false);
-      setUserPlan(data.plan ?? "FREE");
-      setFomoMeta(data.meta ?? null);
-      if (
-        data.meta &&
-        data.meta.plan !== "PRO" &&
-        data.meta.plan !== "EQUIPE"
-      ) {
-        fetch("/api/stats/preview")
-          .then((r) => r.json())
-          .then((d) => setLockedTeasers(d.leads ?? []))
-          .catch(() => {});
-      } else {
-        setLockedTeasers([]);
-      }
+      setSelectedKey((current) =>
+        loaded.some((item) => feedItemKey(item) === current)
+          ? current
+          : loaded[0]
+            ? feedItemKey(loaded[0])
+            : null,
+      );
     } catch {
-      setLoadError(c("error"));
+      setItems([]);
+      setLoadError(common("error"));
     } finally {
       setLoading(false);
     }
-  }, [apiTab, c]);
+  }, [apiTab, common, locale]);
 
   useEffect(() => {
     queueMicrotask(() => void load());
   }, [load]);
 
+  const filteredItems = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase(locale);
+    return items.filter((item) => {
+      if (sourceFilter === "permit" && item.kind !== "permit") return false;
+      if (sourceFilter === "tender" && item.kind !== "tender") return false;
+      if (sourceFilter === "saved" && !item.saved) return false;
+      const recommendation = getFeedDossier(item)?.triage.recommendation;
+      if (decisionFilter && recommendation !== decisionFilter) return false;
+      if (!query) return true;
+      const searchText = [
+        getFeedTitle(item),
+        getFeedLocation(item),
+        item.kind === "permit"
+          ? `${item.permit.address} ${item.permit.city ?? ""}`
+          : `${item.tender.organization ?? ""} ${item.tender.region ?? ""}`,
+      ]
+        .join(" ")
+        .toLocaleLowerCase(locale);
+      return searchText.includes(query);
+    });
+  }, [decisionFilter, items, locale, search, sourceFilter]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const visibleItems = filteredItems.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
+  const selectedItem =
+    filteredItems.find((item) => feedItemKey(item) === selectedKey) ??
+    visibleItems[0] ??
+    null;
+
+  const summary = useMemo(() => {
+    const now = generatedAt ? new Date(generatedAt).getTime() : 0;
+    const nextWeek = now + 7 * 86_400_000;
+    return {
+      analyzed: items.length,
+      verify: items.filter(
+        (item) => getFeedDossier(item)?.triage.recommendation === "verify_first",
+      ).length,
+      due: items.filter((item) => {
+        if (!item.savedNextActionAt) return false;
+        const actionAt = new Date(item.savedNextActionAt).getTime();
+        return (
+          actionAt <= nextWeek &&
+          !["won", "lost", "archived"].includes(item.savedStage ?? "")
+        );
+      }).length,
+    };
+  }, [generatedAt, items]);
+
+  const changeSourceFilter = (filter: SourceFilter) => {
+    setSourceFilter(filter);
+    setPage(1);
+    setDecisionFilter(null);
+  };
+
+  const changeDecisionFilter = (filter: DecisionFilter) => {
+    setDecisionFilter(filter);
+    setPage(1);
+  };
+
   const toggleSave = async (item: FeedItem) => {
-    const res = item.saved
+    const dossier = getFeedDossier(item);
+    const response = item.saved
       ? await fetch(`/api/leads/saved?kind=${item.kind}&itemId=${item.id}`, {
           method: "DELETE",
         })
       : await fetch("/api/leads/saved", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ kind: item.kind, itemId: item.id }),
+          body: JSON.stringify({
+            kind: item.kind,
+            itemId: item.id,
+            stage: dossier?.triage.recommendedStage ?? "new",
+            nextActionAt: dossier?.triage.actionBy ?? null,
+          }),
         });
-    if (!res.ok) {
-      toastError(c("error"));
+    if (!response.ok) {
+      toastError(common("error"));
       return;
     }
-    success(c("success"));
-    void load();
+
+    if (item.saved && sourceFilter === "saved") {
+      setItems((current) =>
+        current.filter((candidate) => feedItemKey(candidate) !== feedItemKey(item)),
+      );
+      setSelectedKey(null);
+    } else {
+      const stage = dossier?.triage.recommendedStage ?? "new";
+      const nextActionAt = dossier?.triage.actionBy ?? null;
+      setItems((current) =>
+        current.map((candidate) =>
+          feedItemKey(candidate) === feedItemKey(item)
+            ? {
+                ...candidate,
+                saved: !item.saved,
+                savedStage: item.saved ? null : stage,
+                savedNextActionAt: item.saved ? null : nextActionAt,
+              }
+            : candidate,
+        ),
+      );
+      if (!item.saved) {
+        setPipelineDrafts((current) => ({
+          ...current,
+          [feedItemKey(item)]: {
+            note: "",
+            stage,
+            nextActionAt: nextActionAt?.slice(0, 10) ?? "",
+          },
+        }));
+      }
+    }
+    success(item.saved ? workspace("removedFromPipeline") : workspace("addedToPipeline"));
   };
 
-  const permits = items.filter((i) => i.kind === "permit");
-  const tenders = items.filter((i) => i.kind === "tender");
-  const savedItems = items.filter((i) => i.saved);
-
-  const saveNote = async (item: FeedItem) => {
-    const key = `${item.kind}:${item.id}`;
-    setSavingNote(key);
+  const savePipeline = async (item: FeedItem) => {
+    const key = feedItemKey(item);
+    const draft = pipelineDrafts[key] ?? {
+      note: "",
+      stage: "new" as const,
+      nextActionAt: "",
+    };
+    setSavingPipeline(key);
     try {
-      const res = await fetch("/api/leads/saved", {
+      const response = await fetch("/api/leads/saved", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           kind: item.kind,
           itemId: item.id,
-          notes: noteDrafts[key] ?? "",
+          notes: draft.note,
+          stage: draft.stage,
+          nextActionAt: draft.nextActionAt
+            ? `${draft.nextActionAt}T12:00:00.000Z`
+            : null,
         }),
       });
-      if (!res.ok) {
+      if (!response.ok) {
         toastError(t("noteSaveError"));
         return;
       }
-      success(t("noteSaved"));
+      setItems((current) =>
+        current.map((candidate) =>
+          feedItemKey(candidate) === key
+            ? {
+                ...candidate,
+                savedNote: draft.note,
+                savedStage: draft.stage,
+                savedNextActionAt: draft.nextActionAt
+                  ? `${draft.nextActionAt}T12:00:00.000Z`
+                  : null,
+              }
+            : candidate,
+        ),
+      );
+      success(t("pipeline.saved"));
     } catch {
       toastError(t("noteSaveError"));
     } finally {
-      setSavingNote(null);
+      setSavingPipeline(null);
     }
   };
 
-  const displayed = useMemo(() => {
-    let list: FeedItem[] =
-      tab === "permits"
-        ? permits
-        : tab === "tenders"
-          ? tenders
-          : tab === "watchlist"
-            ? savedItems
-            : [];
-    if (signalFilter) {
-      list = filterItemsBySignal(
-        list.map((i) => ({ ...i, signals: i.signals })),
-        signalFilter,
-      );
-    }
-    return list;
-  }, [tab, signalFilter, permits, tenders, savedItems]);
-
-  const tradesLabel = profile?.trades?.length
-    ? profile.trades.join(", ")
-    : t("allTrades");
-  const regionsLabel = profile?.regions?.length
-    ? profile.regions.join(", ")
-    : t("allRegions");
-
-  const runVerdict = async () => {
-    if (!verdictAddress.trim()) return;
-    setVerdictLoading(true);
-    const res = await fetch("/api/verdict", {
+  const createCompliance = async (item: FeedItem) => {
+    if (item.kind !== "permit") return;
+    const response = await fetch("/api/compliance", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        address: verdictAddress,
-        borough: verdictBorough || undefined,
-      }),
-    });
-    const data = await res.json();
-    setVerdictLoading(false);
-    if (!res.ok) {
-      toastError(data.error ?? c("error"));
-      return;
-    }
-    const r = data.report;
-    setVerdictResult({
-      tier: r.tier as VerdictTier,
-      label:
-        locale === "fr"
-          ? (r.summaryFr?.split(".")[0] ?? r.tier)
-          : (r.summaryEn?.split(".")[0] ?? r.tier),
-      summary: locale === "fr" ? r.summaryFr : r.summaryEn,
-      slug: r.shareSlug,
-    });
-  };
-
-  const createCompliance = async (p: {
-    applicantName?: string | null;
-    sourceUrl?: string;
-  }) => {
-    const res = await fetch("/api/compliance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contactName: p.applicantName ?? "Demandeur permis",
+        contactName: item.permit.applicantName ?? "Demandeur permis",
         sourceType: "permit_public_registry",
-        sourceUrl: p.sourceUrl,
+        sourceUrl: item.permit.sourceUrl,
       }),
     });
-    const data = await res.json();
-    if (res.ok) window.open(`/api/compliance?id=${data.record.id}`, "_blank");
-    else toastError(data.error ?? c("error"));
+    const data = await response.json();
+    if (response.ok) window.open(`/api/compliance?id=${data.record.id}`, "_blank");
+    else toastError(data.error ?? common("error"));
   };
 
-  const intelAccess = intelAccessForPlan(userPlan);
-
-  const tabs = [
-    { id: "permits", label: t("tab.permits"), count: permits.length },
-    { id: "tenders", label: t("tab.tenders"), count: tenders.length },
-    { id: "watchlist", label: t("tab.watchlist"), count: savedItems.length },
-    { id: "verdict", label: t("tab.verdict") },
-  ];
-
-  const filterChips: { id: typeof signalFilter; label: string }[] = [
-    { id: "urgent", label: t("filterUrgent") },
-    { id: "rbq", label: t("filterRbq") },
-    { id: "high_value", label: t("filterHighValue") },
-    { id: "risks", label: t("filterRisks") },
-  ];
-  const emptyCopy =
-    tab === "watchlist"
-      ? { title: t("noWatchlist"), description: t("noWatchlistHint") }
-      : tab === "tenders"
-        ? { title: t("noTenders"), description: t("noTendersHint") }
-        : { title: t("noPermits"), description: t("noPermitsHint") };
+  const profileLabel = [
+    profile?.trades?.slice(0, 3).join(", "),
+    profile?.regions?.slice(0, 2).join(", "),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const syncedLabel = generatedAt
+    ? new Intl.DateTimeFormat(locale === "fr" ? "fr-CA" : "en-CA", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(generatedAt))
+    : null;
 
   return (
-    <FadeIn className="mx-auto max-w-7xl px-4 py-8 text-ink">
-      <div className="mb-4">
-        <QuebecCoverageBar compact />
-      </div>
-      <PageHeader
-        title={t("title")}
-        subtitle={t("subtitle")}
-        action={
-          <Link
-            href="/settings"
-            className="inline-flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm text-muted shadow-sm transition hover:border-brand-border hover:text-brand"
-          >
-            <Settings className="h-4 w-4" />
-            {t("settings")}
-          </Link>
-        }
-      />
-      <p className="-mt-4 mb-6 text-sm text-muted">
-        {regionsLabel} · {tradesLabel}
-      </p>
-      {dataMode === "local" ? (
-        <p className="-mt-3 mb-6 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-          {t("localDataNotice")}
-        </p>
-      ) : null}
-
-      <Tabs
-        tabs={tabs}
-        active={tab}
-        onChange={setTab}
-        className="sticky top-[57px] z-40 bg-bg/95 py-2 backdrop-blur"
-      />
-
-      {tab !== "verdict" && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {filterChips.map((chip) => (
-            <button
-              key={chip.id ?? "all"}
-              type="button"
-              onClick={() =>
-                setSignalFilter(signalFilter === chip.id ? null : chip.id)
-              }
-              className={`rounded-full px-3 py-1 text-xs ${
-                signalFilter === chip.id
-                  ? "bg-brand text-white"
-                  : "border border-line bg-white text-muted hover:border-brand-border hover:text-brand"
-              }`}
-            >
-              {chip.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {tab !== "verdict" && tab !== "watchlist" && fomoMeta && (
-        <div className="mt-4">
-          <MissedOpportunityBanner meta={fomoMeta} />
-        </div>
-      )}
-
-      {loadError && (
-        <div className="mt-4 rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger-ink">
-          {loadError}
-          <Button
-            variant="secondary"
-            size="sm"
-            className="mt-2"
-            onClick={() => void load()}
-          >
-            {c("retry")}
-          </Button>
-        </div>
-      )}
-
-      {loading ? (
-        <SkeletonList count={4} />
-      ) : tab === "verdict" ? (
-        <Card className="mt-6 space-y-4">
-          <p className="text-sm text-muted">{t("verdictHint")}</p>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <FieldLabel htmlFor="v-address">
-                {t("addressPlaceholder")}
-              </FieldLabel>
-              <Input
-                id="v-address"
-                value={verdictAddress}
-                onChange={(e) => setVerdictAddress(e.target.value)}
-              />
+    <div data-cockpit-workspace className="min-h-screen bg-white text-ink lg:flex">
+      <CockpitSidebar plan={userPlan} user={profile} />
+      <div className="min-w-0 flex-1 xl:grid xl:grid-cols-[minmax(0,1fr)_410px]">
+        <main className="min-w-0 bg-[#f7f9fc] p-3 sm:p-4 lg:p-5">
+          <header className="mb-4 border-b border-line pb-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h1 className="font-display text-2xl font-semibold text-ink">{workspace("title")}</h1>
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+                  <span className="inline-flex items-center gap-2 font-medium text-ink">
+                    <Building2 className="h-4 w-4" />
+                    {profile?.companyName || profile?.name || workspace("yourCompany")}
+                  </span>
+                  {profileLabel ? <span>{workspace("profileLabel", { value: profileLabel })}</span> : null}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted">
+                <CheckCircle2 className="h-4 w-4 text-success" />
+                {syncedLabel ? workspace("generatedAt", { time: syncedLabel }) : workspace("loadingData")}
+              </div>
             </div>
-            <div>
-              <FieldLabel htmlFor="v-borough">
-                {t("boroughPlaceholder")}
-              </FieldLabel>
-              <Input
-                id="v-borough"
-                value={verdictBorough}
-                onChange={(e) => setVerdictBorough(e.target.value)}
-              />
+            {dataMode === "local" ? (
+              <p className="mt-3 border-l-2 border-warning bg-warning-soft px-3 py-2 text-xs text-warning-ink">
+                {t("localDataNotice")}
+              </p>
+            ) : null}
+          </header>
+
+          <section className="mb-4 grid border border-line bg-white sm:grid-cols-3" aria-label={workspace("summaryTitle")}>
+            <div className="flex items-center gap-3 border-b border-line px-4 py-4 sm:border-b-0 sm:border-r">
+              <RefreshCw className="h-5 w-5 text-subtle" strokeWidth={1.6} />
+              <div>
+                <p className="tabular-nums text-2xl font-semibold text-ink">{summary.analyzed}</p>
+                <p className="text-xs text-muted">{workspace("signalsAnalyzed")}</p>
+              </div>
             </div>
-          </div>
-          <Button
-            variant="success"
-            onClick={runVerdict}
-            disabled={verdictLoading}
-          >
-            {verdictLoading ? c("loading") : t("runVerdict")}
-          </Button>
-          {verdictResult && (
-            <div className="space-y-4 border-t border-line pt-4">
-              <VerdictStamp
-                tier={verdictResult.tier}
-                label={verdictResult.label}
-                address={verdictAddress}
-              />
-              <p className="text-sm text-muted">{verdictResult.summary}</p>
-              <Link
-                href={`/verdict/${verdictResult.slug}`}
-                className="text-sm text-brand"
-              >
-                {t("shareLink")} →
-              </Link>
+            <div className="flex items-center gap-3 border-b border-line px-4 py-4 sm:border-b-0 sm:border-r">
+              <Clock3 className="h-5 w-5 text-warning" strokeWidth={1.6} />
+              <div>
+                <p className="tabular-nums text-2xl font-semibold text-ink">{summary.verify}</p>
+                <p className="text-xs text-muted">{workspace("needVerification")}</p>
+              </div>
             </div>
-          )}
-        </Card>
-      ) : (
-        <StaggerList className="mt-6 space-y-4">
-          {displayed.length === 0 ? (
-            <EmptyState
-              title={emptyCopy.title}
-              description={emptyCopy.description}
-              action={
-                <Link href="/settings">
-                  <Button variant="secondary" size="sm">
-                    {t("settings")}
+            <div className="flex items-center gap-3 px-4 py-4">
+              <CheckCircle2 className="h-5 w-5 text-brand" strokeWidth={1.6} />
+              <div>
+                <p className="tabular-nums text-2xl font-semibold text-ink">{summary.due}</p>
+                <p className="text-xs text-muted">{workspace("followupsDue")}</p>
+              </div>
+            </div>
+          </section>
+
+          {loadError ? (
+            <div className="mb-4 flex items-center justify-between gap-3 border border-danger/30 bg-danger-soft p-3 text-sm text-danger-ink">
+              {loadError}
+              <Button variant="secondary" size="sm" onClick={() => void load()}>{common("retry")}</Button>
+            </div>
+          ) : null}
+
+          {loading ? (
+            <div className="animate-pulse border border-line bg-white">
+              <div className="h-24 border-b border-line bg-surface-2" />
+              {Array.from({ length: 7 }).map((_, index) => (
+                <div key={index} className="h-[74px] border-b border-line bg-white" />
+              ))}
+            </div>
+          ) : filteredItems.length ? (
+            <>
+              <OpportunityTable
+                items={visibleItems}
+                selectedKey={selectedItem ? feedItemKey(selectedItem) : null}
+                locale={locale}
+                sourceFilter={sourceFilter}
+                decisionFilter={decisionFilter}
+                search={search}
+                onSourceFilter={changeSourceFilter}
+                onDecisionFilter={changeDecisionFilter}
+                onSearch={(value) => {
+                  setSearch(value);
+                  setPage(1);
+                }}
+                onSelect={(item) => {
+                  setSelectedKey(feedItemKey(item));
+                  setDetailOpen(true);
+                }}
+              />
+              <div className="flex items-center justify-between border-x border-b border-line bg-white px-4 py-3 text-xs text-muted">
+                <span>
+                  {workspace("pageRange", {
+                    from: (safePage - 1) * PAGE_SIZE + 1,
+                    to: Math.min(safePage * PAGE_SIZE, filteredItems.length),
+                    total: filteredItems.length,
+                  })}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={safePage <= 1}
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                  >
+                    {workspace("previous")}
                   </Button>
-                </Link>
-              }
-            />
+                  <span className="grid h-8 min-w-8 place-items-center rounded-md border border-brand text-brand">
+                    {safePage}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={safePage >= pageCount}
+                    onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
+                  >
+                    {workspace("next")}
+                  </Button>
+                </div>
+              </div>
+            </>
           ) : (
-            displayed.map((item) => {
-              const noteKey = `${item.kind}:${item.id}`;
-              return (
-                <StaggerItem key={noteKey}>
-                  {item.kind === "permit" ? (
-                    <LeadCard
-                      locale={locale}
-                      item={{
-                        kind: "permit",
-                        id: item.id,
-                        score: item.score,
-                        signals: item.signals,
-                        permitType: item.permit.permitType,
-                        address: item.permit.address,
-                        borough: item.permit.borough,
-                        estimatedCost: item.permit.estimatedCost,
-                        issueDate: item.permit.issueDate,
-                        summaryFr: item.permit.summaryFr,
-                        summaryEn: item.permit.summaryEn,
-                        rbqFit: item.permit.rbqFit,
-                        pipeline: item.permit.pipeline,
-                        sourceUrl: item.permit.sourceUrl,
-                        applicantName: item.permit.applicantName,
-                        dataQuality: item.permit.dataQuality,
-                        opportunityDossier:
-                          item.permit.opportunityDossier ??
-                          item.opportunityDossier,
-                      }}
-                      saved={item.saved}
-                      complianceEnabled={complianceEntitled}
-                      onSave={() => void toggleSave(item)}
-                      onCompliance={() => createCompliance(item.permit)}
-                      intelligence={item.permit.intelligence}
-                      intelAccess={intelAccess}
-                      testData={dataMode === "local"}
-                    />
-                  ) : (
-                    <LeadCard
-                      locale={locale}
-                      item={{
-                        kind: "tender",
-                        id: item.id,
-                        score: item.score,
-                        signals: item.signals,
-                        title: item.tender.title,
-                        organization: item.tender.organization,
-                        daysLeft: item.tender.daysLeft,
-                        isThursday: item.tender.isThursday,
-                        urgent: item.tender.urgent,
-                        requiresAmp: item.tender.requiresAmp,
-                        plainSummary: item.tender.plainSummary,
-                        sourceUrl: item.tender.sourceUrl,
-                        amendmentCount: item.tender.amendmentCount,
-                        ranking: item.tender.ranking,
-                        opportunityDossier:
-                          item.tender.opportunityDossier ??
-                          item.opportunityDossier,
-                      }}
-                      saved={item.saved}
-                      onSave={() => void toggleSave(item)}
-                      testData={dataMode === "local"}
-                      countdown={
-                        item.tender.daysLeft != null ? (
-                          <p
-                            className={`mt-2 text-xs ${item.tender.urgent ? "text-red-300" : "text-slate-400"}`}
-                          >
-                            {t("closesIn")} {item.tender.daysLeft}j
-                            {item.tender.isThursday && ` · ${t("thursday")}`}
-                          </p>
-                        ) : undefined
-                      }
-                    />
-                  )}
-                  {tab === "watchlist" ? (
-                    <div className="mx-3 border-x border-b border-line bg-white px-4 pb-4 pt-3">
-                      <FieldLabel htmlFor={`note-${item.kind}-${item.id}`}>
-                        {t("watchlistNote")}
-                      </FieldLabel>
-                      <textarea
-                        id={`note-${item.kind}-${item.id}`}
-                        value={noteDrafts[noteKey] ?? ""}
-                        maxLength={2000}
-                        rows={2}
-                        onChange={(event) =>
-                          setNoteDrafts((current) => ({
-                            ...current,
-                            [noteKey]: event.target.value,
-                          }))
-                        }
-                        placeholder={t("watchlistNotePlaceholder")}
-                        className="mt-1 w-full resize-y rounded-md border border-line bg-white px-3 py-2 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-ring"
-                      />
-                      <div className="mt-2 flex items-center justify-between gap-3">
-                        <span className="text-xs text-subtle">
-                          {(noteDrafts[noteKey] ?? "").length}/2000
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          disabled={savingNote === noteKey}
-                          onClick={() => void saveNote(item)}
-                        >
-                          {savingNote === noteKey
-                            ? c("loading")
-                            : t("saveNote")}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : null}
-                </StaggerItem>
-              );
-            })
+            <div className="border border-line bg-white p-10 text-center">
+              <h2 className="text-base font-semibold text-ink">{workspace("emptyTitle")}</h2>
+              <p className="mt-2 text-sm text-muted">{workspace("emptyDescription")}</p>
+            </div>
           )}
-          {tab !== "watchlist" &&
-            fomoMeta &&
-            fomoMeta.plan !== "PRO" &&
-            fomoMeta.plan !== "EQUIPE" && (
-              <LockedLeadTeasers teasers={lockedTeasers} />
-            )}
-        </StaggerList>
-      )}
-    </FadeIn>
+        </main>
+
+        <div className="hidden min-w-0 bg-[#f7f9fc] p-2 xl:block xl:border-l xl:border-line">
+          <OpportunityDetailPanel
+            item={selectedItem}
+            locale={locale}
+            draft={selectedItem ? pipelineDrafts[feedItemKey(selectedItem)] : undefined}
+            saving={selectedItem ? savingPipeline === feedItemKey(selectedItem) : false}
+            complianceEnabled={complianceEntitled}
+            onToggleSave={(item) => void toggleSave(item)}
+            onCompliance={(item) => void createCompliance(item)}
+            onDraftChange={(draft) => {
+              if (!selectedItem) return;
+              setPipelineDrafts((current) => ({
+                ...current,
+                [feedItemKey(selectedItem)]: draft,
+              }));
+            }}
+            onSavePipeline={(item) => void savePipeline(item)}
+          />
+        </div>
+      </div>
+
+      {detailOpen && selectedItem ? (
+        <div className="fixed inset-0 z-[70] overflow-y-auto bg-[#f7f9fc] p-2 xl:hidden">
+          <div className="sticky top-0 z-10 mb-2 flex h-12 items-center justify-between border border-line bg-white px-3">
+            <p className="text-sm font-semibold text-ink">{workspace("dossierTitle")}</p>
+            <button
+              type="button"
+              onClick={() => setDetailOpen(false)}
+              className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-surface-hover"
+              aria-label={workspace("closeDossier")}
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <OpportunityDetailPanel
+            item={selectedItem}
+            locale={locale}
+            draft={pipelineDrafts[feedItemKey(selectedItem)]}
+            saving={savingPipeline === feedItemKey(selectedItem)}
+            complianceEnabled={complianceEntitled}
+            onToggleSave={(item) => void toggleSave(item)}
+            onCompliance={(item) => void createCompliance(item)}
+            onDraftChange={(draft) =>
+              setPipelineDrafts((current) => ({
+                ...current,
+                [feedItemKey(selectedItem)]: draft,
+              }))
+            }
+            onSavePipeline={(item) => void savePipeline(item)}
+          />
+        </div>
+      ) : null}
+    </div>
   );
 }

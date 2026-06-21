@@ -49,6 +49,8 @@ export function NavBar({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  if (user && pathname.startsWith("/feed")) return null;
+
   const plan = user?.plan ?? "FREE";
 
   const links = [
