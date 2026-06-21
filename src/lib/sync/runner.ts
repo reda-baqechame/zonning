@@ -65,7 +65,10 @@ const WEEKLY_DATASET_IDS: DatasetId[] = [
   "toronto-permits",
 ];
 
-const RBQ_BATCH = 3000;
+// Larger than other batches: the RBQ active-licenses dataset has ~900k rows
+// and uses a resumable offset, so each call should advance the offset
+// meaningfully to populate the table in a reasonable number of cycles.
+const RBQ_BATCH = 15000;
 const HERITAGE_BATCH = 500;
 
 async function trySkipUnchangedWeekly(datasetId: DatasetId): Promise<SyncResult | null> {
