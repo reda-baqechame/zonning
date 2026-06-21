@@ -28,8 +28,10 @@ function createPrismaClient(): PrismaClient {
     const pool = new Pool({
       connectionString,
       max: resolvePgPoolMax(),
-      idleTimeoutMillis: 30_000,
-      connectionTimeoutMillis: 10_000,
+      idleTimeoutMillis: process.env.VERCEL ? 5_000 : 30_000,
+      connectionTimeoutMillis: 20_000,
+      allowExitOnIdle: Boolean(process.env.VERCEL),
+      keepAlive: true,
       ssl: useSupabaseSsl ? { rejectUnauthorized: false } : undefined,
     });
     pool.on("error", (error) => {
