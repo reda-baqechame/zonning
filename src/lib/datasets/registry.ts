@@ -511,6 +511,10 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     sourceUrl:
       "https://donneesouvertes-sherbrooke.opendata.arcgis.com/datasets/84e35108c6ff4f9f97d3b98c1aadf262_0",
     preferredFormat: "GeoJSON",
+    coverageStatus: "unavailable",
+    coverageNote:
+      "The official ArcGIS layer returned Invalid URL on 2026-06-21; excluded from live sync until Sherbrooke publishes a verified replacement feed.",
+    syncEnabled: false,
     defaultLimit: 200,
     productionLimit: 1000,
     refreshIntervalMinutes: 10080,
