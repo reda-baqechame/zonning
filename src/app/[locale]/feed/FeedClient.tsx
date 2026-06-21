@@ -115,6 +115,7 @@ export default function FeedClient({ dataMode }: { dataMode: RuntimeDataMode }) 
     return items.filter((item) => {
       if (sourceFilter === "permit" && item.kind !== "permit") return false;
       if (sourceFilter === "tender" && item.kind !== "tender") return false;
+      if (sourceFilter === "thursday" && !(item.kind === "tender" && item.tender.isThursday)) return false;
       if (sourceFilter === "saved" && !item.saved) return false;
       const recommendation = getFeedDossier(item)?.triage.recommendation;
       if (decisionFilter && recommendation !== decisionFilter) return false;

@@ -210,6 +210,7 @@ export default async function HomePage({
           permitsWeek: stats.permitsWeek,
           tendersOpen: stats.tendersOpen,
           tendersClosingWeek: stats.tendersClosingWeek,
+          tendersClosingThursday: stats.tendersClosingThursday,
           indexedDatasets: stats.datasetCount,
         }}
         updatedAt={stats.updatedAt}

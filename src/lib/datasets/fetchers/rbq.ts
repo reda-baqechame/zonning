@@ -72,6 +72,8 @@ function mapRbqRow(row: Record<string, string>, sourceUrl: string): RbqLicenseRe
 }
 
 let cachedRbqResourceId: string | null = null;
+/** Cached per cold start: whether the CKAN DataStore API serves this resource. */
+let rbqDatastoreAvailable: boolean | null = null;
 
 async function getRbqResourceId(): Promise<string | null> {
   if (cachedRbqResourceId) return cachedRbqResourceId;
@@ -85,6 +87,43 @@ async function getRbqResourceId(): Promise<string | null> {
   return cachedRbqResourceId;
 }
 
+/** Page via the CKAN DataStore search API (paginated, no full download). */
+async function fetchRbqDatastorePage(
+  resourceId: string,
+  offset: number,
+  batchSize: number
+): Promise<RbqPageResult> {
+  const cfg = DATASETS.rbq;
+  const page = Math.min(1000, batchSize);
+  const records: RbqLicenseRecord[] = [];
+  let fetched = 0;
+  let cursor = offset;
+
+  while (records.length < batchSize) {
+    const rows = await fetchCkanDatastoreSearch(resourceId, page, cursor);
+    if (rows.length === 0) {
+      return { records, fetched, complete: true };
+    }
+
+    for (const raw of rows) {
+      const normalized = Object.fromEntries(
+        Object.entries(raw).map(([k, v]) => [k.toLowerCase(), String(v ?? "")])
+      );
+      const mapped = mapRbqRow(normalized, cfg.sourceUrl);
+      if (mapped) records.push(mapped);
+      if (records.length >= batchSize) break;
+    }
+
+    fetched += rows.length;
+    cursor += rows.length;
+    if (rows.length < page) {
+      return { records, fetched, complete: true };
+    }
+  }
+
+  return { records, fetched, complete: false };
+}
+
 export async function fetchRbqLicensesPage(
   offset: number,
   batchSize: number
@@ -92,35 +131,19 @@ export async function fetchRbqLicensesPage(
   const cfg = DATASETS.rbq;
   const resourceId = await getRbqResourceId();
 
+  // Prefer the DataStore search API (paginated, avoids downloading the full
+  // CSV). Many Données Québec resources don't have DataStore enabled — in that
+  // case the search returns an empty result. Probe once per cold start and fall
+  // back to a direct CSV fetch so RBQ licenses are actually ingested (without
+  // this, rbqLicenses stays at 0 while the sync falsely reports "complete").
   if (resourceId) {
-    const page = Math.min(1000, batchSize);
-    const records: RbqLicenseRecord[] = [];
-    let fetched = 0;
-    let cursor = offset;
-
-    while (records.length < batchSize) {
-      const rows = await fetchCkanDatastoreSearch(resourceId, page, cursor);
-      if (rows.length === 0) {
-        return { records, fetched, complete: true };
-      }
-
-      for (const raw of rows) {
-        const normalized = Object.fromEntries(
-          Object.entries(raw).map(([k, v]) => [k.toLowerCase(), String(v ?? "")])
-        );
-        const mapped = mapRbqRow(normalized, cfg.sourceUrl);
-        if (mapped) records.push(mapped);
-        if (records.length >= batchSize) break;
-      }
-
-      fetched += rows.length;
-      cursor += rows.length;
-      if (rows.length < page) {
-        return { records, fetched, complete: true };
-      }
+    if (rbqDatastoreAvailable === null) {
+      const probe = await fetchCkanDatastoreSearch(resourceId, 1, 0);
+      rbqDatastoreAvailable = probe.length > 0;
     }
-
-    return { records, fetched, complete: false };
+    if (rbqDatastoreAvailable) {
+      return fetchRbqDatastorePage(resourceId, offset, batchSize);
+    }
   }
 
   const resourceUrl = await fetchCkanResourceUrl(cfg.ckanId, "CSV");
