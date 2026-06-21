@@ -339,6 +339,14 @@ async function upsertPermitRecords(
       } catch {
         /* alerts optional */
       }
+      try {
+        // Watch-list change detection — emit notifications for pinned properties
+        // that just received a new permit (near-real-time, non-blocking).
+        const { detectWatchChanges } = await import("@/lib/watchlist/engine");
+        void detectWatchChanges().catch((e) => console.warn("[watchlist] detection failed", (e as Error).message));
+      } catch {
+        /* watchlist optional */
+      }
     } catch {
       /* webhooks optional */
     }

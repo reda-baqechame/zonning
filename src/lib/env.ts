@@ -188,14 +188,16 @@ export function collectEnvIssues(): EnvIssue[] {
     issues.push({
       key: "STRIPE",
       message: "Not configured — billing is disabled and no plan changes are allowed",
-      severity: "info",
+      // Billing-disabled is a revenue blocker in production but acceptable in
+      // pre-launch / preview builds, so warn rather than error.
+      severity: process.env.NODE_ENV === "production" ? "warn" : "info",
     });
   }
 
   if (!integrations.twilio) {
     issues.push({
       key: "TWILIO",
-      message: "Not configured — SMS alerts disabled",
+      message: "Not configured — SMS alerts disabled (email fallback active)",
       severity: "info",
     });
   }
@@ -203,7 +205,7 @@ export function collectEnvIssues(): EnvIssue[] {
   if (!integrations.openai) {
     issues.push({
       key: "OPENAI_API_KEY",
-      message: "Not configured — using fallback summaries",
+      message: "Not configured — using deterministic fallback summaries + NL parser",
       severity: "info",
     });
   }
@@ -212,7 +214,7 @@ export function collectEnvIssues(): EnvIssue[] {
     issues.push({
       key: "SENTRY_DSN",
       message: "Not configured — error monitoring disabled",
-      severity: "info",
+      severity: process.env.NODE_ENV === "production" ? "warn" : "info",
     });
   }
 

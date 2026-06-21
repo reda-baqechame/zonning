@@ -77,10 +77,10 @@ export default function MarketPulseBar({ compact }: { compact?: boolean }) {
     const hot = items.find((i) => i.hot) ?? items[0];
     if (!hot) return null;
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs text-amber-200">
-        <hot.icon className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+      <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning-ink">
+        <hot.icon className="h-3.5 w-3.5 shrink-0 text-warning" />
         <span className="truncate">{hot.text}</span>
-        <span className="ml-auto shrink-0 rounded-full bg-amber-500/30 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-300">
+        <span className="ml-auto shrink-0 rounded-full bg-warning/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-warning-ink">
           {snapshotLabel}
         </span>
       </div>
@@ -88,10 +88,10 @@ export default function MarketPulseBar({ compact }: { compact?: boolean }) {
   }
 
   return (
-    <div className="relative overflow-hidden border-b border-slate-800 bg-slate-950">
+    <div className="relative overflow-hidden border-b border-line bg-surface-2">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2.5">
-        <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-950/40 px-2.5 py-0.5 text-[10px] font-bold uppercase text-emerald-300">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+        <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-success/40 bg-success-soft px-2.5 py-0.5 text-[10px] font-bold uppercase text-success-ink">
+          <span className="h-1.5 w-1.5 rounded-full bg-success" />
           {snapshotLabel}
         </span>
         <div className="flex min-w-0 flex-1 gap-6 overflow-x-auto whitespace-nowrap scrollbar-none">
@@ -99,10 +99,10 @@ export default function MarketPulseBar({ compact }: { compact?: boolean }) {
             <span
               key={i}
               className={`inline-flex items-center gap-1.5 text-xs ${
-                item.hot ? "font-medium text-amber-200" : "text-slate-400"
+                item.hot ? "font-semibold text-ink" : "text-muted"
               }`}
             >
-              <item.icon className={`h-3.5 w-3.5 ${item.hot ? "text-amber-400" : "text-sky-500"}`} />
+              <item.icon className={`h-3.5 w-3.5 ${item.hot ? "text-brand" : "text-subtle"}`} />
               {item.text}
             </span>
           ))}

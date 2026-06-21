@@ -43,7 +43,14 @@ export async function POST(req: NextRequest) {
     });
 
     if (body.rbqLicenseNumber) {
-      await verifyAndUpdateUserRbq(user.id, body.rbqLicenseNumber, body.rbqLicenseClass);
+      // RBQ verification must not block an already-created account. If the
+      // lookup fails (DB error, transient), the user stays unverified and can
+      // retry from settings — registration itself succeeds.
+      try {
+        await verifyAndUpdateUserRbq(user.id, body.rbqLicenseNumber, body.rbqLicenseClass);
+      } catch (err) {
+        console.warn("[register] RBQ verification failed for", user.id, "— user created unverified:", (err as Error).message);
+      }
     }
 
     await createSession(user.id);

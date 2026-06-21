@@ -64,6 +64,7 @@ export function NavBar() {
   const links = [
     { href: "/", label: t("search") },
     { href: "/#atlas", label: t("map") },
+    { href: "/investigate", label: t("investigate") },
     { href: "/verdict", label: t("dossier") },
     { href: user ? "/feed" : "/chantier-radar", label: t("opportunities") },
     { href: "/coverage?view=municipalities", label: t("municipalities") },

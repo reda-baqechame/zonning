@@ -143,9 +143,9 @@ export default function SettingsClient() {
       <PageHeader title={t("title")} subtitle={t("subtitle")} />
 
       {stripeCustomerId && plan !== "FREE" && (
-        <div className="mt-6 rounded-lg border border-slate-800 bg-slate-900/40 p-4">
-          <p className="text-sm text-slate-300">
-            {t("currentPlan")}: <span className="font-medium text-white">{plan}</span>
+        <div className="mt-6 rounded-lg border border-line bg-surface-2 p-4">
+          <p className="text-sm text-muted">
+            {t("currentPlan")}: <span className="font-medium text-ink">{plan}</span>
           </p>
           <Button type="button" onClick={openBillingPortal} disabled={billingLoading} variant="secondary">
             {billingLoading ? "…" : t("manageSubscription")}
@@ -154,8 +154,8 @@ export default function SettingsClient() {
       )}
 
       {integrations && (
-        <div className="mt-6 rounded-lg border border-slate-800 bg-slate-900/40 p-4 text-sm text-slate-400">
-          <p className="font-medium text-slate-300">{t("integrations")}</p>
+        <div className="mt-6 rounded-lg border border-line bg-surface-2 p-4 text-sm text-muted">
+          <p className="font-medium text-ink">{t("integrations")}</p>
           <ul className="mt-2 space-y-1">
             <li>Courriel (Resend): {integrations.resend ? "✓" : "—"}</li>
             <li>SMS (Twilio): {integrations.twilio ? "✓" : "—"}</li>
@@ -166,7 +166,7 @@ export default function SettingsClient() {
 
       <div className="mt-8 space-y-6">
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-white">{t("company")}</h2>
+          <h2 className="text-lg font-semibold text-ink">{t("company")}</h2>
           <div>
             <FieldLabel htmlFor="name">{t("name")}</FieldLabel>
             <Input
@@ -186,7 +186,7 @@ export default function SettingsClient() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-white">RBQ</h2>
+          <h2 className="text-lg font-semibold text-ink">RBQ</h2>
           <div>
             <FieldLabel htmlFor="rbqClass">{t("rbqClass")}</FieldLabel>
             <Select
@@ -216,7 +216,7 @@ export default function SettingsClient() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-white">{t("trades")}</h2>
+          <h2 className="text-lg font-semibold text-ink">{t("trades")}</h2>
           <div className="mt-2 flex flex-wrap gap-2">
             {TRADE_OPTIONS.map((tr) => (
               <button
@@ -224,7 +224,7 @@ export default function SettingsClient() {
                 type="button"
                 onClick={() => toggle("trades", tr)}
                 className={`rounded-full px-3 py-1 text-xs ${
-                  form.trades.includes(tr) ? "bg-sky-500 text-white" : "bg-slate-800 text-slate-400"
+                  form.trades.includes(tr) ? "bg-brand text-brand-ink" : "bg-surface-hover text-muted"
                 }`}
               >
                 {tr}
@@ -234,7 +234,7 @@ export default function SettingsClient() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-white">{t("regions")}</h2>
+          <h2 className="text-lg font-semibold text-ink">{t("regions")}</h2>
           <div className="mt-2 flex flex-wrap gap-2">
             {REGION_OPTIONS.map((r) => (
               <button
@@ -242,7 +242,7 @@ export default function SettingsClient() {
                 type="button"
                 onClick={() => toggle("regions", r)}
                 className={`rounded-full px-3 py-1 text-xs ${
-                  form.regions.includes(r) ? "bg-sky-500 text-white" : "bg-slate-800 text-slate-400"
+                  form.regions.includes(r) ? "bg-brand text-brand-ink" : "bg-surface-hover text-muted"
                 }`}
               >
                 {r}
@@ -252,7 +252,7 @@ export default function SettingsClient() {
         </section>
 
         <section className="space-y-2">
-          <label className="flex items-center gap-2 text-sm text-slate-300">
+          <label className="flex items-center gap-2 text-sm text-muted">
             <input
               type="checkbox"
               checked={form.ampAuthorized}
@@ -260,7 +260,7 @@ export default function SettingsClient() {
             />
             {t("amp")}
           </label>
-          <label className="flex items-center gap-2 text-sm text-slate-300">
+          <label className="flex items-center gap-2 text-sm text-muted">
             <input
               type="checkbox"
               checked={form.alertSmsEnabled}
@@ -276,7 +276,7 @@ export default function SettingsClient() {
             {t("saveAndFeed")}
           </Button>
         </div>
-        {saved && <p className="text-sm text-emerald-400">{t("saved")}</p>}
+        {saved && <p className="text-sm text-success-ink">{t("saved")}</p>}
       </div>
     </FadeIn>
   );

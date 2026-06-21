@@ -103,7 +103,7 @@ export default function PartenairesCaClient() {
             type="button"
             onClick={() => setCert(cert === chip ? "" : chip)}
             className={`rounded-full px-3 py-1 text-xs ${
-              cert === chip ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-400"
+              cert === chip ? "bg-brand text-brand-ink" : "bg-surface-hover text-muted"
             }`}
           >
             {chip}
@@ -145,14 +145,14 @@ export default function PartenairesCaClient() {
             return (
               <div
                 key={c.id}
-                className="rounded-xl border border-slate-800 bg-slate-900/40 p-5"
+                className="rounded-xl border border-line bg-surface p-5 shadow-sm"
               >
-                <h2 className="text-lg font-semibold text-white">{c.name}</h2>
-                <p className="text-sm text-slate-400">
+                <h2 className="text-lg font-semibold text-ink">{c.name}</h2>
+                <p className="text-sm text-muted">
                   {c.sector} · {c.city}, {c.region}
                 </p>
                 {c.rbqLicense && (
-                  <p className="mt-1 text-xs text-emerald-400">
+                  <p className="mt-1 text-xs text-success-ink">
                     RBQ {c.rbqLicense.licenseNumber}
                     {c.rbqLicense.subclass ? ` · ${c.rbqLicense.subclass}` : ""}
                   </p>
@@ -162,7 +162,7 @@ export default function PartenairesCaClient() {
                     href={c.sourceUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-1 inline-block text-xs text-sky-400 hover:underline"
+                    className="mt-1 inline-block text-xs text-brand hover:underline"
                   >
                     Registre →
                   </a>
@@ -171,16 +171,16 @@ export default function PartenairesCaClient() {
                   {certs.map((certName) => (
                     <span
                       key={certName}
-                      className="rounded bg-sky-500/10 px-2 py-0.5 text-xs text-sky-300"
+                      className="rounded bg-brand-soft px-2 py-0.5 text-xs text-brand"
                     >
                       {certName}
                     </span>
                   ))}
                 </div>
-                <p className="mt-2 text-sm text-slate-500">{caps.join(" · ")}</p>
+                <p className="mt-2 text-sm text-muted">{caps.join(" · ")}</p>
                 {c.seaoAwards && c.seaoAwards.length > 0 && (
-                  <div className="mt-3 rounded border border-slate-700/50 p-2 text-xs text-slate-500">
-                    <p className="font-medium text-slate-400">{t("seaoAwards")}</p>
+                  <div className="mt-3 rounded border border-line p-2 text-xs text-subtle">
+                    <p className="font-medium text-muted">{t("seaoAwards")}</p>
                     {c.seaoAwards.map((a, i) => (
                       <p key={i}>
                         {a.title} —{" "}
@@ -190,7 +190,7 @@ export default function PartenairesCaClient() {
                   </div>
                 )}
                 {c.email && (
-                  <p className="mt-2 text-sm text-slate-300">{c.email}</p>
+                  <p className="mt-2 text-sm text-ink">{c.email}</p>
                 )}
               </div>
             );
@@ -200,14 +200,14 @@ export default function PartenairesCaClient() {
           suppliers.map((s) => (
             <div
               key={s.id}
-              className="rounded-xl border border-slate-800 bg-slate-900/40 p-5"
+              className="rounded-xl border border-line bg-surface p-5 shadow-sm"
             >
-              <h2 className="text-lg font-semibold text-white">{s.name}</h2>
-              <p className="text-sm text-slate-400">
+              <h2 className="text-lg font-semibold text-ink">{s.name}</h2>
+              <p className="text-sm text-muted">
                 {s.borough} {s.neq ? `· NEQ ${s.neq}` : ""}
               </p>
               {s.phone && (
-                <p className="mt-2 text-sm text-slate-300">{s.phone}</p>
+                <p className="mt-2 text-sm text-ink">{s.phone}</p>
               )}
             </div>
           ))}

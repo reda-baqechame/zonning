@@ -266,7 +266,7 @@ export default function ChantierRadarClient() {
         action={<FreshnessBadge datasetId="permits" />}
       />
 
-      <div className="mt-6 grid gap-4 rounded-xl border border-slate-800 bg-slate-900/50 p-4 md:grid-cols-2 lg:grid-cols-6">
+      <div className="mt-6 grid gap-4 rounded-xl border border-line bg-surface-2 p-4 md:grid-cols-2 lg:grid-cols-6">
         <div>
           <FieldLabel htmlFor="borough">{t("borough")}</FieldLabel>
           <Input
@@ -323,7 +323,7 @@ export default function ChantierRadarClient() {
           </Select>
         </div>
         <div className="flex items-end">
-          <label className="flex items-center gap-2 text-sm text-slate-300">
+          <label className="flex items-center gap-2 text-sm text-muted">
             <input
               type="checkbox"
               checked={eligibleOnly}
@@ -333,7 +333,7 @@ export default function ChantierRadarClient() {
           </label>
         </div>
         <div className="flex items-end">
-          <label className="flex items-center gap-2 text-sm text-slate-300">
+          <label className="flex items-center gap-2 text-sm text-muted">
             <input
               type="checkbox"
               checked={noGtc}
@@ -353,7 +353,7 @@ export default function ChantierRadarClient() {
       </div>
 
       {loadError && (
-        <div className="mt-4 rounded-lg border border-red-500/40 bg-red-950/30 p-4 text-sm text-red-200">
+        <div className="mt-4 rounded-lg border border-danger/40 bg-danger-soft p-4 text-sm text-danger-ink">
           {loadError}
           <Button
             variant="secondary"
@@ -366,7 +366,7 @@ export default function ChantierRadarClient() {
         </div>
       )}
 
-      <p className="mt-2 text-sm text-slate-500">
+      <p className="mt-2 text-sm text-muted">
         {t("resultSummary", {
           count: permits.length,
           total: totalCount,
@@ -375,13 +375,13 @@ export default function ChantierRadarClient() {
       </p>
 
       {boroughDelays.length > 0 && (
-        <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-          <p className="text-sm font-medium text-slate-300">
+        <div className="mt-4 rounded-xl border border-line bg-surface-2 p-4">
+          <p className="text-sm font-medium text-muted">
             {t("permitDelays")} — {borough}
           </p>
-          <ul className="mt-2 flex flex-wrap gap-3 text-xs text-slate-400">
+          <ul className="mt-2 flex flex-wrap gap-3 text-xs text-muted">
             {boroughDelays.map((d, i) => (
-              <li key={i} className="rounded bg-slate-950 px-2 py-1">
+              <li key={i} className="rounded bg-surface-hover px-2 py-1">
                 {d.phase ?? "Permis"}: {d.medianDays ?? "—"} j (cible{" "}
                 {d.targetDays ?? "—"} j)
               </li>
@@ -391,11 +391,11 @@ export default function ChantierRadarClient() {
       )}
 
       {devProjects.length > 0 && (
-        <div className="mt-4 rounded-xl border border-emerald-800/40 bg-emerald-950/20 p-4">
-          <p className="text-sm font-medium text-emerald-300">
+        <div className="mt-4 rounded-xl border border-success/30 bg-success-soft p-4">
+          <p className="text-sm font-medium text-success-ink">
             {t("devProjects")} — {city} ({devProjects.length})
           </p>
-          <ul className="mt-2 space-y-2 text-sm text-slate-400">
+          <ul className="mt-2 space-y-2 text-sm text-muted">
             {devProjects.slice(0, 8).map((p) => (
               <li
                 key={p.id}
@@ -403,7 +403,7 @@ export default function ChantierRadarClient() {
               >
                 <span>{p.name ?? p.address ?? "Projet résidentiel"}</span>
                 {p.unitsPlanned != null && (
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-muted">
                     {p.unitsPlanned} unités
                   </span>
                 )}
@@ -412,7 +412,7 @@ export default function ChantierRadarClient() {
                     href={p.projectUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-sky-400 hover:underline"
+                    className="text-xs text-brand hover:underline"
                   >
                     {t("viewProject")}
                   </a>
@@ -424,7 +424,7 @@ export default function ChantierRadarClient() {
       )}
 
       <div className="mt-4 flex flex-wrap gap-3 text-xs">
-        <label className="flex items-center gap-1.5 text-slate-400">
+        <label className="flex items-center gap-1.5 text-muted">
           <input
             type="checkbox"
             checked={showDevOnMap}
@@ -432,7 +432,7 @@ export default function ChantierRadarClient() {
           />
           {t("layerDevProjects")}
         </label>
-        <label className="flex items-center gap-1.5 text-slate-400">
+        <label className="flex items-center gap-1.5 text-muted">
           <input
             type="checkbox"
             checked={showGtcLayer}
@@ -440,7 +440,7 @@ export default function ChantierRadarClient() {
           />
           {t("layerGtc")}
         </label>
-        <label className="flex items-center gap-1.5 text-slate-400">
+        <label className="flex items-center gap-1.5 text-muted">
           <input
             type="checkbox"
             checked={showHeritageLayer}

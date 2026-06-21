@@ -36,6 +36,7 @@
     "setup:resend": "npx tsx scripts/setup-resend.ts",
     "agent:env": "npx tsx scripts/agent-env-audit.ts",
     "discover:quebec": "npx tsx scripts/discover-quebec-sources.ts",
+    "harvest:quebec": "npx tsx scripts/harvest-quebec.ts",
     "vercel:plan": "npx tsx scripts/use-vercel-plan.ts",
     "setup:links": "scripts/open-setup-links.bat"
   },

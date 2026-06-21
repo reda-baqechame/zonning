@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
+import { appUrl } from "@/lib/app-url";
 import { z } from "zod";
 
 const requestSchema = z.object({
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     const body = requestSchema.parse(await req.json().catch(() => ({})));
     const locale = body.locale === "en" ? "en" : "fr";
-    const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const base = appUrl();
 
     const session = await stripe.billingPortal.sessions.create({
       customer: user.stripeCustomerId,

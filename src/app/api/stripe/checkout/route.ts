@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { getStripe, PLANS } from "@/lib/stripe";
 import { getIntegrationStatus } from "@/lib/env";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
+import { appUrl } from "@/lib/app-url";
 import { z } from "zod";
 
 const requestSchema = z.object({
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const base = appUrl();
     const session = await stripe.checkout.sessions.create({
       mode: "oneTime" in planConfig && planConfig.oneTime ? "payment" : "subscription",
       customer_email: user.email,
