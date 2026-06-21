@@ -1,6 +1,6 @@
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { isPostgresUrl, resolveDatabaseUrl } from "./env-resolve";
+import { isPostgresUrl, resolveDatabaseUrl, resolvePgPoolMax } from "./env-resolve";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
@@ -27,10 +27,13 @@ function createPrismaClient(): PrismaClient {
       : resolved;
     const pool = new Pool({
       connectionString,
-      max: Number(process.env.PG_POOL_MAX ?? 10),
+      max: resolvePgPoolMax(),
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 10_000,
       ssl: useSupabaseSsl ? { rejectUnauthorized: false } : undefined,
+    });
+    pool.on("error", (error) => {
+      console.warn("[database] Dropped idle PostgreSQL connection; the pool will reconnect.", error.message);
     });
     return new PrismaClient({ adapter: new PrismaPg(pool) });
   }

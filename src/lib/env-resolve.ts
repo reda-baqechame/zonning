@@ -55,3 +55,14 @@ export function isPostgresUrl(url?: string): boolean {
   const u = url ?? resolveDatabaseUrl() ?? "";
   return u.startsWith("postgres://") || u.startsWith("postgresql://");
 }
+
+export function resolvePgPoolMax(): number {
+  const configured = Number(process.env.PG_POOL_MAX);
+  if (Number.isInteger(configured) && configured >= 1 && configured <= 20) {
+    return configured;
+  }
+
+  // Serverless instances multiply pool capacity quickly. One connection per
+  // instance avoids exhausting the upstream pool while requests queue locally.
+  return process.env.VERCEL ? 1 : 10;
+}
