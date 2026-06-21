@@ -140,10 +140,12 @@ export async function fetchCkanDatastoreSearch(
   resourceId: string,
   limit = 500,
   offset = 0,
-  host: CkanHost = "quebec"
+  host: CkanHost = "quebec",
+  sort?: string
 ): Promise<Record<string, unknown>[]> {
   const base = CKAN_BASES[host];
-  const url = `${base}/datastore_search?resource_id=${resourceId}&limit=${limit}&offset=${offset}`;
+  const sortParam = sort ? `&sort=${encodeURIComponent(sort)}` : "";
+  const url = `${base}/datastore_search?resource_id=${resourceId}&limit=${limit}&offset=${offset}${sortParam}`;
   const res = await fetchWithRetry(url);
   if (!res.ok) {
     dataWarn("fetchCkanDatastoreSearch", { resourceId, host, status: res.status });

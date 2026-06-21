@@ -13,6 +13,9 @@ P5,500 Rue E,Verdun,2023-08-15,80000,Construction
 vi.mock("../../client", () => ({
   fetchCkanResourceUrl: vi.fn().mockResolvedValue("https://example.com/permits.csv"),
   fetchText: vi.fn().mockResolvedValue(fixtureCsv),
+  // No DataStore available in this CSV-path test → falls back to fetchText.
+  fetchCkanPackage: vi.fn().mockResolvedValue(null),
+  fetchCkanDatastoreSearch: vi.fn().mockResolvedValue([]),
 }));
 
 import { fetchPermits, fetchPermitsPaginated } from "../permits";
