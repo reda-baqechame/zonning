@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui";
+import type { PublicUser } from "@/lib/user-dto";
 
 const PRO_PLANS = new Set(["PRO", "EQUIPE"]);
 const ESSENTIEL_PLUS = new Set(["ESSENTIEL", "PRO", "EQUIPE"]);
@@ -39,17 +40,24 @@ function NavLink({
   );
 }
 
-export function NavBar({
-  user,
-}: {
-  user?: { name?: string | null; email: string; plan?: string } | null;
-}) {
+export function NavBar() {
   const t = useTranslations("nav");
   const locale = useLocale();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<PublicUser | null>(null);
 
-  if (user && pathname.startsWith("/feed")) return null;
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/auth/me", { signal: controller.signal })
+      .then((response) => (response.ok ? response.json() : { user: null }))
+      .then((payload: { user?: PublicUser | null }) => setUser(payload.user ?? null))
+      .catch(() => undefined);
+
+    return () => controller.abort();
+  }, []);
+
+  if (pathname.startsWith("/feed")) return null;
 
   const plan = user?.plan ?? "FREE";
 
