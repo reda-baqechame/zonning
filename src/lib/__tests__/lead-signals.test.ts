@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { computeLeadSignals, filterItemsBySignal } from "@/lib/lead-signals";
 import { matchesEssentielProfile } from "@/lib/usage";
 
@@ -114,6 +114,16 @@ describe("filterItemsBySignal", () => {
 });
 
 describe("matchesEssentielProfile", () => {
+  const env = process.env;
+
+  beforeEach(() => {
+    process.env = { ...env, ZONNING_FREE_TEST_MODE: "false" };
+  });
+
+  afterEach(() => {
+    process.env = env;
+  });
+
   it("matches any trade when multiple configured", () => {
     const ok = matchesEssentielProfile(
       "ESSENTIEL",

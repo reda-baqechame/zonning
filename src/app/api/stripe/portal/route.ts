@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
+import { isFreeTestMode } from "@/lib/free-test";
 import { getStripe } from "@/lib/stripe";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { appUrl } from "@/lib/app-url";
@@ -14,23 +15,27 @@ export async function POST(req: NextRequest) {
   const limited = await rateLimitAsync(`stripe:portal:${ip}`, 10, 60_000);
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
-  const stripe = getStripe();
-  if (!stripe) {
-    return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
-  }
-
   try {
     const user = await requireUser();
+    const body = requestSchema.parse(await req.json().catch(() => ({})));
+    const locale = body.locale === "en" ? "en" : "fr";
+    const base = appUrl();
+
+    if (isFreeTestMode()) {
+      return NextResponse.json({ url: `${base}/${locale}/settings?billing=free-test` });
+    }
+
+    const stripe = getStripe();
+    if (!stripe) {
+      return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
+    }
+
     if (!user.stripeCustomerId) {
       return NextResponse.json(
         { error: "No billing account — subscribe via pricing first" },
         { status: 400 }
       );
     }
-
-    const body = requestSchema.parse(await req.json().catch(() => ({})));
-    const locale = body.locale === "en" ? "en" : "fr";
-    const base = appUrl();
 
     const session = await stripe.billingPortal.sessions.create({
       customer: user.stripeCustomerId,

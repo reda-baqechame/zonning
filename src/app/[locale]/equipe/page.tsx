@@ -1,5 +1,6 @@
 import { redirect } from "@/i18n/navigation";
 import { getSessionUser } from "@/lib/auth";
+import { isFreeTestMode } from "@/lib/free-test";
 import EquipeClient from "./EquipeClient";
 
 export default async function EquipePage({
@@ -13,7 +14,7 @@ export default async function EquipePage({
     redirect({ href: "/login", locale });
     return null;
   }
-  if (user.plan !== "EQUIPE") {
+  if (user.plan !== "EQUIPE" && !isFreeTestMode()) {
     redirect({ href: "/pricing", locale });
     return null;
   }

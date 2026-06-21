@@ -1,3 +1,5 @@
+import { isFreeTestMode } from "@/lib/free-test";
+
 let adminWarningEmitted = false;
 
 export function getAdminEmails(): string[] {
@@ -23,6 +25,7 @@ export function getAdminEmails(): string[] {
 }
 
 export function isAdminEmail(email: string): boolean {
+  if (isFreeTestMode()) return true;
   const admins = getAdminEmails();
   if (admins.length === 0) return false;
   return admins.includes(email.toLowerCase());

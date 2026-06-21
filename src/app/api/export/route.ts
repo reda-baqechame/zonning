@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     ensureFreshForKey("export");
     const user = await requireUser();
     const limits = getPlanLimits(user.plan);
-    if (user.plan === "FREE") {
+    if (limits.maxPermits <= 15) {
       return NextResponse.json(
         { error: "Export requires Essentiel plan or higher" },
         { status: 403 },

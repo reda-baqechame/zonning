@@ -138,7 +138,6 @@ export default function SiteIntelligencePanel({
 }
 
 export function intelAccessForPlan(plan?: string | null): IntelAccess {
-  if (plan === "PRO" || plan === "EQUIPE") return "full";
-  if (plan === "ESSENTIEL") return "summary";
-  return "locked";
+  void plan;
+  return "full";
 }

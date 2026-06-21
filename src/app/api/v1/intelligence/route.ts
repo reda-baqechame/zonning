@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey } from "@/lib/api-auth";
+import { FREE_TEST_PRINCIPAL_ID, isFreeTestMode } from "@/lib/free-test";
 import { getIntelligenceByAddress } from "@/lib/intelligence";
 import { ensureFreshForKey } from "@/lib/sync/auto";
 import { rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
@@ -7,14 +8,15 @@ import { rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 export async function GET(req: NextRequest) {
   ensureFreshForKey("intelligence");
   const auth = await validateApiKey(req.headers.get("authorization"), "verdict");
-  if (!auth) {
+  if (!auth && !isFreeTestMode()) {
     return NextResponse.json(
       { error: "Invalid API key or missing intelligence scope (Équipe plan)" },
       { status: 401 }
     );
   }
 
-  const limited = await rateLimitAsync(`api:v1:intel:${auth.orgId}`, 60, 60_000);
+  const principalId = auth?.orgId ?? FREE_TEST_PRINCIPAL_ID;
+  const limited = await rateLimitAsync(`api:v1:intel:${principalId}`, 60, 60_000);
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   const address = req.nextUrl.searchParams.get("address")?.trim();

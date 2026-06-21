@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createApiKey } from "@/lib/api-auth";
+import { isFreeTestMode } from "@/lib/free-test";
 import { randomBytes } from "crypto";
 import { z } from "zod";
 import { rateLimitAsync, rateLimitResponse, clientIp } from "@/lib/rate-limit";
@@ -108,7 +109,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await requireUser();
-    if (user.plan !== "EQUIPE") {
+    if (user.plan !== "EQUIPE" && !isFreeTestMode()) {
       return NextResponse.json(
         { error: "Équipe plan required" },
         { status: 403 },

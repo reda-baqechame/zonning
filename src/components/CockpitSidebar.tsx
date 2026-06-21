@@ -49,6 +49,7 @@ export function CockpitSidebar({
   const locale = useLocale();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const effectivePlan = user ? "EQUIPE" : plan;
 
   const links = [
     { href: "/", label: nav("search"), icon: Search },
@@ -62,10 +63,10 @@ export function CockpitSidebar({
     },
     { href: "/partenaires-ca", label: nav("companies"), icon: Store },
     { href: "/coverage", label: nav("coverage"), icon: ChartNoAxesCombined },
-    ...(PRO_PLANS.has(plan)
+    ...(PRO_PLANS.has(effectivePlan)
       ? [{ href: "/compliance", label: nav("compliance"), icon: ShieldCheck }]
       : []),
-    ...(ESSENTIEL_PLUS.has(plan)
+    ...(ESSENTIEL_PLUS.has(effectivePlan)
       ? [{ href: "/export", label: nav("export"), icon: Download }]
       : []),
   ];

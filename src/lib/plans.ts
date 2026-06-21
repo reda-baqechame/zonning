@@ -1,4 +1,5 @@
 import type { Plan } from "@/generated/prisma/client";
+import { isFreeTestMode } from "@/lib/free-test";
 
 export type PlanLimits = {
   maxPermits: number;
@@ -40,7 +41,12 @@ const LIMITS: Record<Plan, PlanLimits> = {
 };
 
 export function getPlanLimits(plan: Plan | null | undefined): PlanLimits {
+  if (isFreeTestMode()) return LIMITS.EQUIPE;
   return LIMITS[plan ?? "FREE"];
+}
+
+export function getEffectivePlan(plan: Plan | null | undefined): Plan {
+  return isFreeTestMode() ? "EQUIPE" : plan ?? "FREE";
 }
 
 export function canCreateAlert(plan: Plan | null | undefined, currentCount: number): boolean {

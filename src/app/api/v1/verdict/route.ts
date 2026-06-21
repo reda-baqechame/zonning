@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateApiKey } from "@/lib/api-auth";
+import { FREE_TEST_PRINCIPAL_ID, isFreeTestMode } from "@/lib/free-test";
 import { ensureFreshForKey } from "@/lib/sync/auto";
 import { getIntelligenceByAddress } from "@/lib/intelligence";
 import { computeVerdictTier } from "@/lib/verdict/compute-verdict";
@@ -8,11 +9,12 @@ import { rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
   const auth = await validateApiKey(req.headers.get("authorization"), "verdict");
-  if (!auth) {
+  if (!auth && !isFreeTestMode()) {
     return NextResponse.json({ error: "Invalid API key or missing verdict scope" }, { status: 401 });
   }
 
-  const limited = await rateLimitAsync(`api:v1:verdict:${auth.orgId}`, 60, 60_000);
+  const principalId = auth?.orgId ?? FREE_TEST_PRINCIPAL_ID;
+  const limited = await rateLimitAsync(`api:v1:verdict:${principalId}`, 60, 60_000);
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   const address = req.nextUrl.searchParams.get("address")?.trim();

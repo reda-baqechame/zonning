@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
+import { isFreeTestMode } from "@/lib/free-test";
 import { ensureFreshForKey } from "@/lib/sync/auto";
 import { getIntelligenceByAddress, type PropertyIntelligence } from "@/lib/intelligence";
 import { computeVerdictTier } from "@/lib/verdict/compute-verdict";
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
 
     const user = await getSessionUser();
 
-    if (!user || user.plan === "FREE") {
+    if (!isFreeTestMode() && (!user || user.plan === "FREE")) {
       const limited = await rateLimitAsync(
         `verdict:ip:${clientIp(req)}`,
         FREE_VERDICTS_PER_DAY,

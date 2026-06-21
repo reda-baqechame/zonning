@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { isFreeTestMode } from "@/lib/free-test";
 import { getStripe, PLANS } from "@/lib/stripe";
 import { getIntegrationStatus } from "@/lib/env";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
@@ -27,6 +29,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
+    const base = appUrl();
+    if (isFreeTestMode()) {
+      const nextPlan = plan === "essentiel" ? "ESSENTIEL" : plan === "pro" ? "PRO" : "EQUIPE";
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          plan: nextPlan,
+          onboardingComplete: true,
+        },
+      });
+
+      return NextResponse.json({
+        url: `${base}/${locale}/feed?checkout=free-test&plan=${plan}`,
+      });
+    }
+
     const integrations = getIntegrationStatus();
     if (integrations.stripeMisconfigured) {
       return NextResponse.json(
@@ -43,7 +61,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const base = appUrl();
     const session = await stripe.checkout.sessions.create({
       mode: "oneTime" in planConfig && planConfig.oneTime ? "payment" : "subscription",
       customer_email: user.email,

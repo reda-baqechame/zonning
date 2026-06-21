@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { validateApiKey } from "@/lib/api-auth";
+import { FREE_TEST_PRINCIPAL_ID, isFreeTestMode } from "@/lib/free-test";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 
 export type V2Access =
   | { kind: "session"; principalId: string }
-  | { kind: "api_key"; principalId: string };
+  | { kind: "api_key"; principalId: string }
+  | { kind: "free_test"; principalId: string };
 
 export async function requireV2Access(
   req: NextRequest,
@@ -19,6 +21,10 @@ export async function requireV2Access(
   const user = await getSessionUser();
   if (user) {
     return { kind: "session", principalId: user.id };
+  }
+
+  if (isFreeTestMode()) {
+    return { kind: "free_test", principalId: FREE_TEST_PRINCIPAL_ID };
   }
 
   return NextResponse.json(

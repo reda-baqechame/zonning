@@ -89,14 +89,21 @@ describe("admin emails", () => {
   });
 
   it("uses demo only in non-production when unset", () => {
-    process.env = { ...env, NODE_ENV: "development" };
+    process.env = { ...env, NODE_ENV: "development", ZONNING_FREE_TEST_MODE: "false" };
     delete process.env.ADMIN_EMAILS;
     expect(getAdminEmails()).toEqual(["demo@zonning.ca"]);
     expect(isAdminEmail("demo@zonning.ca")).toBe(true);
   });
 
-  it("returns empty in production when unset", () => {
+  it("opens admin checks while free test mode is active", () => {
     process.env = { ...env, NODE_ENV: "production" };
+    delete process.env.ADMIN_EMAILS;
+    expect(getAdminEmails()).toEqual([]);
+    expect(isAdminEmail("team@zonning.ca")).toBe(true);
+  });
+
+  it("returns empty in production when unset", () => {
+    process.env = { ...env, NODE_ENV: "production", ZONNING_FREE_TEST_MODE: "false" };
     delete process.env.ADMIN_EMAILS;
     expect(getAdminEmails()).toEqual([]);
     expect(isAdminEmail("demo@zonning.ca")).toBe(false);

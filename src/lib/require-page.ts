@@ -1,6 +1,7 @@
 import { redirect } from "@/i18n/navigation";
 import { getSessionUser } from "@/lib/auth";
-import { getPlanLimits } from "@/lib/plans";
+import { getEffectivePlan, getPlanLimits } from "@/lib/plans";
+import { isFreeTestMode } from "@/lib/free-test";
 import type { Plan } from "@/generated/prisma/client";
 
 export async function requireAuth(locale: string) {
@@ -15,6 +16,7 @@ export async function requireAuth(locale: string) {
 export async function requireOnboardingComplete(locale: string) {
   const user = await requireAuth(locale);
   if (!user) return null;
+  if (isFreeTestMode()) return user;
   if (!user.onboardingComplete) {
     redirect({ href: "/onboarding", locale });
     return null;
@@ -28,13 +30,14 @@ export async function requirePlan(
 ) {
   const user = await requireOnboardingComplete(locale);
   if (!user) return null;
+  if (isFreeTestMode()) return user;
 
   const order: Plan[] = ["FREE", "ESSENTIEL", "PRO", "EQUIPE"];
   const minIdx =
     minPlan === "PRO_PLUS"
       ? order.indexOf("PRO")
       : order.indexOf(minPlan);
-  const userIdx = order.indexOf(user.plan);
+  const userIdx = order.indexOf(getEffectivePlan(user.plan));
 
   if (userIdx < minIdx) {
     redirect({ href: "/pricing", locale });
@@ -48,5 +51,5 @@ export function planHasComplianceVault(plan: Plan) {
 }
 
 export function planHasExport(plan: Plan) {
-  return plan !== "FREE";
+  return getEffectivePlan(plan) !== "FREE";
 }

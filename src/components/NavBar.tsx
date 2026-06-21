@@ -59,7 +59,7 @@ export function NavBar() {
 
   if (pathname.startsWith("/feed")) return null;
 
-  const plan = user?.plan ?? "FREE";
+  const plan = user ? "EQUIPE" : "FREE";
 
   const links = [
     { href: "/", label: t("search") },

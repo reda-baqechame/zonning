@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSession, hashPassword } from "@/lib/auth";
+import { isFreeTestMode } from "@/lib/free-test";
 import { verifyAndUpdateUserRbq } from "@/lib/rbq-verify";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { z } from "zod";
@@ -39,6 +40,8 @@ export async function POST(req: NextRequest) {
         rbqLicenseNumber: body.rbqLicenseNumber,
         phone: body.phone,
         ampAuthorized: body.ampAuthorized ?? false,
+        plan: isFreeTestMode() ? "EQUIPE" : undefined,
+        onboardingComplete: isFreeTestMode() ? true : undefined,
       },
     });
 
