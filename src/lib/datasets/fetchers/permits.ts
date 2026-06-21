@@ -1,5 +1,5 @@
 import { assessPermitQuality, buildPermitExternalId } from "@/lib/permits/quality";
-import { fetchCkanResourceUrl, fetchText } from "../client";
+import { fetchCkanDatastoreSearch, fetchCkanPackage, fetchCkanResourceUrl, fetchText } from "../client";
 import { parseCsvLine, parseDate, parseFloatSafe, parseMoney, pick } from "../parser";
 import { DATASETS, getSyncLimit } from "../registry";
 
@@ -173,11 +173,97 @@ export async function fetchPermits(
   return parsePermitRows(rows, cap, options);
 }
 
+let cachedPermitsResourceId: string | null = null;
+let permitsDatastoreAvailable: boolean | null = null;
+
+async function getPermitsResourceId(): Promise<string | null> {
+  if (cachedPermitsResourceId) return cachedPermitsResourceId;
+  const pkg = await fetchCkanPackage(DATASETS.permits.ckanId);
+  const csv = pkg?.resources.find(
+    (r) =>
+      r.format?.toUpperCase() === "CSV" || r.url?.toLowerCase().endsWith(".csv"),
+  );
+  cachedPermitsResourceId = csv?.id ?? null;
+  return cachedPermitsResourceId;
+}
+
+/**
+ * Fetch permits newest-first via the CKAN DataStore API. Avoids downloading the
+ * full ~183 MB CSV (which truncates/OOMs on serverless and lands only a partial
+ * slice). Pages with `sort=date_emission desc` and stops once records fall
+ * below the requested window, so only recent permits are transferred.
+ */
+async function fetchPermitsViaDatastore(
+  resourceId: string,
+  cap: number,
+  options?: FetchPermitOptions,
+): Promise<PermitRecord[]> {
+  const maxAgeDays = options?.maxAgeDays ?? 365;
+  const minTime = options?.minIssueDate
+    ? options.minIssueDate.getTime()
+    : Date.now() - maxAgeDays * 86_400_000;
+  const maxIssueTime = options?.maxIssueDate?.getTime();
+  const pageSize = 1000;
+  const rows: Record<string, string>[] = [];
+  let offset = 0;
+
+  while (rows.length < cap) {
+    const recs = await fetchCkanDatastoreSearch(
+      resourceId,
+      Math.min(pageSize, cap - rows.length + pageSize),
+      offset,
+      "quebec",
+      "date_emission desc",
+    );
+    if (recs.length === 0) break;
+    let stop = false;
+    for (const raw of recs) {
+      const row = Object.fromEntries(
+        Object.entries(raw).map(([k, v]) => [k.toLowerCase(), String(v ?? "")]),
+      );
+      const issueTime = parseDate(row.date_emission)?.getTime();
+      if (!issueTime) continue;
+      if (issueTime < minTime) {
+        stop = true;
+        break;
+      }
+      if (maxIssueTime && issueTime >= maxIssueTime) continue;
+      rows.push(row);
+      if (rows.length >= cap) {
+        stop = true;
+        break;
+      }
+    }
+    offset += recs.length;
+    if (stop || recs.length < pageSize) break;
+  }
+
+  return parsePermitRows(rows, cap, options);
+}
+
 /** Date-window pagination for full CKAN coverage (newest-first windows). */
 export async function fetchPermitsPaginated(
   totalCap: number,
   options?: FetchPermitOptions,
 ): Promise<PermitRecord[]> {
+  // Prefer the DataStore API (paginated, newest-first, no full-CSV download).
+  const resourceId = await getPermitsResourceId();
+  if (resourceId) {
+    if (permitsDatastoreAvailable === null) {
+      const probe = await fetchCkanDatastoreSearch(
+        resourceId,
+        1,
+        0,
+        "quebec",
+        "date_emission desc",
+      );
+      permitsDatastoreAvailable = probe.length > 0;
+    }
+    if (permitsDatastoreAvailable) {
+      return fetchPermitsViaDatastore(resourceId, totalCap, options);
+    }
+  }
+
   if (options?.minIssueDate) return fetchPermits(totalCap, options);
 
   const all: PermitRecord[] = [];
