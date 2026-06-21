@@ -142,7 +142,7 @@ function pct(value: number) {
   return `${Math.round(value * 100)}%`;
 }
 
-export default function QuebecIntelligenceSearch() {
+export default function QuebecIntelligenceSearch({ embedded = false }: { embedded?: boolean }) {
   const locale = useLocale() as "fr" | "en";
   const copy = COPY[locale];
   const [query, setQuery] = useState("");
@@ -184,17 +184,21 @@ export default function QuebecIntelligenceSearch() {
     <section>
       <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
         <div>
-          <p className="text-sm font-semibold uppercase text-brand">
-            {copy.eyebrow}
-          </p>
-          <h1 className="mt-3 max-w-3xl text-3xl font-semibold text-ink md:text-4xl">
-            {copy.title}
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-muted">
-            {copy.description}
-          </p>
+          {!embedded ? (
+            <>
+              <p className="text-sm font-semibold uppercase text-brand">
+                {copy.eyebrow}
+              </p>
+              <h1 className="mt-3 max-w-3xl text-3xl font-semibold text-ink md:text-4xl">
+                {copy.title}
+              </h1>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-muted">
+                {copy.description}
+              </p>
+            </>
+          ) : null}
 
-          <form onSubmit={submit} className="mt-6 rounded-lg border border-line bg-surface-2 p-2 shadow-sm">
+          <form onSubmit={submit} className={`${embedded ? "" : "mt-6"} rounded-lg border border-line bg-surface-2 p-2 shadow-sm`}>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input
                 value={query}
@@ -225,14 +229,16 @@ export default function QuebecIntelligenceSearch() {
             ))}
           </div>
 
-          <div className="mt-6 grid gap-2 sm:grid-cols-2">
-            {copy.features.map((item) => (
-              <div key={item} className="flex items-start gap-2 text-sm text-muted">
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-                <span>{item}</span>
-              </div>
-            ))}
-          </div>
+          {!embedded ? (
+            <div className="mt-6 grid gap-2 sm:grid-cols-2">
+              {copy.features.map((item) => (
+                <div key={item} className="flex items-start gap-2 text-sm text-muted">
+                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="rounded-lg border border-line bg-surface-2 p-4">
