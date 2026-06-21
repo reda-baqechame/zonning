@@ -397,6 +397,43 @@ export async function syncPermits(limit?: number): Promise<SyncResult> {
   });
 }
 
+/**
+ * Full Montréal permit backfill — ignores the delta cursor and re-fetches the
+ * full historical window (up to the production limit). Used to self-heal an
+ * interrupted initial bootstrap that left the permit table near-empty (e.g.
+ * 48 rows). Idempotent upserts make this safe; scheduled weekly + triggerable
+ * on demand via `/api/cron/sync?mode=backfill&dataset=permits`.
+ */
+export async function syncPermitsFull(limit?: number): Promise<SyncResult> {
+  const cfg = DATASETS.permits;
+  return runSync("permits", async () => {
+    try {
+      const remote = await fetchPermitsPaginated(limit ?? getSyncLimit("permits"), {
+        maxAgeDays: 365,
+      });
+      const processed = await upsertPermitRecords(remote);
+
+      const newest = remote.find((p) => p.issueDate);
+      if (newest?.issueDate) {
+        await prisma.syncState.update({
+          where: { datasetId: "permits" },
+          data: { cursor: newest.issueDate.toISOString() },
+        });
+      }
+
+      await persistSourceMetadata("permits");
+
+      const source = remote.length > 0 ? "live" : "empty";
+      await logSync(cfg.syncSource, source === "live" ? "success" : source, processed);
+      return { dataset: "permits", ok: true, processed, source };
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Sync failed";
+      await logSync(cfg.syncSource, "error", 0, message);
+      throw e;
+    }
+  });
+}
+
 async function syncCityPermitsDataset(
   datasetId: "permits-laval" | "permits-longueuil" | "permits-quebec" | "permits-gatineau"
 ): Promise<SyncResult> {

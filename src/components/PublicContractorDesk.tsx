@@ -34,6 +34,7 @@ type DeskStats = {
   permitsWeek: number;
   tendersOpen: number;
   tendersClosingWeek: number;
+  tendersClosingThursday: number;
   indexedDatasets: number;
 };
 
@@ -41,7 +42,7 @@ const COPY = {
   fr: {
     title: "Le bureau de décision des entrepreneurs du Québec.",
     description:
-      "Comparez les permis municipaux et les avis SEAO, ouvrez la preuve officielle et transformez chaque signal en prochaine action.",
+      "Le permis est le premier irritant des entrepreneurs (APCHQ 2025). ZONNING surveille chaque permis municipal et avis SEAO, vous alerte selon votre licence RBQ, et ne vous laisse jamais rater une clôture du jeudi.",
     openCockpit: "Ouvrir mon cockpit",
     signIn: "Connexion",
     queue: "File du marché public",
@@ -61,7 +62,21 @@ const COPY = {
     officialSource: "Ouvrir la source officielle",
     personalize: "Classer selon mon RBQ et mon territoire",
     noMatch: "Aucun dossier ne correspond à cette recherche.",
-    stats: ["permis sur 7 jours", "avis SEAO ouverts", "échéances sous 7 jours", "jeux de données actifs"],
+    stats: ["permis émis (7 j)", "clôturent jeudi", "avis SEAO ouverts", "jeux de données actifs"],
+    painPoints: [
+      {
+        title: "Permis : 1er irritant",
+        body: "Alerté dès l'émission d'un permis, filtré par votre licence RBQ et votre territoire.",
+      },
+      {
+        title: "Clôtures du jeudi",
+        body: "Environ 35 % des avis SEAO clôturent jeudi. Ne ratez plus les premiers jours de la fenêtre.",
+      },
+      {
+        title: "Garde RBQ",
+        body: "Une caution expirée annule votre licence et vos permis. ZONNING surveille l'échéance pour vous.",
+      },
+    ],
     decisions: {
       review: "Analyse urgente",
       qualify: "À qualifier",
@@ -71,7 +86,7 @@ const COPY = {
   en: {
     title: "The decision desk for Quebec contractors.",
     description:
-      "Compare municipal permits and SEAO notices, open official evidence, and turn every signal into a next action.",
+      "Permits are contractors' #1 irritant (APCHQ 2025). ZONNING watches every municipal permit and SEAO notice, alerts you by RBQ licence, and never lets you miss a Thursday close.",
     openCockpit: "Open my cockpit",
     signIn: "Sign in",
     queue: "Public market queue",
@@ -91,7 +106,21 @@ const COPY = {
     officialSource: "Open official source",
     personalize: "Rank for my RBQ profile and territory",
     noMatch: "No record matches this search.",
-    stats: ["permits in 7 days", "open SEAO notices", "deadlines within 7 days", "active datasets"],
+    stats: ["permits issued (7d)", "close Thursday", "open SEAO notices", "active datasets"],
+    painPoints: [
+      {
+        title: "Permits: #1 irritant",
+        body: "Alerted the moment a permit is issued, filtered by your RBQ licence and territory.",
+      },
+      {
+        title: "Thursday closes",
+        body: "About 35% of SEAO notices close Thursday. Never miss the first days of a bid window again.",
+      },
+      {
+        title: "RBQ guard",
+        body: "A lapsed bond cancels your licence and permits. ZONNING watches the expiry for you.",
+      },
+    ],
     decisions: {
       review: "Review urgently",
       qualify: "Qualify",
@@ -99,6 +128,8 @@ const COPY = {
     },
   },
 } as const;
+
+const PAIN_ICONS = [Building2, CalendarClock, CircleAlert] as const;
 
 const DECISION_STYLE = {
   review: "border-danger/30 bg-danger-soft text-danger",
@@ -143,8 +174,8 @@ export default function PublicContractorDesk({
   }).format(new Date(updatedAt));
   const statValues = [
     stats.permitsWeek,
+    stats.tendersClosingThursday,
     stats.tendersOpen,
-    stats.tendersClosingWeek,
     stats.indexedDatasets,
   ];
 
@@ -184,6 +215,21 @@ export default function PublicContractorDesk({
               <p className="mt-1 text-xs text-muted">{copy.stats[index]}</p>
             </div>
           ))}
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {copy.painPoints.map((point, index) => {
+            const Icon = PAIN_ICONS[index] ?? Building2;
+            return (
+              <div key={point.title} className="flex gap-3 rounded-md border border-line bg-white p-4">
+                <Icon className="mt-0.5 h-5 w-5 shrink-0 text-brand" aria-hidden="true" />
+                <div>
+                  <p className="text-sm font-semibold text-ink">{point.title}</p>
+                  <p className="mt-1 text-xs leading-5 text-muted">{point.body}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">

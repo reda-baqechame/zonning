@@ -10,6 +10,7 @@ import QuebecCoverageBar from "@/components/QuebecCoverageBar";
 type CoverageData = {
   datasetCount: number;
   coverageCities: number;
+  searchableMunicipalities?: number;
   cityBreakdown: {
     city: string;
     permitsToday: number;
@@ -82,8 +83,11 @@ export default function CoverageClient() {
               <p className="text-sm text-muted">{t("datasets")}</p>
             </div>
             <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
-              <p className="text-2xl font-bold text-brand">{data.coverageCities}</p>
-              <p className="text-sm text-muted">{t("cities")}</p>
+              <p className="text-2xl font-bold text-brand">
+                {data.searchableMunicipalities ?? 0}
+                <span className="text-base font-medium text-muted"> / {data.coverageCities}</span>
+              </p>
+              <p className="text-sm text-muted">{t("citiesLive")}</p>
             </div>
             <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
               <p className="text-2xl font-bold text-success">{data.rbqLicenses.toLocaleString()}</p>

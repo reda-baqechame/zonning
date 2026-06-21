@@ -20,7 +20,7 @@ import {
 import type { OpportunityDossier } from "@/lib/domain/quebec";
 import { cn } from "@/lib/cn";
 
-export type SourceFilter = "all" | "permit" | "tender" | "saved";
+export type SourceFilter = "all" | "permit" | "tender" | "thursday" | "saved";
 export type DecisionFilter =
   | OpportunityDossier["triage"]["recommendation"]
   | null;
@@ -82,7 +82,7 @@ export function OpportunityTable({
 }) {
   const t = useTranslations("feed.workspace");
   const feed = useTranslations("feed");
-  const sourceFilters: SourceFilter[] = ["all", "permit", "tender", "saved"];
+  const sourceFilters: SourceFilter[] = ["all", "permit", "tender", "thursday", "saved"];
   const decisions: Exclude<DecisionFilter, null>[] = [
     "act_now",
     "verify_first",
@@ -181,6 +181,16 @@ export function OpportunityTable({
                   <p className="mt-1 truncate text-xs text-muted">
                     {getFeedLocation(item)} · {item.kind === "permit" ? t("permitRecord") : t("tenderRecord")}
                   </p>
+                  {item.kind === "tender" && (item.tender.isThursday || item.tender.requiresAmp) && (
+                    <span className="mt-1.5 flex flex-wrap gap-1">
+                      {item.tender.isThursday && (
+                        <span className="rounded border border-brand/30 bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold text-brand">{feed("thursday")}</span>
+                      )}
+                      {item.tender.requiresAmp && (
+                        <span className="rounded border border-warning/40 bg-warning-soft px-1.5 py-0.5 text-[10px] font-semibold text-warning-ink">{feed("ampRequired")}</span>
+                      )}
+                    </span>
+                  )}
                 </div>
                 <span className="tabular-nums text-sm font-semibold text-brand">{dossier?.confidence ?? 0}%</span>
               </div>
@@ -242,6 +252,16 @@ export function OpportunityTable({
                     <span className="mt-1 block truncate text-xs text-muted">
                       {item.kind === "permit" ? t("permitRecord") : t("tenderRecord")}
                     </span>
+                    {item.kind === "tender" && (item.tender.isThursday || item.tender.requiresAmp) && (
+                      <span className="mt-1.5 flex flex-wrap gap-1">
+                        {item.tender.isThursday && (
+                          <span className="rounded border border-brand/30 bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold text-brand">{feed("thursday")}</span>
+                        )}
+                        {item.tender.requiresAmp && (
+                          <span className="rounded border border-warning/40 bg-warning-soft px-1.5 py-0.5 text-[10px] font-semibold text-warning-ink">{feed("ampRequired")}</span>
+                        )}
+                      </span>
+                    )}
                   </span>
                   <span role="cell" className="min-w-0 pr-4">
                     <span className="block truncate text-sm font-medium text-ink">{getFeedLocation(item)}</span>

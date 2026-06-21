@@ -344,6 +344,7 @@
         "all": "Toutes",
         "permit": "Permis",
         "tender": "SEAO",
+        "thursday": "Jeudi",
         "saved": "Pipeline"
       },
       "resultCount": "{count} dossiers",
@@ -604,6 +605,7 @@
     "subtitle": "État réel des sources publiques, des synchronisations et des enregistrements actuellement indexés.",
     "datasets": "Jeux de données actifs",
     "cities": "Villes couvertes",
+    "citiesLive": "Municipalités en direct / suivies",
     "rbqLicenses": "Licences RBQ actives",
     "syncHealth": "Sync: {healthy} saines · {stale} en retard · {critical} critiques",
     "cityTable": "Permis par ville",
