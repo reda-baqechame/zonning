@@ -3,15 +3,9 @@
 import { CalendarClock, Save } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button, FieldLabel, Select } from "@/components/ui";
+import type { PipelineStage } from "@/lib/domain/quebec";
 
-export type PipelineStage =
-  | "new"
-  | "researching"
-  | "pursuing"
-  | "submitted"
-  | "won"
-  | "lost"
-  | "archived";
+export type { PipelineStage } from "@/lib/domain/quebec";
 
 export function LeadPipelineEditor({
   id,

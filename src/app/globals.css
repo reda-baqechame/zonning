@@ -145,6 +145,16 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+body:has([data-cockpit-workspace]) {
+  overflow-x: hidden;
+  background: #ffffff;
+}
+
+body:has([data-cockpit-workspace]) > footer,
+body:has([data-cockpit-workspace]) main + footer {
+  display: none;
+}
+
 ::selection {
   background: var(--brand-soft);
   color: var(--ink);

@@ -178,6 +178,15 @@ export type OpportunityDossier = {
   };
 };
 
+export type PipelineStage =
+  | "new"
+  | "researching"
+  | "pursuing"
+  | "submitted"
+  | "won"
+  | "lost"
+  | "archived";
+
 export function evidence<T>(
   value: T,
   source: SourceRef,

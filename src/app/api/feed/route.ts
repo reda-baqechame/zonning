@@ -411,8 +411,12 @@ export async function GET(req: NextRequest) {
       trades: userTrades,
       regions: userRegions,
       ampAuthorized: user?.ampAuthorized ?? false,
+      name: user?.name ?? null,
+      email: user?.email ?? null,
+      companyName: user?.companyName ?? null,
     },
     plan: user?.plan ?? "FREE",
     complianceEntitled: user ? getPlanLimits(user.plan).complianceVault : false,
+    generatedAt: new Date().toISOString(),
   });
 }

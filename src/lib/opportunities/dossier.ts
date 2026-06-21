@@ -123,6 +123,81 @@ function unique(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
 }
 
+function evidenceGapText(id: string, locale: DossierLocale): string {
+  const text: Record<string, [string, string]> = {
+    rbq_profile: [
+      "Le profil et les sous-catégories de licence RBQ doivent être configurés.",
+      "The RBQ licence profile and subclasses must be configured.",
+    ],
+    cost_or_budget: [
+      "La valeur des travaux ou la plage de budget de l'entreprise doit être confirmée.",
+      "The work value or the company's budget range must be confirmed.",
+    ],
+    market_activity: [
+      "L'activité comparable du marché local n'est pas suffisamment documentée.",
+      "Comparable local market activity is not sufficiently documented.",
+    ],
+    issue_date: [
+      "La date d'émission du permis doit être confirmée.",
+      "The permit issue date must be confirmed.",
+    ],
+    site_intelligence: [
+      "Les données de site disponibles ne suffisent pas pour évaluer la faisabilité.",
+      "Available site data is insufficient to assess feasibility.",
+    ],
+    zoning: [
+      "La zone, le règlement applicable et les usages permis à la parcelle doivent être vérifiés.",
+      "The parcel zone, applicable bylaw, and permitted uses must be verified.",
+    ],
+    trade_profile: [
+      "Les métiers cibles de l'entreprise doivent être configurés pour mesurer l'adéquation.",
+      "The company's target trades must be configured to measure fit.",
+    ],
+    region_profile: [
+      "Les régions desservies par l'entreprise doivent être configurées.",
+      "The company's service regions must be configured.",
+    ],
+    value_or_budget: [
+      "La valeur du contrat ou la plage de budget de l'entreprise doit être confirmée.",
+      "The contract value or the company's budget range must be confirmed.",
+    ],
+    amp_requirement: [
+      "L'exigence et le statut d'autorisation AMP doivent être vérifiés.",
+      "The AMP requirement and authorization status must be verified.",
+    ],
+    closing_date: [
+      "La date et l'heure limites de dépôt doivent être confirmées dans SEAO.",
+      "The bid closing date and time must be confirmed in SEAO.",
+    ],
+  };
+  const value = text[id];
+  return value
+    ? copy(locale, value[0], value[1])
+    : copy(locale, "Une preuve requise pour la décision reste à confirmer.", "Evidence required for the decision remains unconfirmed.");
+}
+
+function permitQualityIssueText(id: string, locale: DossierLocale): string {
+  const text: Record<string, [string, string]> = {
+    invalid_source: ["Le lien source officiel est absent ou invalide.", "The official source link is missing or invalid."],
+    missing_source_id: ["L'identifiant municipal du permis n'est pas publié.", "The municipal permit identifier is not published."],
+    derived_identity: ["L'identifiant stable a été reconstruit à partir du dossier public.", "The stable identifier was reconstructed from the public record."],
+    missing_address: ["L'adresse civique n'est pas publiée.", "The civic address is not published."],
+    placeholder_address: ["L'adresse publiée n'identifie pas un emplacement précis.", "The published address does not identify a precise location."],
+    missing_permit_type: ["Le type de permis n'est pas publié.", "The permit type is not published."],
+    generic_permit_type: ["Le type de permis publié est trop général pour qualifier les travaux.", "The published permit type is too general to qualify the work."],
+    missing_issue_date: ["La date d'émission du permis n'est pas publiée.", "The permit issue date is not published."],
+    future_issue_date: ["La date d'émission publiée est future et doit être vérifiée.", "The published issue date is in the future and must be verified."],
+    stale_record: ["Le permis date de plus de deux ans et peut ne plus représenter une occasion active.", "The permit is more than two years old and may no longer represent an active opportunity."],
+    missing_cost: ["La valeur déclarée des travaux n'est pas publiée.", "The declared work value is not published."],
+    missing_coordinates: ["Les coordonnées ne sont pas publiées; la localisation cartographique reste approximative.", "Coordinates are not published; map positioning remains approximate."],
+    dataset_level_source: ["La source ouvre le jeu de données municipal, pas le permis individuel.", "The source opens the municipal dataset, not the individual permit."],
+  };
+  const value = text[id];
+  return value
+    ? copy(locale, value[0], value[1])
+    : copy(locale, "Un champ du dossier municipal doit être confirmé à la source.", "A municipal record field must be confirmed at the source.");
+}
+
 function evidenceThresholds(input: {
   score: number;
   confidence: number;
@@ -174,12 +249,10 @@ export function buildPermitOpportunityDossier(input: PermitDossierInput): Opport
   const { permit, pipeline, dataQuality, intelligence } = input;
   const locale = input.locale ?? "en";
   const limitations = unique([
-    ...(dataQuality?.issues ?? []).map((issue) => copy(locale, `Problème de qualité du permis : ${issue}.`, `Permit data quality issue: ${issue}.`)),
-    ...(pipeline.missingEvidence ?? []).map((item) => copy(locale, `Preuve de classement manquante : ${item}.`, `Missing ranking evidence: ${item}.`)),
+    ...(dataQuality?.issues ?? []).map((issue) => permitQualityIssueText(issue, locale)),
+    ...(pipeline.missingEvidence ?? []).map((item) => evidenceGapText(item, locale)),
     dataQuality && !dataQuality.officialSource ? copy(locale, "L'hôte de la source n'est pas reconnu comme officiel.", "Source host is not recognized as an official Quebec or municipal source.") : "",
-    dataQuality?.sourceScope === "dataset" ? copy(locale, "La source ouvre le jeu de données, pas le dossier municipal individuel.", "Source opens the dataset, not the individual municipal record.") : "",
     !permit.applicantName ? copy(locale, "Le demandeur ou contact n'est pas publié.", "Applicant/contact is not published in this record.") : "",
-    !permit.estimatedCost ? copy(locale, "La valeur déclarée des travaux n'est pas publiée.", "Declared work value is not published.") : "",
     copy(locale, "Vérifier la source municipale avant toute démarche, soumission ou action de conformité.", "Verify the municipal source before outreach, bidding, or compliance action."),
   ]);
   const thresholds = evidenceThresholds({
@@ -255,7 +328,7 @@ export function buildTenderOpportunityDossier(input: TenderDossierInput): Opport
   const { tender, ranking } = input;
   const locale = input.locale ?? "en";
   const limitations = unique([
-    ...ranking.missingEvidence.map((item) => copy(locale, `Preuve de classement manquante : ${item}.`, `Missing ranking evidence: ${item}.`)),
+    ...ranking.missingEvidence.map((item) => evidenceGapText(item, locale)),
     tender.requiresAmp ? copy(locale, "L'autorisation AMP doit être confirmée avant de soumissionner.", "AMP authorization must be confirmed before bidding.") : "",
     tender.amendmentCount ? copy(locale, "Un ou plusieurs addendas doivent être révisés sur SEAO.", "One or more addenda/amendments must be reviewed on SEAO.") : "",
     !tender.organization ? copy(locale, "L'organisme acheteur n'est pas normalisé.", "Buyer organization is not normalized.") : "",

@@ -110,7 +110,45 @@ describe("OpportunityDossier", () => {
       "region_profile",
       "value_or_budget",
     ]);
+    expect(dossier.limitations.join(" ")).toContain(
+      "target trades must be configured",
+    );
+    expect(dossier.limitations.join(" ")).not.toContain("trade_profile");
+    expect(dossier.limitations.join(" ")).not.toContain("value_or_budget");
     expect(dossier.whyRanked.join(" ")).toContain("not high enough");
+  });
+
+  it("keeps permit quality codes out of contractor-facing limitations", () => {
+    const dossier = buildPermitOpportunityDossier({
+      permit: {
+        id: "permit-partial",
+        permitType: "Renovation",
+        address: "200 rue Test",
+        city: "Montreal",
+        sourceUrl: "https://donnees.montreal.ca/dataset/permis",
+      },
+      score: 55,
+      signals: [],
+      pipeline: {
+        ...strongPipeline,
+        confidence: 45,
+        missingEvidence: ["cost_or_budget", "zoning"],
+      },
+      dataQuality: {
+        score: 55,
+        grade: "medium",
+        usable: true,
+        officialSource: true,
+        sourceScope: "dataset",
+        issues: ["dataset_level_source", "missing_cost"],
+      },
+    });
+
+    const limitations = dossier.limitations.join(" ");
+    expect(limitations).toContain("municipal dataset");
+    expect(limitations).toContain("parcel zone");
+    expect(limitations).not.toContain("dataset_level_source");
+    expect(limitations).not.toContain("cost_or_budget");
   });
 
   it("localizes contractor actions without changing the evidence gate", () => {
