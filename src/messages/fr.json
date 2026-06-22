@@ -24,7 +24,8 @@
     "logout": "Déconnexion",
     "openMenu": "Ouvrir le menu",
     "closeMenu": "Fermer le menu",
-    "feedPreview": "Fil (aperçu)"
+    "feedPreview": "Fil (aperçu)",
+    "carte": "Carte"
   },
   "hero": {
     "badge": "{datasets} jeux de données · {cities} villes",
@@ -518,5 +519,38 @@
     "title": "Une erreur est survenue",
     "description": "Réessayez ou contactez le support si le problème persiste.",
     "retry": "Réessayer"
+  },
+  "carte": {
+    "title": "Carte du Québec",
+    "subtitle": "Couches de données géolocalisées. Chaque couche indique précisément ce qui est disponible — pas de promesse de carte que nous ne rendons pas.",
+    "layerCount": "{count} éléments indexés",
+    "polygonCount": "{count} polygones de zonage",
+    "openIntelligence": "Ouvrir l'explorateur intelligence",
+    "openMarches": "Ouvrir MarchésQC",
+    "layer": {
+      "permits": "Permis",
+      "tenders": "SEAO",
+      "zoning": "Zonage",
+      "contamination": "Terrains contaminés",
+      "heritage": "Patrimoine",
+      "roadworks": "Travaux"
+    },
+    "status": {
+      "AVAILABLE": "Disponible",
+      "PARTIAL": "Partiel",
+      "POINT_ONLY": "Points seulement",
+      "LIST_ONLY": "Liste seulement",
+      "NONE": "Non disponible"
+    },
+    "notMapped": {
+      "title": "Couche non cartographiée ici",
+      "none": "Aucune donnée pour cette couche",
+      "permits": "Permis affichés sur la carte.",
+      "tenders": "Les appels d'offres SEAO sont consultables en liste, pas en points sur la carte.",
+      "zoning": "Le zonage est servi par adresse (polygone confirmé ou point le plus proche) dans l'explorateur intelligence, pas encore en couche polygonale sur la carte.",
+      "contamination": "Sites contaminés disponibles via l'intelligence par adresse.",
+      "heritage": "Patrimoine disponible via l'intelligence par adresse.",
+      "roadworks": "Travaux routiers disponibles via l'intelligence par adresse."
+    }
   }
 }

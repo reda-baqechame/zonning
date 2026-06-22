@@ -56,6 +56,7 @@ export function NavBar({
       : [{ href: "/feed-preview", label: t("feedPreview") }]),
     { href: "/verdict", label: t("verdict") },
     { href: "/intelligence", label: t("intelligence") },
+    { href: "/carte", label: t("carte") },
     { href: "/chantier-radar", label: t("chantierRadar") },
     { href: "/marches-qc", label: t("marchesQc") },
     { href: "/coverage", label: t("coverage") },

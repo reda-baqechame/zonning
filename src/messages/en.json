@@ -24,7 +24,8 @@
     "logout": "Log out",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "feedPreview": "Feed preview"
+    "feedPreview": "Feed preview",
+    "carte": "Map"
   },
   "hero": {
     "badge": "{datasets} datasets · {cities} cities",
@@ -518,5 +519,38 @@
     "title": "Something went wrong",
     "description": "Try again or contact support if the problem persists.",
     "retry": "Try again"
+  },
+  "carte": {
+    "title": "Quebec map",
+    "subtitle": "Geolocated data layers. Each layer states exactly what's available — no promise of a map we don't render.",
+    "layerCount": "{count} indexed items",
+    "polygonCount": "{count} zoning polygons",
+    "openIntelligence": "Open intelligence explorer",
+    "openMarches": "Open MarchésQC",
+    "layer": {
+      "permits": "Permits",
+      "tenders": "SEAO",
+      "zoning": "Zoning",
+      "contamination": "Contaminated sites",
+      "heritage": "Heritage",
+      "roadworks": "Roadworks"
+    },
+    "status": {
+      "AVAILABLE": "Available",
+      "PARTIAL": "Partial",
+      "POINT_ONLY": "Points only",
+      "LIST_ONLY": "List only",
+      "NONE": "Unavailable"
+    },
+    "notMapped": {
+      "title": "Layer not mapped here",
+      "none": "No data for this layer",
+      "permits": "Permits shown on the map.",
+      "tenders": "SEAO tenders are browsable as a list, not as map points.",
+      "zoning": "Zoning is served per address (confirmed polygon or nearest point) in the intelligence explorer, not yet as a polygon map layer.",
+      "contamination": "Contaminated sites available via per-address intelligence.",
+      "heritage": "Heritage available via per-address intelligence.",
+      "roadworks": "Roadworks available via per-address intelligence."
+    }
   }
 }
