@@ -23,7 +23,8 @@
     "register": "Sign up",
     "logout": "Log out",
     "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "feedPreview": "Feed preview"
   },
   "hero": {
     "badge": "{datasets} datasets · {cities} cities",
@@ -167,6 +168,16 @@
   },
   "demoMode": {
     "banner": "Demo mode — sample data shown until the first live public-data sync completes."
+  },
+  "feedPreview": {
+    "title": "Feed preview",
+    "subtitle": "A public sample of permits and tenders. The full feed, personalized to your RBQ profile, is for members.",
+    "notice": "Read-only preview — create an account for pipeline scores, win probability and alerts.",
+    "openFeed": "Open my feed",
+    "signUp": "Create an account",
+    "emptyTitle": "No opportunities yet",
+    "emptyDesc": "Try again after the next public-data sync.",
+    "ctaTitle": "Ready for a feed personalized to your RBQ license, trades and regions?"
   },
   "footer": {
     "tagline": "ZONNING — Revenue pipeline and compliance for Quebec",

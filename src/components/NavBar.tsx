@@ -51,7 +51,9 @@ export function NavBar({
   const plan = user?.plan ?? "FREE";
 
   const links = [
-    ...(user ? [{ href: "/feed", label: t("feed") }] : []),
+    ...(user
+      ? [{ href: "/feed", label: t("feed") }]
+      : [{ href: "/feed-preview", label: t("feedPreview") }]),
     { href: "/verdict", label: t("verdict") },
     { href: "/intelligence", label: t("intelligence") },
     { href: "/chantier-radar", label: t("chantierRadar") },

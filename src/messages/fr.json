@@ -23,7 +23,8 @@
     "register": "Inscription",
     "logout": "Déconnexion",
     "openMenu": "Ouvrir le menu",
-    "closeMenu": "Fermer le menu"
+    "closeMenu": "Fermer le menu",
+    "feedPreview": "Fil (aperçu)"
   },
   "hero": {
     "badge": "{datasets} jeux de données · {cities} villes",
@@ -167,6 +168,16 @@
   },
   "demoMode": {
     "banner": "Mode démonstration — données d'exemple affichées jusqu'à la première synchronisation des données publiques en direct."
+  },
+  "feedPreview": {
+    "title": "Aperçu du fil",
+    "subtitle": "Un échantillon public de permis et d'appels d'offres. Le fil complet, personnalisé selon votre profil RBQ, est réservé aux membres.",
+    "notice": "Aperçu en lecture seule — créez un compte pour les scores de pipeline, la probabilité de gain et les alertes.",
+    "openFeed": "Ouvrir mon fil",
+    "signUp": "Créer un compte",
+    "emptyTitle": "Aucune opportunité pour l'instant",
+    "emptyDesc": "Réessayez après la prochaine synchronisation des données publiques.",
+    "ctaTitle": "Prêt pour un fil personnalisé selon votre licence RBQ, vos métiers et vos régions ?"
   },
   "footer": {
     "tagline": "ZONNING — Pipeline de revenus et conformité pour le Québec",
