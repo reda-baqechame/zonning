@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Input, FieldLabel, FieldError, Button, Card, FadeIn } from "@/components/ui";
 
 export default function LoginClient() {
   const t = useTranslations("auth");
   const c = useTranslations("common");
-  const router = useRouter();
+  const locale = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -31,20 +30,17 @@ export default function LoginClient() {
       return;
     }
     const settingsRes = await fetch("/api/user/settings");
+    let destination = "/feed";
     if (settingsRes.ok) {
       const settings = await settingsRes.json();
-      router.push(settings.user?.onboardingComplete ? "/feed" : "/onboarding");
-    } else {
-      router.push("/feed");
+      destination = settings.user?.onboardingComplete ? "/feed" : "/onboarding";
     }
+    window.location.assign(`/${locale}${destination}`);
   };
 
   return (
     <FadeIn className="mx-auto max-w-md px-4 py-16">
-      <h1 className="text-2xl font-bold text-white">{t("signIn")}</h1>
-      {process.env.NODE_ENV !== "production" && (
-        <p className="mt-2 text-sm text-slate-500">{c("demoHint")}</p>
-      )}
+      <h1 className="text-2xl font-bold text-ink">{t("signIn")}</h1>
       <Card className="mt-8">
         <form onSubmit={submit} className="space-y-4">
           <div>
@@ -77,9 +73,9 @@ export default function LoginClient() {
           </Button>
         </form>
       </Card>
-      <p className="mt-4 text-center text-sm text-slate-400">
+      <p className="mt-4 text-center text-sm text-muted">
         {t("noAccount")}{" "}
-        <Link href="/register" className="text-sky-400 hover:underline">
+        <Link href="/register" className="text-brand hover:underline">
           {t("signUp")}
         </Link>
       </p>

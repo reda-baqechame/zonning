@@ -1,21 +1,27 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans } from "next/font/google";
+import { IBM_Plex_Sans, Space_Grotesk } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { NavBar } from "@/components/NavBar";
-import { DemoModeBanner } from "@/components/DemoModeBanner";
+import { DataModeBanner } from "@/components/DataModeBanner";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CookieConsent } from "@/components/CookieConsent";
 import { ToastProvider } from "@/components/ui";
-import { getSessionUser } from "@/lib/auth";
 import "@/app/globals.css";
 
 const ibmPlex = IBM_Plex_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-ibm-plex",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-space-grotesk",
   display: "swap",
 });
 
@@ -40,15 +46,14 @@ export default async function LocaleLayout({
   if (!routing.locales.includes(locale as "fr" | "en")) notFound();
 
   const messages = await getMessages();
-  const user = await getSessionUser();
 
   return (
-    <html lang={locale} className={`h-full ${ibmPlex.variable}`}>
-      <body className={`${ibmPlex.className} min-h-full bg-slate-950 text-slate-100 antialiased`}>
+    <html lang={locale} className={`h-full ${ibmPlex.variable} ${spaceGrotesk.variable}`}>
+      <body className={`${ibmPlex.className} min-h-full antialiased`}>
         <NextIntlClientProvider messages={messages}>
           <ToastProvider>
-            <DemoModeBanner />
-            <NavBar user={user} />
+            <DataModeBanner />
+            <NavBar />
             <main className="min-h-[calc(100vh-8rem)]">{children}</main>
             <SiteFooter />
             <CookieConsent />

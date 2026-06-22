@@ -43,8 +43,8 @@ export default function FreshnessBadge({ datasetId }: Props) {
 
   if (!lastSuccessAt) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-800 px-2.5 py-1 text-xs text-slate-400">
-        <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-2.5 py-1 text-xs font-medium text-warning-ink">
+        <span className="h-1.5 w-1.5 rounded-full bg-warning" />
         {t("pending")}
       </span>
     );
@@ -56,8 +56,8 @@ export default function FreshnessBadge({ datasetId }: Props) {
   });
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-300">
-      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-success-soft px-2.5 py-1 text-xs font-medium text-success-ink">
+      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
       {t("live")} · {ago}
     </span>
   );

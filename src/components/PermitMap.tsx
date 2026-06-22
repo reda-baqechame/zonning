@@ -105,12 +105,12 @@ export default function PermitMap({
   return (
     <div className="relative h-[420px] w-full">
       {loading && (
-        <div className="absolute inset-0 z-[500] flex items-center justify-center rounded-xl bg-slate-950/70">
-          <span className="text-sm text-slate-400">Chargement…</span>
+        <div className="absolute inset-0 z-[500] flex items-center justify-center rounded-xl bg-ink/70">
+          <span className="text-sm text-surface">Chargement…</span>
         </div>
       )}
       {totalCount != null && mappableCount != null && mappableCount < totalCount && (
-        <div className="absolute bottom-2 left-2 z-[500] rounded bg-slate-900/90 px-2 py-1 text-xs text-slate-400">
+        <div className="absolute bottom-2 left-2 z-[500] rounded border border-line bg-surface/95 px-2 py-1 text-xs text-muted shadow-1">
           {mappableCount}/{totalCount} sur la carte
         </div>
       )}

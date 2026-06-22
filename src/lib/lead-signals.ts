@@ -1,6 +1,7 @@
 import { differenceInDays, getDay } from "date-fns";
 import type { PipelineScoreResult } from "@/lib/pipeline-score";
 import type { PropertyIntelligence } from "@/lib/intelligence";
+import type { TenderScoreResult } from "@/lib/tender-score";
 
 export type LeadSignalId =
   | "strong_match"
@@ -64,6 +65,7 @@ export type TenderLeadInput = {
   sourceUrl: string;
   hasSimilarAwards?: boolean;
   amendmentCount?: number;
+  ranking?: TenderScoreResult;
 };
 
 export type LeadInput = PermitLeadInput | TenderLeadInput;
@@ -72,11 +74,15 @@ const HIGH_VALUE_DEFAULT = 500_000;
 
 export function computeLeadSignals(
   item: LeadInput,
-  user: LeadUserContext = {}
+  user: LeadUserContext = {},
 ): LeadSignal[] {
   const signals: LeadSignal[] = [];
 
-  if (item.score >= 80) {
+  const confidence =
+    item.kind === "permit"
+      ? item.pipeline?.confidence
+      : item.ranking?.confidence;
+  if (item.score >= 80 && (confidence ?? 0) >= 65) {
     signals.push({ id: "strong_match", severity: "positive" });
   }
 
@@ -113,7 +119,9 @@ export function computeLeadSignals(
   if (item.kind === "tender") {
     const daysLeft =
       item.daysLeft ??
-      (item.closesAt ? differenceInDays(new Date(item.closesAt), new Date()) : null);
+      (item.closesAt
+        ? differenceInDays(new Date(item.closesAt), new Date())
+        : null);
     if (daysLeft !== null && daysLeft <= 7) {
       signals.push({ id: "urgent_close", severity: "warning" });
     }
@@ -121,8 +129,10 @@ export function computeLeadSignals(
       item.isThursday ??
       (item.closesAt ? getDay(new Date(item.closesAt)) === 4 : false);
     if (isThu) signals.push({ id: "thursday_seao", severity: "warning" });
-    if (item.requiresAmp) signals.push({ id: "amp_required", severity: "info" });
-    if (item.hasSimilarAwards) signals.push({ id: "award_linked", severity: "info" });
+    if (item.requiresAmp)
+      signals.push({ id: "amp_required", severity: "info" });
+    if (item.hasSimilarAwards)
+      signals.push({ id: "award_linked", severity: "info" });
   }
 
   return signals;
@@ -130,7 +140,7 @@ export function computeLeadSignals(
 
 export function filterItemsBySignal<T extends { signals: LeadSignal[] }>(
   items: T[],
-  filter: "urgent" | "rbq" | "high_value" | "risks" | null
+  filter: "urgent" | "rbq" | "high_value" | "risks" | null,
 ): T[] {
   if (!filter) return items;
   return items.filter((item) => {

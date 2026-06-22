@@ -11,7 +11,9 @@ import { getLatestQualityByDataset } from "@/lib/sync/quality";
 import { isSyncAutomationEnabled, getIntegrationStatus } from "@/lib/env";
 import SyncDatasetButton from "@/components/SyncDatasetButton";
 import AdminConciergePanel from "@/components/AdminConciergePanel";
+import { AdminEmailTestButton } from "@/components/AdminEmailTestButton";
 import { isAdminEmail } from "@/lib/admin";
+import { emailFromDomain } from "@/lib/email/templates";
 
 function datasetHealth(
   state: {
@@ -156,66 +158,68 @@ export default async function DashboardPage({
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+      <div className="mt-6 rounded-xl border border-line bg-surface-2 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-white">Santé sync & intégrations</h2>
-          <Link href="/api/sync/health" className="text-xs text-sky-400 hover:underline">
+          <h2 className="text-lg font-semibold text-ink">Santé sync & intégrations</h2>
+          <Link href="/api/sync/health" className="text-xs text-brand hover:underline">
             /api/sync/health →
           </Link>
         </div>
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
-          <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-emerald-300">
+          <span className="rounded-full bg-success-soft px-3 py-1 font-medium text-success-ink">
             {syncSummary.healthy} sains
           </span>
-          <span className="rounded-full bg-amber-500/20 px-3 py-1 text-amber-300">
+          <span className="rounded-full bg-warning-soft px-3 py-1 font-medium text-warning-ink">
             {syncSummary.stale} périmés
           </span>
-          <span className="rounded-full bg-red-500/20 px-3 py-1 text-red-300">
+          <span className="rounded-full bg-danger-soft px-3 py-1 font-medium text-danger-ink">
             {syncSummary.critical} critiques
           </span>
           {syncSummary.anomalies > 0 && (
-            <span className="rounded-full bg-fuchsia-500/20 px-3 py-1 text-fuchsia-300">
+            <span className="rounded-full bg-brand-soft px-3 py-1 font-medium text-brand">
               {syncSummary.anomalies} anomalies
             </span>
           )}
         </div>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-400">
-          <span className={integrations.resend ? "text-emerald-400" : "text-slate-500"}>
+        <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted">
+          <span className={integrations.resend ? "text-success-ink" : "text-subtle"}>
             Resend {integrations.resend ? "✓" : "—"}
+            {emailFromDomain() ? ` · ${emailFromDomain()}` : ""}
           </span>
-          <span className={integrations.stripe ? "text-emerald-400" : integrations.stripeDemo ? "text-amber-400" : "text-slate-500"}>
-            Stripe {integrations.stripe ? "✓" : integrations.stripeDemo ? "demo" : "—"}
+          <span className={integrations.stripe ? "text-success-ink" : "text-subtle"}>
+            Stripe {integrations.stripe ? "✓" : "disabled"}
           </span>
-          <span className={integrations.upstash ? "text-emerald-400" : "text-slate-500"}>
+          <span className={integrations.upstash ? "text-success-ink" : "text-subtle"}>
             Upstash {integrations.upstash ? "✓" : "—"}
           </span>
-          <span className={integrations.twilio ? "text-emerald-400" : "text-slate-500"}>
+          <span className={integrations.twilio ? "text-success-ink" : "text-subtle"}>
             Twilio {integrations.twilio ? "✓" : "—"}
           </span>
         </div>
+        <AdminEmailTestButton locale={locale} />
       </div>
 
       <div className="mt-8 grid gap-4 md:grid-cols-4">
-        <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-6">
-          <p className="text-sm text-slate-400">{t("permitsWeek")}</p>
-          <p className="mt-2 text-3xl font-bold text-sky-300">{permitsWeek}</p>
+        <div className="rounded-xl border border-line bg-surface-2 p-6">
+          <p className="text-sm text-muted">{t("permitsWeek")}</p>
+          <p className="mt-2 text-3xl font-bold tabular-nums text-brand">{permitsWeek}</p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-6">
-          <p className="text-sm text-slate-400">{t("tendersOpen")}</p>
-          <p className="mt-2 text-3xl font-bold text-sky-300">{tendersOpen}</p>
+        <div className="rounded-xl border border-line bg-surface-2 p-6">
+          <p className="text-sm text-muted">{t("tendersOpen")}</p>
+          <p className="mt-2 text-3xl font-bold tabular-nums text-brand">{tendersOpen}</p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-6">
-          <p className="text-sm text-slate-400">{t("alerts")}</p>
-          <p className="mt-2 text-3xl font-bold text-sky-300">{alerts}</p>
+        <div className="rounded-xl border border-line bg-surface-2 p-6">
+          <p className="text-sm text-muted">{t("alerts")}</p>
+          <p className="mt-2 text-3xl font-bold tabular-nums text-brand">{alerts}</p>
         </div>
-        <div className="rounded-xl border border-emerald-800/50 bg-emerald-950/20 p-6">
-          <p className="text-sm text-slate-400">Comptes payants</p>
-          <p className="mt-2 text-3xl font-bold text-emerald-300">{payingAccounts}</p>
+        <div className="rounded-xl border border-success/40 bg-success-soft p-6">
+          <p className="text-sm text-muted">Comptes payants</p>
+          <p className="mt-2 text-3xl font-bold tabular-nums text-success-ink">{payingAccounts}</p>
           <a
             href="https://dashboard.stripe.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-2 inline-block text-xs text-emerald-400 hover:underline"
+            className="mt-2 inline-block text-xs text-success-ink hover:underline"
           >
             MRR → Stripe Dashboard
           </a>
@@ -223,13 +227,13 @@ export default async function DashboardPage({
       </div>
 
       {permitDelays.length > 0 && (
-        <div className="mt-10 rounded-xl border border-slate-800 bg-slate-900/40 p-6">
-          <h2 className="text-lg font-semibold text-white">Délais permis (Montréal)</h2>
+        <div className="mt-10 rounded-xl border border-line bg-surface-2 p-6">
+          <h2 className="text-lg font-semibold text-ink">Délais permis (Montréal)</h2>
           <div className="mt-4 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
             {permitDelays.map((d) => (
-              <div key={d.id} className="rounded-lg border border-slate-800 px-3 py-2 text-sm">
-                <p className="font-medium text-slate-200">{d.borough}</p>
-                <p className="text-xs text-slate-500">
+              <div key={d.id} className="rounded-lg border border-line px-3 py-2 text-sm">
+                <p className="font-medium text-ink">{d.borough}</p>
+                <p className="text-xs text-muted">
                   {d.phase ?? "Permis"} — médiane {d.medianDays ?? "—"} j / cible{" "}
                   {d.targetDays ?? "—"} j
                 </p>
@@ -241,9 +245,9 @@ export default async function DashboardPage({
 
       <div className="mt-10">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">{t("dataFreshness")}</h2>
+          <h2 className="text-lg font-semibold text-ink">{t("dataFreshness")}</h2>
           {errorCount > 0 && (
-            <span className="rounded-full bg-red-500/20 px-3 py-1 text-xs text-red-300">
+            <span className="rounded-full bg-danger-soft px-3 py-1 text-xs font-medium text-danger-ink">
               {errorCount} {t("syncErrors")}
             </span>
           )}
@@ -266,31 +270,31 @@ export default async function DashboardPage({
                 key={id}
                 className={`rounded-lg border px-4 py-3 text-sm ${
                   hasError || health === "critical"
-                    ? "border-red-500/40 bg-red-950/20"
+                    ? "border-danger/40 bg-danger-soft"
                     : health === "stale"
-                      ? "border-amber-500/30 bg-amber-950/10"
-                      : "border-slate-800 bg-slate-900/30"
+                      ? "border-warning/30 bg-warning-soft"
+                      : "border-line bg-surface"
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <p className="font-medium text-slate-200">{label}</p>
+                  <p className="font-medium text-ink">{label}</p>
                   <span
                     className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] uppercase ${HEALTH_STYLES[health]}`}
                   >
                     {health}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-muted">
                   {t("lastSync")}: {ago}
                   {state?.recordsProcessed ? ` · ${state.recordsProcessed} rec.` : ""}
                 </p>
                 {(state?.syncOffset ?? 0) > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-muted">
                     Reprise sync · offset {state?.syncOffset}
                   </p>
                 )}
                 {state?.lastError && (
-                  <p className="mt-1 text-xs text-red-400 line-clamp-2">{state.lastError}</p>
+                  <p className="mt-1 text-xs text-danger-ink line-clamp-2">{state.lastError}</p>
                 )}
                 {admin && <SyncDatasetButton datasetId={id} label={id} />}
               </div>

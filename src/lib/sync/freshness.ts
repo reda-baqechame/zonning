@@ -1,4 +1,4 @@
-import { DATASETS, type DatasetId } from "@/lib/datasets/registry";
+import { DATASETS, isDatasetSyncEnabled, type DatasetId } from "@/lib/datasets/registry";
 import { prisma } from "@/lib/prisma";
 import { syncDataset } from "@/lib/sync/runner";
 import { getLiveMaxAgeMinutes } from "@/lib/sync/live-watch";
@@ -66,6 +66,7 @@ export async function ensureFresh(
   options?: { maxAgeMinutes?: number; background?: boolean }
 ): Promise<void> {
   if (process.env.SYNC_ENABLED === "false") return;
+  if (!isDatasetSyncEnabled(datasetId)) return;
 
   const background = options?.background ?? true;
 
@@ -95,7 +96,7 @@ export async function ensureFreshMany(
   datasetIds: DatasetId[],
   options?: { maxAgeMinutes?: number; background?: boolean }
 ): Promise<void> {
-  const unique = [...new Set(datasetIds)];
+  const unique = [...new Set(datasetIds)].filter(isDatasetSyncEnabled);
   for (const id of unique) {
     void ensureFresh(id, options);
   }

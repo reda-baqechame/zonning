@@ -12,6 +12,9 @@ import type { PropertyIntelligence } from "@/lib/intelligence";
 import { COVERAGE_CITIES } from "@/lib/datasets/registry";
 import { createAlert } from "@/lib/alerts/create-alert";
 import type { LeadSignal } from "@/lib/lead-signals";
+import type { PipelineScoreResult } from "@/lib/pipeline-score";
+import type { PermitDataQuality } from "@/lib/permits/quality";
+import type { OpportunityDossier } from "@/lib/domain/quebec";
 import {
   PageHeader,
   Input,
@@ -37,19 +40,11 @@ type Permit = {
   sourceUrl?: string;
   rbqFit: { score: number; eligible: boolean; reasonFr: string };
   pipelineScore?: number;
-  pipeline?: {
-    competitionCount?: number;
-    densityGapLabelFr?: string;
-    breakdown?: {
-      rbqFit: number;
-      costFit: number;
-      competition: number;
-      intelligence: number;
-      zoning: number;
-    };
-  };
+  pipeline?: PipelineScoreResult;
   signals?: LeadSignal[];
   intelligence?: PropertyIntelligence;
+  dataQuality?: PermitDataQuality;
+  opportunityDossier?: OpportunityDossier;
 };
 
 export default function ChantierRadarClient() {
@@ -65,7 +60,12 @@ export default function ChantierRadarClient() {
   const [showGtcLayer, setShowGtcLayer] = useState(false);
   const [showHeritageLayer, setShowHeritageLayer] = useState(false);
   const [mapOverlays, setMapOverlays] = useState<
-    { id: string; lat: number; lng: number; kind: "gtc" | "heritage" | "zoning" }[]
+    {
+      id: string;
+      lat: number;
+      lng: number;
+      kind: "gtc" | "heritage" | "zoning";
+    }[]
   >([]);
   const [mappableCount, setMappableCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
@@ -88,7 +88,12 @@ export default function ChantierRadarClient() {
   const [days, setDays] = useState("90");
   const [loading, setLoading] = useState(true);
   const [boroughDelays, setBoroughDelays] = useState<
-    { borough: string; phase?: string | null; medianDays?: number | null; targetDays?: number | null }[]
+    {
+      borough: string;
+      phase?: string | null;
+      medianDays?: number | null;
+      targetDays?: number | null;
+    }[]
   >([]);
   const [devProjects, setDevProjects] = useState<
     {
@@ -159,7 +164,17 @@ export default function ChantierRadarClient() {
     } finally {
       setLoading(false);
     }
-  }, [borough, city, minCost, permitType, eligibleOnly, noGtc, days, showDevProjects, c]);
+  }, [
+    borough,
+    city,
+    minCost,
+    permitType,
+    eligibleOnly,
+    noGtc,
+    days,
+    showDevProjects,
+    c,
+  ]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -204,7 +219,7 @@ export default function ChantierRadarClient() {
         .join(",");
       try {
         const res = await fetch(
-          `/api/map/overlays?lat=${center.latitude}&lng=${center.longitude}&layers=${layers}`
+          `/api/map/overlays?lat=${center.latitude}&lng=${center.longitude}&layers=${layers}`,
         );
         const d = await res.json();
         if (!cancelled) setMapOverlays(d.points ?? []);
@@ -261,7 +276,7 @@ export default function ChantierRadarClient() {
         action={<FreshnessBadge datasetId="permits" />}
       />
 
-      <div className="mt-6 grid gap-4 rounded-xl border border-slate-800 bg-slate-900/50 p-4 md:grid-cols-2 lg:grid-cols-6">
+      <div className="mt-6 grid gap-4 rounded-xl border border-line bg-surface-2 p-4 md:grid-cols-2 lg:grid-cols-6">
         <div>
           <FieldLabel htmlFor="borough">{t("borough")}</FieldLabel>
           <Input
@@ -273,7 +288,11 @@ export default function ChantierRadarClient() {
         </div>
         <div>
           <FieldLabel htmlFor="city">Ville</FieldLabel>
-          <Select id="city" value={city} onChange={(e) => setCity(e.target.value)}>
+          <Select
+            id="city"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+          >
             <option value="">Toutes</option>
             {COVERAGE_CITIES.map((c) => (
               <option key={c} value={c}>
@@ -303,14 +322,18 @@ export default function ChantierRadarClient() {
         </div>
         <div>
           <FieldLabel htmlFor="days">{t("days")}</FieldLabel>
-          <Select id="days" value={days} onChange={(e) => setDays(e.target.value)}>
+          <Select
+            id="days"
+            value={days}
+            onChange={(e) => setDays(e.target.value)}
+          >
             <option value="30">30 {t("daysLabel")}</option>
             <option value="90">90 {t("daysLabel")}</option>
             <option value="180">180 {t("daysLabel")}</option>
           </Select>
         </div>
         <div className="flex items-end">
-          <label className="flex items-center gap-2 text-sm text-slate-300">
+          <label className="flex items-center gap-2 text-sm text-muted">
             <input
               type="checkbox"
               checked={eligibleOnly}
@@ -320,7 +343,7 @@ export default function ChantierRadarClient() {
           </label>
         </div>
         <div className="flex items-end">
-          <label className="flex items-center gap-2 text-sm text-slate-300">
+          <label className="flex items-center gap-2 text-sm text-muted">
             <input
               type="checkbox"
               checked={noGtc}
@@ -333,20 +356,27 @@ export default function ChantierRadarClient() {
           <Button variant="secondary" onClick={() => void load()}>
             {t("filters")}
           </Button>
-          <Button onClick={() => void handleCreateAlert()}>{t("createAlert")}</Button>
+          <Button onClick={() => void handleCreateAlert()}>
+            {t("createAlert")}
+          </Button>
         </div>
       </div>
 
       {loadError && (
-        <div className="mt-4 rounded-lg border border-red-500/40 bg-red-950/30 p-4 text-sm text-red-200">
+        <div className="mt-4 rounded-lg border border-danger/40 bg-danger-soft p-4 text-sm text-danger-ink">
           {loadError}
-          <Button variant="secondary" size="sm" className="mt-2" onClick={() => void load()}>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="mt-2"
+            onClick={() => void load()}
+          >
             {c("retry")}
           </Button>
         </div>
       )}
 
-      <p className="mt-2 text-sm text-slate-500">
+      <p className="mt-2 text-sm text-muted">
         {t("resultSummary", {
           count: permits.length,
           total: totalCount,
@@ -355,14 +385,15 @@ export default function ChantierRadarClient() {
       </p>
 
       {boroughDelays.length > 0 && (
-        <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-          <p className="text-sm font-medium text-slate-300">
+        <div className="mt-4 rounded-xl border border-line bg-surface-2 p-4">
+          <p className="text-sm font-medium text-muted">
             {t("permitDelays")} — {borough}
           </p>
-          <ul className="mt-2 flex flex-wrap gap-3 text-xs text-slate-400">
+          <ul className="mt-2 flex flex-wrap gap-3 text-xs text-muted">
             {boroughDelays.map((d, i) => (
-              <li key={i} className="rounded bg-slate-950 px-2 py-1">
-                {d.phase ?? "Permis"}: {d.medianDays ?? "—"} j (cible {d.targetDays ?? "—"} j)
+              <li key={i} className="rounded bg-surface-hover px-2 py-1">
+                {d.phase ?? "Permis"}: {d.medianDays ?? "—"} j (cible{" "}
+                {d.targetDays ?? "—"} j)
               </li>
             ))}
           </ul>
@@ -370,23 +401,28 @@ export default function ChantierRadarClient() {
       )}
 
       {devProjects.length > 0 && (
-        <div className="mt-4 rounded-xl border border-emerald-800/40 bg-emerald-950/20 p-4">
-          <p className="text-sm font-medium text-emerald-300">
+        <div className="mt-4 rounded-xl border border-success/30 bg-success-soft p-4">
+          <p className="text-sm font-medium text-success-ink">
             {t("devProjects")} — {city} ({devProjects.length})
           </p>
-          <ul className="mt-2 space-y-2 text-sm text-slate-400">
+          <ul className="mt-2 space-y-2 text-sm text-muted">
             {devProjects.slice(0, 8).map((p) => (
-              <li key={p.id} className="flex flex-wrap items-center justify-between gap-2">
+              <li
+                key={p.id}
+                className="flex flex-wrap items-center justify-between gap-2"
+              >
                 <span>{p.name ?? p.address ?? "Projet résidentiel"}</span>
                 {p.unitsPlanned != null && (
-                  <span className="text-xs text-slate-500">{p.unitsPlanned} unités</span>
+                  <span className="text-xs text-muted">
+                    {p.unitsPlanned} unités
+                  </span>
                 )}
                 {p.projectUrl && (
                   <a
                     href={p.projectUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-sky-400 hover:underline"
+                    className="text-xs text-brand hover:underline"
                   >
                     {t("viewProject")}
                   </a>
@@ -398,7 +434,7 @@ export default function ChantierRadarClient() {
       )}
 
       <div className="mt-4 flex flex-wrap gap-3 text-xs">
-        <label className="flex items-center gap-1.5 text-slate-400">
+        <label className="flex items-center gap-1.5 text-muted">
           <input
             type="checkbox"
             checked={showDevOnMap}
@@ -406,7 +442,7 @@ export default function ChantierRadarClient() {
           />
           {t("layerDevProjects")}
         </label>
-        <label className="flex items-center gap-1.5 text-slate-400">
+        <label className="flex items-center gap-1.5 text-muted">
           <input
             type="checkbox"
             checked={showGtcLayer}
@@ -414,7 +450,7 @@ export default function ChantierRadarClient() {
           />
           {t("layerGtc")}
         </label>
-        <label className="flex items-center gap-1.5 text-slate-400">
+        <label className="flex items-center gap-1.5 text-muted">
           <input
             type="checkbox"
             checked={showHeritageLayer}
@@ -486,6 +522,8 @@ export default function ChantierRadarClient() {
                   pipeline: p.pipeline,
                   sourceUrl: p.sourceUrl,
                   applicantName: p.applicantName,
+                  dataQuality: p.dataQuality,
+                  opportunityDossier: p.opportunityDossier,
                 }}
                 intelligence={p.intelligence}
                 intelAccess={intelAccess}

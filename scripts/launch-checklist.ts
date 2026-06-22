@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { loadProdEnv } from "./load-prod-env";
 import { collectEnvIssues } from "../src/lib/env";
 import {
   resolveDatabaseUrl,
@@ -18,6 +19,7 @@ function has(v?: string) {
 }
 
 function main() {
+  loadProdEnv();
   console.log("ZONNING launch checklist\n");
 
   const url = resolveDatabaseUrl() ?? "";
@@ -67,8 +69,14 @@ function main() {
     {
       name: "RESEND_API_KEY",
       ok: has(process.env.RESEND_API_KEY),
-      detail: has(process.env.RESEND_API_KEY) ? "set" : "missing — email alerts disabled",
-      required: false,
+      detail: has(process.env.RESEND_API_KEY) ? "set" : "missing — email disabled",
+      required: true,
+    },
+    {
+      name: "EMAIL_FROM",
+      ok: has(process.env.EMAIL_FROM),
+      detail: process.env.EMAIL_FROM ?? "missing — set ZONNING <onboarding@resend.dev>",
+      required: true,
     },
     {
       name: "UPSTASH_REDIS",
@@ -79,7 +87,7 @@ function main() {
     {
       name: "STRIPE_SECRET_KEY",
       ok: has(process.env.STRIPE_SECRET_KEY),
-      detail: has(process.env.STRIPE_SECRET_KEY) ? "live billing" : "demo mode OK",
+      detail: has(process.env.STRIPE_SECRET_KEY) ? "live billing" : "billing disabled",
       required: false,
     },
     {

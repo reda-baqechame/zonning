@@ -4,12 +4,38 @@ import type { VerdictTier } from "@/lib/verdict/compute-verdict";
 
 const TIER_STYLES: Record<
   VerdictTier,
-  { ring: string; bg: string; text: string }
+  { ring: string; bg: string; text: string; mark: string }
 > = {
-  eleve: { ring: "border-emerald-500", bg: "bg-emerald-950/40", text: "text-emerald-300" },
-  moyen: { ring: "border-amber-500", bg: "bg-amber-950/40", text: "text-amber-300" },
-  faible: { ring: "border-slate-500", bg: "bg-slate-900/60", text: "text-slate-300" },
-  bloque: { ring: "border-red-500", bg: "bg-red-950/40", text: "text-red-300" },
+  insufficient_data: {
+    ring: "border-slate-300",
+    bg: "bg-surface-2",
+    text: "text-subtle",
+    mark: "?",
+  },
+  eleve: {
+    ring: "border-success",
+    bg: "bg-success-soft",
+    text: "text-success",
+    mark: "✓",
+  },
+  moyen: {
+    ring: "border-warning",
+    bg: "bg-warning-soft",
+    text: "text-warning",
+    mark: "!",
+  },
+  faible: {
+    ring: "border-slate-300",
+    bg: "bg-surface-2",
+    text: "text-muted",
+    mark: "•",
+  },
+  bloque: {
+    ring: "border-danger",
+    bg: "bg-danger-soft",
+    text: "text-danger",
+    mark: "×",
+  },
 };
 
 export default function VerdictStamp({
@@ -26,17 +52,17 @@ export default function VerdictStamp({
   const s = TIER_STYLES[tier];
   return (
     <div
-      className={`relative rounded-2xl border-2 ${s.ring} ${s.bg} p-6 text-center ${compact ? "p-4" : ""}`}
+      className={`relative rounded-2xl border-2 ${s.ring} ${s.bg} p-6 text-center shadow-sm ${compact ? "p-4" : ""}`}
     >
-      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">PERMIS.AI</p>
+      <p className="text-xs uppercase tracking-[0.2em] text-subtle">ZONNING verdict</p>
       <p className={`mt-2 text-2xl font-bold ${s.text} ${compact ? "text-lg" : ""}`}>{label}</p>
-      <p className="mt-3 text-sm text-slate-400 line-clamp-2">{address}</p>
+      <p className="mt-3 line-clamp-2 text-sm text-muted">{address}</p>
       <div className="mt-4 flex justify-center">
-        <div className={`h-16 w-16 rounded-full border-4 ${s.ring} flex items-center justify-center`}>
-          <span className="text-2xl">✓</span>
+        <div className={`flex h-16 w-16 items-center justify-center rounded-full border-4 bg-white ${s.ring}`}>
+          <span className={`text-2xl font-bold ${s.text}`}>{s.mark}</span>
         </div>
       </div>
-      <p className="mt-3 text-[10px] text-slate-600">Analyse PERMIS.AI · Propulsé par ZONNING</p>
+      <p className="mt-3 text-[10px] text-subtle">Sourced analysis · limitations shown when data is missing</p>
     </div>
   );
 }

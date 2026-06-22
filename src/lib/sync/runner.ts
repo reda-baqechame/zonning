@@ -3,6 +3,7 @@ import { getRequiredRbqClasses } from "@/lib/rbq";
 import {
   DATASETS,
   getSyncLimit,
+  isDatasetSyncEnabled,
   type DatasetId,
 } from "@/lib/datasets/registry";
 import { fetchPermitsPaginated } from "@/lib/datasets/fetchers/permits";
@@ -64,7 +65,10 @@ const WEEKLY_DATASET_IDS: DatasetId[] = [
   "toronto-permits",
 ];
 
-const RBQ_BATCH = 3000;
+// Larger than other batches: the RBQ active-licenses dataset has ~900k rows
+// and uses a resumable offset, so each call should advance the offset
+// meaningfully to populate the table in a reasonable number of cycles.
+const RBQ_BATCH = 15000;
 const HERITAGE_BATCH = 500;
 
 async function trySkipUnchangedWeekly(datasetId: DatasetId): Promise<SyncResult | null> {
@@ -153,7 +157,7 @@ export type SyncResult = {
   dataset: DatasetId;
   ok: boolean;
   processed: number;
-  source: "live" | "empty" | "skipped" | "error";
+  source: "live" | "unchanged" | "empty" | "skipped" | "error";
   error?: string;
 };
 
@@ -197,23 +201,24 @@ async function acquireLock(datasetId: DatasetId): Promise<boolean> {
 
 async function releaseLock(
   datasetId: DatasetId,
-  result: { ok: boolean; processed: number; error?: string }
+  result: { ok: boolean; processed: number; source: SyncResult["source"]; error?: string },
 ) {
   running.delete(datasetId);
+  const freshnessConfirmed = result.ok && !["empty", "skipped"].includes(result.source);
   await prisma.syncState.upsert({
     where: { datasetId },
     create: {
       datasetId,
       status: result.ok ? "idle" : "error",
       lastRunAt: new Date(),
-      lastSuccessAt: result.ok ? new Date() : undefined,
+      lastSuccessAt: freshnessConfirmed ? new Date() : undefined,
       recordsProcessed: result.processed,
       lastError: result.error ?? null,
     },
     update: {
       status: result.ok ? "idle" : "error",
       lastRunAt: new Date(),
-      ...(result.ok ? { lastSuccessAt: new Date() } : {}),
+      ...(freshnessConfirmed ? { lastSuccessAt: new Date() } : {}),
       recordsProcessed: result.processed,
       lastError: result.error ?? null,
     },
@@ -293,7 +298,11 @@ async function upsertPermitRecords(
   remote: Awaited<ReturnType<typeof fetchPermitsPaginated>>,
   city = "Montréal"
 ) {
-  const chunkSize = 25;
+  const configuredChunkSize = Number(process.env.PERMIT_UPSERT_CHUNK_SIZE ?? 10);
+  const chunkSize =
+    Number.isFinite(configuredChunkSize) && configuredChunkSize > 0
+      ? Math.min(configuredChunkSize, 25)
+      : 10;
 
   const { processed, results } = await transactionChunkUpsert(remote, chunkSize, (p) => {
     const required = getRequiredRbqClasses(p.permitType, p.workType);
@@ -320,13 +329,23 @@ async function upsertPermitRecords(
       const { dispatchPermitCreatedEvents, dispatchHighScoreLeadEvents } = await import(
         "@/lib/webhooks/dispatcher"
       );
-      void dispatchPermitCreatedEvents(newIds.slice(0, 50));
-      void dispatchHighScoreLeadEvents(newIds.slice(0, 50));
+      await Promise.all([
+        dispatchPermitCreatedEvents(newIds.slice(0, 50)),
+        dispatchHighScoreLeadEvents(newIds.slice(0, 50)),
+      ]);
       try {
         const { schedulePermitIngestAlerts } = await import("@/lib/alerts/permit-ingest");
         schedulePermitIngestAlerts(newIds);
       } catch {
         /* alerts optional */
+      }
+      try {
+        // Watch-list change detection — emit notifications for pinned properties
+        // that just received a new permit (near-real-time, non-blocking).
+        const { detectWatchChanges } = await import("@/lib/watchlist/engine");
+        void detectWatchChanges().catch((e) => console.warn("[watchlist] detection failed", (e as Error).message));
+      } catch {
+        /* watchlist optional */
       }
     } catch {
       /* webhooks optional */
@@ -338,17 +357,6 @@ async function upsertPermitRecords(
     scheduleGeocodeAfterPermitIngest(city);
   } catch {
     /* geocode optional */
-  }
-
-  if (processed > 0) {
-    // Live data has landed — drop the demo-fallback flag so the UI stops
-    // showing the demo banner.
-    try {
-      const { clearDemoFallbackMarker } = await import("./demo-fallback");
-      void clearDemoFallbackMarker();
-    } catch {
-      /* fallback marker optional */
-    }
   }
 
   return processed;
@@ -383,14 +391,52 @@ export async function syncPermits(limit?: number): Promise<SyncResult> {
         /* summaries optional */
       }
 
-      const status = remote.length > 0 ? "success" : "empty";
+      const source = remote.length > 0 ? "live" : minIssueDate ? "unchanged" : "empty";
+      const status = source === "live" ? "success" : source;
       await logSync(cfg.syncSource, status, processed);
       return {
         dataset: "permits",
         ok: true,
         processed,
-        source: remote.length > 0 ? "live" : "empty",
+        source,
       };
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Sync failed";
+      await logSync(cfg.syncSource, "error", 0, message);
+      throw e;
+    }
+  });
+}
+
+/**
+ * Full Montréal permit backfill — ignores the delta cursor and re-fetches the
+ * full historical window (up to the production limit). Used to self-heal an
+ * interrupted initial bootstrap that left the permit table near-empty (e.g.
+ * 48 rows). Idempotent upserts make this safe; scheduled weekly + triggerable
+ * on demand via `/api/cron/sync?mode=backfill&dataset=permits`.
+ */
+export async function syncPermitsFull(limit?: number): Promise<SyncResult> {
+  const cfg = DATASETS.permits;
+  return runSync("permits", async () => {
+    try {
+      const remote = await fetchPermitsPaginated(limit ?? getSyncLimit("permits"), {
+        maxAgeDays: 365,
+      });
+      const processed = await upsertPermitRecords(remote);
+
+      const newest = remote.find((p) => p.issueDate);
+      if (newest?.issueDate) {
+        await prisma.syncState.update({
+          where: { datasetId: "permits" },
+          data: { cursor: newest.issueDate.toISOString() },
+        });
+      }
+
+      await persistSourceMetadata("permits");
+
+      const source = remote.length > 0 ? "live" : "empty";
+      await logSync(cfg.syncSource, source === "live" ? "success" : source, processed);
+      return { dataset: "permits", ok: true, processed, source };
     } catch (e) {
       const message = e instanceof Error ? e.message : "Sync failed";
       await logSync(cfg.syncSource, "error", 0, message);
@@ -422,7 +468,8 @@ async function syncCityPermitsDataset(
       }
 
       await persistSourceMetadata(datasetId);
-      const status = remote.length > 0 ? "success" : "empty";
+      const source = remote.length > 0 ? "live" : minIssueDate ? "unchanged" : "empty";
+      const status = source === "live" ? "success" : source;
       await logSync(cfg.syncSource, status, processed);
 
       try {
@@ -436,7 +483,7 @@ async function syncCityPermitsDataset(
         dataset: datasetId,
         ok: true,
         processed,
-        source: remote.length > 0 ? "live" : "empty",
+        source,
       };
     } catch (e) {
       const message = e instanceof Error ? e.message : "Sync failed";
@@ -556,7 +603,7 @@ export async function syncTenders(limit?: number): Promise<SyncResult> {
       if (tenderIds.length > 0) {
         try {
           const { dispatchTenderCreatedEvents } = await import("@/lib/webhooks/dispatcher");
-          void dispatchTenderCreatedEvents(tenderIds.slice(0, 20));
+          await dispatchTenderCreatedEvents(tenderIds.slice(0, 20));
         } catch {
           /* webhooks optional */
         }
@@ -1173,6 +1220,17 @@ export async function syncZoning(): Promise<SyncResult> {
 async function upsertZoningPointBatch(
   remote: Awaited<ReturnType<typeof fetchPum2050Zoning>>
 ) {
+  if (remote.length > 0) {
+    await prisma.zoningPoint.deleteMany({
+      where: {
+        city: { in: [...new Set(remote.map((record) => record.city))] },
+        landUse: null,
+        intensificationLevel: null,
+        densityThreshold: null,
+        zoneCode: null,
+      },
+    });
+  }
   return transactionChunkUpsert(remote, 40, (z) =>
     prisma.zoningPoint.upsert({
       where: { externalId: z.externalId },
@@ -1222,9 +1280,27 @@ async function upsertHeritageGeoBatch(
 export async function syncPum2050Zoning(): Promise<SyncResult> {
   const cfg = DATASETS["pum2050-zoning"];
   return runSync("pum2050-zoning", async () => {
-    const skipped = await trySkipUnchangedWeekly("pum2050-zoning");
-    if (skipped) return skipped;
+    const invalidStoredCoordinates = await prisma.zoningPoint.count({
+      where: {
+        city: "Montréal",
+        OR: [
+          { latitude: { lt: 44 } },
+          { latitude: { gt: 63 } },
+          { longitude: { lt: -80 } },
+          { longitude: { gt: -57 } },
+        ],
+      },
+    });
+    if (invalidStoredCoordinates === 0) {
+      const skipped = await trySkipUnchangedWeekly("pum2050-zoning");
+      if (skipped) return skipped;
+    }
     const remote = await fetchPum2050Zoning();
+    if (remote.length > 0) {
+      await prisma.zoningPoint.deleteMany({
+        where: { externalId: { startsWith: "pum2050-" } },
+      });
+    }
     const { processed } = await upsertZoningPointBatch(remote);
     await persistSourceMetadata("pum2050-zoning");
     await logSync(cfg.syncSource, remote.length ? "success" : "empty", processed);
@@ -1753,10 +1829,11 @@ export async function syncRbqInfractions(): Promise<SyncResult> {
 export async function syncSeaoStandingOffers(): Promise<SyncResult> {
   const cfg = DATASETS["seao-standing-offers"];
   return runSync("seao-standing-offers", async () => {
-    const { fetchSeaoStandingOffers } = await import(
+    const { fetchSeaoStandingOffers, standingOffersSource } = await import(
       "@/lib/datasets/fetchers/seao-standing-offers"
     );
-    const remote = await fetchSeaoStandingOffers();
+    const fetched = await fetchSeaoStandingOffers();
+    const remote = fetched.records;
     let processed = 0;
     for (const t of remote) {
       await prisma.tender.upsert({
@@ -1795,12 +1872,13 @@ export async function syncSeaoStandingOffers(): Promise<SyncResult> {
       processed++;
     }
     await persistSourceMetadata("seao-standing-offers");
-    await logSync(cfg.syncSource, processed ? "success" : "empty", processed);
+    const source = standingOffersSource(processed, fetched.bundlesFetched);
+    await logSync(cfg.syncSource, source === "live" ? "success" : source, processed);
     return {
       dataset: "seao-standing-offers",
       ok: true,
       processed,
-      source: processed ? "live" : "empty",
+      source,
     };
   });
 }
@@ -1862,7 +1940,7 @@ export async function syncTorontoPermitsScaffold(): Promise<SyncResult> {
   });
 }
 
-const SYNC_FNS: Record<DatasetId, (limit?: number) => Promise<SyncResult>> = {
+const SYNC_FNS: Partial<Record<DatasetId, (limit?: number) => Promise<SyncResult>>> = {
   permits: syncPermits,
   "permits-laval": () => syncPermitsLaval(),
   "permits-longueuil": () => syncPermitsLongueuil(),
@@ -1920,19 +1998,38 @@ const SYNC_FNS: Record<DatasetId, (limit?: number) => Promise<SyncResult>> = {
 };
 
 export async function syncDataset(datasetId: DatasetId): Promise<SyncResult> {
-  return SYNC_FNS[datasetId]();
+  if (!isDatasetSyncEnabled(datasetId)) {
+    return {
+      dataset: datasetId,
+      ok: true,
+      processed: 0,
+      source: "skipped",
+      error: "Dataset is registered for coverage only and is not sync-enabled.",
+    };
+  }
+  const fn = SYNC_FNS[datasetId];
+  if (!fn) {
+    return {
+      dataset: datasetId,
+      ok: false,
+      processed: 0,
+      source: "error",
+      error: "No sync adapter registered for dataset.",
+    };
+  }
+  return fn();
 }
 
 export async function syncAll(
   datasets?: DatasetId[]
 ): Promise<{ results: SyncResult[]; totalProcessed: number }> {
-  const ids = datasets ?? (Object.keys(SYNC_FNS) as DatasetId[]);
+  const ids = datasets ?? (Object.keys(SYNC_FNS) as DatasetId[]).filter(isDatasetSyncEnabled);
   const results: SyncResult[] = [];
   const batchSize = 4;
 
   for (let i = 0; i < ids.length; i += batchSize) {
     const batch = ids.slice(i, i + batchSize);
-    const batchResults = await Promise.all(batch.map((id) => SYNC_FNS[id]()));
+    const batchResults = await Promise.all(batch.map((id) => syncDataset(id)));
     results.push(...batchResults);
   }
 

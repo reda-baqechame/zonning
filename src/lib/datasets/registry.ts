@@ -52,11 +52,29 @@ export type DatasetId =
   | "rbq-infractions"
   | "seao-standing-offers"
   | "inspection-violations-mtl"
-  | "toronto-permits";
+  | "toronto-permits"
+  | "mamh-municipal-directory"
+  | "mamh-assessment-rolls"
+  | "adresses-quebec"
+  | "cptaq-zones"
+  | "cptaq-decisions"
+  | "gtc-provincial"
+  | "wetlands-provincial"
+  | "flood-hazards"
+  | "protected-areas"
+  | "road-network";
 
 export type SyncTier = "fast" | "daily" | "weekly";
 
 export type CkanHost = "quebec" | "montreal";
+
+export type DatasetCoverageStatus =
+  | "authoritative"
+  | "partial"
+  | "document_only"
+  | "licensed_required"
+  | "unavailable"
+  | "stale";
 
 export type DatasetConfig = {
   id: DatasetId;
@@ -75,6 +93,11 @@ export type DatasetConfig = {
   arcGisLayerUrl?: string;
   /** Datasets allowed empty at bootstrap (CKAN not live). */
   bootstrapAllowlist?: boolean;
+  /** Honest coverage state. Empty or scaffold connectors must not be marketed as live. */
+  coverageStatus?: DatasetCoverageStatus;
+  coverageNote?: string;
+  /** False when the record is a documentation/status placeholder, not a runnable source. */
+  syncEnabled?: boolean;
 };
 
 export const DATASETS: Record<DatasetId, DatasetConfig> = {
@@ -110,8 +133,10 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     id: "permits-longueuil",
     label: "Permis de construction (Longueuil)",
     ckanId: "permis-de-construction-ville-de-longueuil",
-    sourceUrl:
-      "https://www.donneesquebec.ca/recherche/dataset/permis-de-construction-ville-de-longueuil",
+    sourceUrl: "https://longueuil.quebec/fr/actions/demander-un-permis",
+    coverageStatus: "document_only",
+    coverageNote: "The municipal permit service is linked; the former Donnees Quebec catalog identifier is unavailable and no verified machine-readable feed is configured.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 300,
     productionLimit: 3000,
@@ -138,8 +163,10 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     id: "permits-gatineau",
     label: "Permis de construction (Gatineau)",
     ckanId: "permis-de-construction-ville-de-gatineau",
-    sourceUrl:
-      "https://www.donneesquebec.ca/recherche/dataset/permis-de-construction-ville-de-gatineau",
+    sourceUrl: "https://www.gatineau.ca/portail/default.aspx?p=guichet_municipal/permis_certificats_autorisation_urbanisme",
+    coverageStatus: "document_only",
+    coverageNote: "The municipal permit service is linked; the former Donnees Quebec catalog identifier is unavailable and no verified machine-readable feed is configured.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 300,
     productionLimit: 5000,
@@ -154,6 +181,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     label: "Permis de construction (Lévis)",
     ckanId: "permis-levis",
     sourceUrl: "https://www.ville.levis.qc.ca/taxes-permis-reglements/autorisations-et-demandes-de-permis/",
+    coverageStatus: "document_only",
+    coverageNote: "Municipal permit instructions are linked; no open machine-readable permit feed is wired yet.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 100,
     productionLimit: 3000,
@@ -231,9 +261,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
   transactions: {
     id: "transactions",
     label: "Transactions immobilières 2024",
-    ckanId: "vmtl-liste-des-transactions-immobilieres-2024",
+    ckanId: "d50c333b-b6d7-47ed-848e-4481439c3c55",
     sourceUrl:
-      "https://www.donneesquebec.ca/recherche/dataset/vmtl-liste-des-transactions-immobilieres-2024",
+      "https://www.donneesquebec.ca/recherche/dataset/d50c333b-b6d7-47ed-848e-4481439c3c55",
     preferredFormat: "CSV",
     defaultLimit: 800,
     productionLimit: 5000,
@@ -244,9 +274,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
   "transactions-2023": {
     id: "transactions-2023",
     label: "Transactions immobilières 2023",
-    ckanId: "vmtl-liste-des-transactions-immobilieres-2023",
+    ckanId: "d50c333b-b6d7-47ed-848e-4481439c3c55",
     sourceUrl:
-      "https://www.donneesquebec.ca/recherche/dataset/vmtl-liste-des-transactions-immobilieres-2023",
+      "https://www.donneesquebec.ca/recherche/dataset/d50c333b-b6d7-47ed-848e-4481439c3c55",
     preferredFormat: "CSV",
     defaultLimit: 800,
     productionLimit: 5000,
@@ -367,7 +397,7 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "vmtl-immeubles-faisant-l-objet-d-un-enonce-d-interet-patrimonial",
     sourceUrl:
       "https://www.donneesquebec.ca/recherche/dataset/vmtl-immeubles-faisant-l-objet-d-un-enonce-d-interet-patrimonial",
-    preferredFormat: "CSV",
+    preferredFormat: "GeoJSON",
     defaultLimit: 300,
     productionLimit: 1500,
     refreshIntervalMinutes: 360,
@@ -462,9 +492,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
   "transactions-2025": {
     id: "transactions-2025",
     label: "Transactions immobilières 2025",
-    ckanId: "vmtl-liste-des-transactions-immobilieres-2025",
+    ckanId: "d50c333b-b6d7-47ed-848e-4481439c3c55",
     sourceUrl:
-      "https://www.donneesquebec.ca/recherche/dataset/vmtl-liste-des-transactions-immobilieres-2025",
+      "https://www.donneesquebec.ca/recherche/dataset/d50c333b-b6d7-47ed-848e-4481439c3c55",
     preferredFormat: "CSV",
     defaultLimit: 800,
     productionLimit: 5000,
@@ -481,6 +511,10 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     sourceUrl:
       "https://donneesouvertes-sherbrooke.opendata.arcgis.com/datasets/84e35108c6ff4f9f97d3b98c1aadf262_0",
     preferredFormat: "GeoJSON",
+    coverageStatus: "unavailable",
+    coverageNote:
+      "The official ArcGIS layer returned Invalid URL on 2026-06-21; excluded from live sync until Sherbrooke publishes a verified replacement feed.",
+    syncEnabled: false,
     defaultLimit: 200,
     productionLimit: 1000,
     refreshIntervalMinutes: 10080,
@@ -495,6 +529,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     label: "Projets de construction (Brossard)",
     ckanId: "permis-brossard",
     sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/?q=brossard+permis",
+    coverageStatus: "document_only",
+    coverageNote: "Search/discovery placeholder only; requires a verified municipal project feed before sync.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 100,
     productionLimit: 2000,
@@ -520,8 +557,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
   "roadworks-saguenay": {
     id: "roadworks-saguenay",
     label: "Chantiers 511 (Saguenay)",
-    ckanId: "chantiers-511",
-    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/chantiers-511",
+    ckanId: "221d146e-f285-4eb4-9f47-09b4b36cc429",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/221d146e-f285-4eb4-9f47-09b4b36cc429",
     preferredFormat: ["CSV", "GeoJSON"],
     defaultLimit: 300,
     productionLimit: 1500,
@@ -536,6 +574,10 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "vmtl-contrats-octroyes-par-les-fonctionnaires-des-arrondissements",
     sourceUrl:
       "https://www.donneesquebec.ca/recherche/dataset/vmtl-contrats-octroyes-par-les-fonctionnaires-des-arrondissements",
+    coverageStatus: "unavailable",
+    coverageNote:
+      "The previously registered aggregate CKAN package returns 404. Données Québec exposes individual borough/year contract datasets, so this source needs a dedicated adapter before it can be indexed honestly.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 500,
     productionLimit: 8000,
@@ -543,7 +585,6 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     tier: "daily",
     syncSource: "ckan-contracts-boroughs",
     city: "Montréal",
-    bootstrapAllowlist: true,
   },
   "permits-sherbrooke": {
     id: "permits-sherbrooke",
@@ -551,6 +592,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "permis-sherbrooke",
     sourceUrl:
       "https://www.donneesquebec.ca/recherche/organization/ville-de-sherbrooke-donnees-geomatiques",
+    coverageStatus: "document_only",
+    coverageNote: "Municipal open-data organization discovered; permit feed still requires a verified resource URL.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 200,
     productionLimit: 4000,
@@ -564,7 +608,10 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     id: "permits-trois-rivieres",
     label: "Permis de construction (Trois-Rivières)",
     ckanId: "permis-trois-rivieres",
-    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/zonage-v3r",
+    sourceUrl: "https://www.v3r.net/services-aux-citoyens/permis-et-reglements/permis-et-certificats",
+    coverageStatus: "document_only",
+    coverageNote: "Corrected from the V3R zoning dataset. Only the municipal permit information page is linked until a permit feed is verified.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 200,
     productionLimit: 3000,
@@ -578,7 +625,10 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     id: "permits-saguenay",
     label: "Permis de construction (Saguenay)",
     ckanId: "permis-saguenay",
-    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/chantiers-511",
+    sourceUrl: "https://ville.saguenay.ca/services-aux-citoyens/permis-certificats-et-reglements/permis-et-certificats",
+    coverageStatus: "document_only",
+    coverageNote: "Corrected from the Chantiers 511 roadwork layer. Only the municipal permit information page is linked until a permit feed is verified.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 200,
     productionLimit: 3000,
@@ -594,6 +644,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "permis-de-construction-ville-de-terrebonne",
     sourceUrl:
       "https://www.donneesquebec.ca/recherche/dataset/?q=terrebonne+permis",
+    coverageStatus: "document_only",
+    coverageNote: "Search placeholder; requires verified source resource before being counted live.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 200,
     productionLimit: 4000,
@@ -609,6 +662,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "permis-de-construction-ville-de-repentigny",
     sourceUrl:
       "https://www.donneesquebec.ca/recherche/dataset/?q=repentigny+permis",
+    coverageStatus: "document_only",
+    coverageNote: "Search placeholder; requires verified source resource before being counted live.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 200,
     productionLimit: 4000,
@@ -624,6 +680,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "permis-brossard",
     sourceUrl:
       "https://www.donneesquebec.ca/recherche/dataset/?q=brossard+permis",
+    coverageStatus: "document_only",
+    coverageNote: "Search placeholder; requires verified source resource before being counted live.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 200,
     productionLimit: 3000,
@@ -639,6 +698,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "permis-saint-jean-sur-richelieu",
     sourceUrl:
       "https://www.donneesquebec.ca/recherche/dataset/?q=saint-jean-sur-richelieu+permis",
+    coverageStatus: "document_only",
+    coverageNote: "Search placeholder; requires verified source resource before being counted live.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 200,
     productionLimit: 4000,
@@ -654,6 +716,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "permis-drummondville",
     sourceUrl:
       "https://www.donneesquebec.ca/recherche/dataset/?q=drummondville+permis",
+    coverageStatus: "document_only",
+    coverageNote: "Search placeholder; requires verified source resource before being counted live.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 200,
     productionLimit: 4000,
@@ -669,6 +734,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "permis-saint-jerome",
     sourceUrl:
       "https://www.donneesquebec.ca/recherche/dataset/?q=saint-jerome+permis",
+    coverageStatus: "document_only",
+    coverageNote: "Search placeholder; requires verified source resource before being counted live.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 200,
     productionLimit: 4000,
@@ -684,6 +752,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "permis-granby",
     sourceUrl:
       "https://www.donneesquebec.ca/recherche/dataset/?q=granby+permis",
+    coverageStatus: "document_only",
+    coverageNote: "Search placeholder; requires verified source resource before being counted live.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 200,
     productionLimit: 3000,
@@ -699,6 +770,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "permis-saint-hyacinthe",
     sourceUrl:
       "https://www.donneesquebec.ca/recherche/dataset/?q=saint-hyacinthe+permis",
+    coverageStatus: "document_only",
+    coverageNote: "Search placeholder; requires verified source resource before being counted live.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 200,
     productionLimit: 4000,
@@ -714,6 +788,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "zonage-sherbrooke",
     sourceUrl:
       "https://pab.donneesquebec.ca/recherche/organization/ville-de-sherbrooke-donnees-geomatiques",
+    coverageStatus: "document_only",
+    coverageNote: "Search/organization placeholder; requires verified zoning polygons or bylaw documents before being counted live.",
+    syncEnabled: false,
     preferredFormat: "GeoJSON",
     defaultLimit: 500,
     productionLimit: 5000,
@@ -726,23 +803,27 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
   "zoning-quebec": {
     id: "zoning-quebec",
     label: "Zonage (Ville de Québec)",
-    ckanId: "zonage-municipal-ville-de-quebec",
+    ckanId: "vque_56",
     sourceUrl:
-      "https://www.donneesquebec.ca/recherche/dataset/zonage-municipal-ville-de-quebec",
-    preferredFormat: "GeoJSON",
+      "https://www.donneesquebec.ca/recherche/dataset/vque_56",
+    preferredFormat: ["GeoJSON", "CSV", "KML", "SHP"],
     defaultLimit: 500,
     productionLimit: 5000,
     refreshIntervalMinutes: 10080,
     tier: "weekly",
     syncSource: "quebec-zoning-scaffold",
     city: "Québec",
-    bootstrapAllowlist: true,
+    coverageStatus: "partial",
+    coverageNote: "Official Ville de Québec zoning-zone polygons are syncable; use grids/specification sheets before any compliance conclusion.",
   },
   "zoning-laval": {
     id: "zoning-laval",
     label: "Zonage (Laval)",
     ckanId: "zonage-laval",
     sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/?q=laval+zonage",
+    coverageStatus: "document_only",
+    coverageNote: "Search placeholder; requires a verified zoning polygon/regulation source before being counted live.",
+    syncEnabled: false,
     preferredFormat: "GeoJSON",
     defaultLimit: 500,
     productionLimit: 5000,
@@ -755,23 +836,27 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
   "zoning-longueuil": {
     id: "zoning-longueuil",
     label: "Zonage (Longueuil)",
-    ckanId: "zonage-longueuil",
+    ckanId: "zonage",
     sourceUrl:
-      "https://www.donneesquebec.ca/recherche/dataset/?q=longueuil+zonage",
-    preferredFormat: "GeoJSON",
+      "https://www.donneesquebec.ca/recherche/dataset/zonage",
+    coverageStatus: "partial",
+    coverageNote: "Official Longueuil zoning polygons are syncable; regulation grids and use tables remain required before any compliance conclusion.",
+    preferredFormat: ["GeoJSON", "SHP", "KML"],
     defaultLimit: 500,
     productionLimit: 5000,
     refreshIntervalMinutes: 10080,
     tier: "weekly",
     syncSource: "longueuil-zoning-scaffold",
     city: "Longueuil",
-    bootstrapAllowlist: true,
   },
   "amp-registry": {
     id: "amp-registry",
-    label: "Registre AMP (RBQ)",
+    label: "Registre AMP (autorisation contracter)",
     ckanId: "amp-autorises",
-    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/licencesactives",
+    sourceUrl: "https://amp.quebec/",
+    coverageStatus: "document_only",
+    coverageNote: "Corrected from RBQ active licences. Requires an AMP-supported source before automated sync.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 500,
     productionLimit: 5000,
@@ -784,7 +869,10 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     id: "rbq-infractions",
     label: "Infractions RBQ",
     ckanId: "rbq-infractions",
-    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/licencesactives",
+    sourceUrl: "https://www.rbq.gouv.qc.ca/",
+    coverageStatus: "document_only",
+    coverageNote: "Corrected from RBQ active licences. Requires a verified infractions/sanctions source before automated sync.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 200,
     productionLimit: 2000,
@@ -813,6 +901,9 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "vmtl-inspections",
     sourceUrl:
       "https://www.donneesquebec.ca/recherche/dataset/vmtl-permis-construction",
+    coverageStatus: "document_only",
+    coverageNote: "Placeholder mapping; not counted as live until a true inspections/violations source is verified.",
+    syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 200,
     productionLimit: 2000,
@@ -821,6 +912,159 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     syncSource: "mtl-inspections-scaffold",
     city: "Montréal",
     bootstrapAllowlist: true,
+  },
+  "mamh-municipal-directory": {
+    id: "mamh-municipal-directory",
+    label: "MAMH municipal directory (Quebec-wide)",
+    ckanId: "repertoire-des-municipalites-du-quebec",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/repertoire-des-municipalites-du-quebec",
+    preferredFormat: ["CSV", "JSON"],
+    defaultLimit: 1300,
+    productionLimit: 1300,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-mamh-municipal-directory",
+    coverageStatus: "authoritative",
+    coverageNote: "Province-wide municipal foundation source registered; worker adapter required before indexed publication.",
+    syncEnabled: false,
+  },
+  "mamh-assessment-rolls": {
+    id: "mamh-assessment-rolls",
+    label: "MAMH property assessment rolls (1,140 files)",
+    ckanId: "roles-d-evaluation-fonciere-du-quebec",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/roles-d-evaluation-fonciere-du-quebec",
+    preferredFormat: ["GPKG", "FGDB", "ZIP", "XML"],
+    defaultLimit: 1140,
+    productionLimit: 1140,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-mamh-assessment-rolls",
+    coverageStatus: "authoritative",
+    coverageNote: "Large province-wide foundation source registered; requires Railway worker/object storage ingestion.",
+    syncEnabled: false,
+  },
+  "adresses-quebec": {
+    id: "adresses-quebec",
+    label: "Adresses Quebec (province-wide)",
+    ckanId: "adresses-quebec",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/adresses-quebec",
+    preferredFormat: ["GPKG", "SHP", "FGDB"],
+    defaultLimit: 1000,
+    productionLimit: 100000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-adresses-quebec",
+    coverageStatus: "authoritative",
+    coverageNote: "Province-wide address foundation registered; vector/geocoder adapter pending.",
+    syncEnabled: false,
+  },
+  "cptaq-zones": {
+    id: "cptaq-zones",
+    label: "CPTAQ agricultural zones",
+    ckanId: "zone-agricole-du-quebec",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/zone-agricole-du-quebec",
+    preferredFormat: ["SHP", "WMS", "GeoJSON"],
+    defaultLimit: 1000,
+    productionLimit: 100000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-cptaq-zones",
+    coverageStatus: "authoritative",
+    coverageNote: "Province-wide constraint layer registered; spatial tile adapter pending.",
+    syncEnabled: false,
+  },
+  "cptaq-decisions": {
+    id: "cptaq-decisions",
+    label: "CPTAQ decisions",
+    ckanId: "decisions-de-la-cptaq",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/decisions-de-la-cptaq",
+    preferredFormat: ["CSV", "JSON"],
+    defaultLimit: 1000,
+    productionLimit: 100000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-cptaq-decisions",
+    coverageStatus: "authoritative",
+    coverageNote: "Province-wide decision layer registered; normalization adapter pending.",
+    syncEnabled: false,
+  },
+  "gtc-provincial": {
+    id: "gtc-provincial",
+    label: "Provincial contaminated land directory (GTC)",
+    ckanId: "repertoire-des-terrains-contamines-gtc",
+    sourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/repertoire-des-terrains-contamines-gtc",
+    preferredFormat: ["GPKG", "FGDB", "GeoJSON"],
+    defaultLimit: 1000,
+    productionLimit: 100000,
+    refreshIntervalMinutes: 360,
+    tier: "daily",
+    syncSource: "ckan-gtc-provincial-foundation",
+    coverageStatus: "authoritative",
+    coverageNote: "Registered as foundation alias for GTC; operational ingestion currently uses contamination-gtc.",
+    syncEnabled: false,
+  },
+  "wetlands-provincial": {
+    id: "wetlands-provincial",
+    label: "Potential wetlands (province-wide)",
+    ckanId: "milieux-humides-potentiels",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/milieux-humides-potentiels",
+    preferredFormat: ["GPKG", "FGDB", "SHP"],
+    defaultLimit: 1000,
+    productionLimit: 100000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-wetlands-provincial",
+    coverageStatus: "authoritative",
+    coverageNote: "Province-wide environmental constraint layer registered; spatial adapter pending.",
+    syncEnabled: false,
+  },
+  "flood-hazards": {
+    id: "flood-hazards",
+    label: "Flood and erosion hazard layers",
+    ckanId: "zones-inondables",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/?q=zones+inondables",
+    preferredFormat: ["GPKG", "SHP", "WMS", "PDF"],
+    defaultLimit: 1000,
+    productionLimit: 100000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-flood-hazards",
+    coverageStatus: "partial",
+    coverageNote: "Hazard coverage is fragmented by source and municipality; connector must expose limitations per area.",
+    syncEnabled: false,
+  },
+  "protected-areas": {
+    id: "protected-areas",
+    label: "Protected areas and conservation constraints",
+    ckanId: "aires-protegees",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/aires-protegees",
+    preferredFormat: ["GPKG", "SHP", "WMS"],
+    defaultLimit: 1000,
+    productionLimit: 100000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-protected-areas",
+    coverageStatus: "authoritative",
+    coverageNote: "Province-wide constraint layer registered; spatial adapter pending.",
+    syncEnabled: false,
+  },
+  "road-network": {
+    id: "road-network",
+    label: "Quebec road network",
+    ckanId: "reseau-routier",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/?q=reseau+routier",
+    preferredFormat: ["GPKG", "SHP", "WFS", "WMS"],
+    defaultLimit: 1000,
+    productionLimit: 100000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan-road-network",
+    coverageStatus: "partial",
+    coverageNote: "Registered for routing/context; roadwork opportunity ingestion remains separate.",
+    syncEnabled: false,
   },
   "toronto-permits": {
     id: "toronto-permits",
@@ -930,11 +1174,11 @@ export function getBootstrapAllowlist(): DatasetId[] {
 }
 
 export function getDatasetCount(): number {
-  return getActiveDatasetIds().length;
+  return getSyncEnabledDatasetIds().length;
 }
 
-/** Datasets enabled for sync and marketing (excludes legacy caduque + optional Ontario). */
-export function getActiveDatasetIds(): DatasetId[] {
+/** Datasets registered for Quebec coverage/status pages (excludes legacy caduque + optional Ontario). */
+export function getRegisteredDatasetIds(): DatasetId[] {
   return ALL_DATASET_IDS.filter((id) => {
     if (id === "toronto-permits" && process.env.EXPAND_ONTARIO !== "true") {
       return false;
@@ -946,6 +1190,37 @@ export function getActiveDatasetIds(): DatasetId[] {
   });
 }
 
+export function getDatasetCoverageStatus(id: DatasetId): DatasetCoverageStatus {
+  return DATASETS[id].coverageStatus ?? "authoritative";
+}
+
+export function isDatasetSyncEnabled(id: DatasetId): boolean {
+  const cfg = DATASETS[id];
+  const status = getDatasetCoverageStatus(id);
+  if (cfg.syncEnabled === false) return false;
+  if (status === "document_only" || status === "licensed_required" || status === "unavailable") {
+    return false;
+  }
+  return getRegisteredDatasetIds().includes(id);
+}
+
+/** Backward-compatible name: only runnable/indexed datasets, not every registered source. */
+export function getActiveDatasetIds(): DatasetId[] {
+  return getSyncEnabledDatasetIds();
+}
+
+export function getSyncEnabledDatasetIds(): DatasetId[] {
+  return getRegisteredDatasetIds().filter(isDatasetSyncEnabled);
+}
+
+export function getRegisteredSourceCount(): number {
+  return getRegisteredDatasetIds().length;
+}
+
+export function getFoundationDatasetIds(): DatasetId[] {
+  return getRegisteredDatasetIds().filter((id) => DATASETS[id].syncEnabled === false);
+}
+
 export function getSyncLimit(datasetId: DatasetId): number {
   const cfg = DATASETS[datasetId];
   return process.env.NODE_ENV === "production"
@@ -954,8 +1229,8 @@ export function getSyncLimit(datasetId: DatasetId): number {
 }
 
 export function getDatasetIdsForTier(tier: string): DatasetId[] {
-  const active = new Set(getActiveDatasetIds());
-  if (tier === "all") return getActiveDatasetIds();
+  const active = new Set(getSyncEnabledDatasetIds());
+  if (tier === "all") return getSyncEnabledDatasetIds();
   if (tier in TIER_DATASETS) {
     return TIER_DATASETS[tier as SyncTier].filter((id) => active.has(id));
   }

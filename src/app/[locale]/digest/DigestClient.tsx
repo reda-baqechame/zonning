@@ -40,22 +40,22 @@ export default function DigestClient() {
       <PageHeader title={t("title")} subtitle={t("subtitle")} />
       {stats && (
         <div className="mt-6 grid grid-cols-3 gap-3 text-center text-sm">
-          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
-            <p className="text-xl font-bold text-sky-300">{stats.permitsWeek}</p>
-            <p className="text-slate-500">{t("statPermits")}</p>
+          <div className="rounded-lg border border-line bg-surface-2 p-3">
+            <p className="text-xl font-bold text-brand tabular-nums">{stats.permitsWeek}</p>
+            <p className="text-muted">{t("statPermits")}</p>
           </div>
-          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
-            <p className="text-xl font-bold text-sky-300">{stats.tendersOpen}</p>
-            <p className="text-slate-500">{t("statTenders")}</p>
+          <div className="rounded-lg border border-line bg-surface-2 p-3">
+            <p className="text-xl font-bold text-brand tabular-nums">{stats.tendersOpen}</p>
+            <p className="text-muted">{t("statTenders")}</p>
           </div>
-          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-3">
-            <p className="text-xl font-bold text-sky-300">{stats.companies}</p>
-            <p className="text-slate-500">{t("statCompanies")}</p>
+          <div className="rounded-lg border border-line bg-surface-2 p-3">
+            <p className="text-xl font-bold text-brand tabular-nums">{stats.companies}</p>
+            <p className="text-muted">{t("statCompanies")}</p>
           </div>
         </div>
       )}
       {done ? (
-        <p className="mt-8 text-emerald-400">{t("confirmed")}</p>
+        <p className="mt-8 text-success-ink">{t("confirmed")}</p>
       ) : (
         <form onSubmit={submit} className="mt-8 space-y-4">
           <div>

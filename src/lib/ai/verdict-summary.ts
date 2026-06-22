@@ -19,7 +19,9 @@ export async function summarizeVerdict(
 Adresse: ${address}${borough ? `, ${borough}` : ""}
 Verdict: ${verdict.labelFr} (${verdict.tier})
 Raisons: ${verdict.reasonsFr.join("; ")}
-Données: évaluation ${intel.assessment?.totalValue ?? "N/A"}, contamination ${intel.contamination?.nearby ? "oui" : "non"}, patrimoine ${intel.heritage?.nearby ? "oui" : "non"}
+Données: évaluation ${intel.assessment?.totalValue ?? "N/A"}; entrées environnementales à proximité ${intel.contamination?.count ?? 0} (correspondance à la parcelle non établie); entrées patrimoniales à proximité ${intel.heritage?.count ?? 0} (statut juridique de la parcelle non établi).
+Limites: ${verdict.limitations.join("; ") || "aucune limite supplémentaire"}.
+Ne déclare jamais le projet conforme, autorisé, contaminé, protégé ou bloqué lorsque la preuve est seulement indicative ou fondée sur la proximité. N'invente aucune règle de zonage, hauteur, usage ou marge.
 
 Réponds en JSON: {"summaryFr":"...","summaryEn":"..."}`;
 

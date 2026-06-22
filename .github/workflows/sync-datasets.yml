@@ -70,6 +70,12 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "${{ secrets.APP_URL }}/api/cron/sync?tier=weekly"
 
+      - name: Weekly Montréal permit backfill (self-heal)
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/sync?mode=backfill&dataset=permits"
+
   sync-bootstrap:
     if: github.event_name != 'push' && (github.event.schedule == '0 */6 * * *' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest

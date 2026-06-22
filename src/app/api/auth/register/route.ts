@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSession, hashPassword } from "@/lib/auth";
+import { isFreeTestMode } from "@/lib/free-test";
 import { verifyAndUpdateUserRbq } from "@/lib/rbq-verify";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { z } from "zod";
 
 const schema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  name: z.string().optional(),
-  companyName: z.string().optional(),
-  rbqLicenseClass: z.string().optional(),
-  rbqLicenseNumber: z.string().optional(),
-  phone: z.string().optional(),
+  email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
+  password: z.string().min(8).max(200),
+  name: z.string().trim().min(1).max(120).optional(),
+  companyName: z.string().trim().min(1).max(180).optional(),
+  rbqLicenseClass: z.string().trim().max(80).optional(),
+  rbqLicenseNumber: z.string().trim().max(80).optional(),
+  phone: z.string().trim().max(32).optional(),
   ampAuthorized: z.boolean().optional(),
   acceptTerms: z.boolean().refine((v) => v === true, { message: "Terms acceptance required" }),
 });
@@ -39,11 +40,20 @@ export async function POST(req: NextRequest) {
         rbqLicenseNumber: body.rbqLicenseNumber,
         phone: body.phone,
         ampAuthorized: body.ampAuthorized ?? false,
+        plan: isFreeTestMode() ? "EQUIPE" : undefined,
+        onboardingComplete: isFreeTestMode() ? true : undefined,
       },
     });
 
     if (body.rbqLicenseNumber) {
-      await verifyAndUpdateUserRbq(user.id, body.rbqLicenseNumber, body.rbqLicenseClass);
+      // RBQ verification must not block an already-created account. If the
+      // lookup fails (DB error, transient), the user stays unverified and can
+      // retry from settings — registration itself succeeds.
+      try {
+        await verifyAndUpdateUserRbq(user.id, body.rbqLicenseNumber, body.rbqLicenseClass);
+      } catch (err) {
+        console.warn("[register] RBQ verification failed for", user.id, "— user created unverified:", (err as Error).message);
+      }
     }
 
     await createSession(user.id);

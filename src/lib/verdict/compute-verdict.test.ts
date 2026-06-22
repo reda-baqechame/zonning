@@ -3,18 +3,30 @@ import { computeVerdictTier } from "./compute-verdict";
 import type { PropertyIntelligence } from "@/lib/intelligence";
 
 describe("computeVerdictTier", () => {
-  it("returns bloque when multiple contamination sites nearby", () => {
+  it("returns insufficient_data when no evidence is available", () => {
+    const intel: PropertyIntelligence = {};
+    const result = computeVerdictTier(intel);
+    expect(result.tier).toBe("insufficient_data");
+    expect(result.confidence).toBe(0);
+    expect(result.limitations.length).toBeGreaterThan(0);
+  });
+
+  it("does not call a parcel blocked from nearby contamination records", () => {
     const intel: PropertyIntelligence = {
       contamination: { nearby: true, count: 3 },
     };
-    expect(computeVerdictTier(intel).tier).toBe("bloque");
+    const result = computeVerdictTier(intel);
+    expect(result.tier).not.toBe("bloque");
+    expect(result.limitations.join(" ")).toContain("proximity only");
   });
 
-  it("returns bloque when GTC contamination nearby", () => {
+  it("does not call a parcel contaminated from a nearby GTC entry", () => {
     const intel: PropertyIntelligence = {
       contamination: { nearby: true, count: 1, gtcNearby: true, gtcCount: 1 },
     };
-    expect(computeVerdictTier(intel).tier).toBe("bloque");
+    const result = computeVerdictTier(intel);
+    expect(result.tier).not.toBe("bloque");
+    expect(result.reasonsEn.join(" ")).toContain("parcel match not established");
   });
 
   it("returns eleve for clean intel with hot market", () => {

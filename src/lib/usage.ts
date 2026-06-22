@@ -1,5 +1,6 @@
 import { startOfWeek } from "date-fns";
 import { prisma } from "@/lib/prisma";
+import { isFreeTestMode } from "@/lib/free-test";
 import type { Plan } from "@/generated/prisma/client";
 
 export async function incrementUsage(
@@ -40,6 +41,7 @@ export function matchesEssentielProfile(
   userRegions: string[],
   item: { trade?: string; region?: string; borough?: string; title?: string }
 ): boolean {
+  if (isFreeTestMode()) return true;
   if (plan !== "ESSENTIEL") return true;
 
   const trades = userTrades.map((t) => t.toLowerCase()).filter(Boolean);
@@ -54,6 +56,7 @@ export function matchesEssentielProfile(
 }
 
 export async function canViewTenderMatch(plan: Plan | null | undefined, userId: string): Promise<boolean> {
+  if (isFreeTestMode()) return true;
   if (plan !== "ESSENTIEL") return true;
   const used = await getUsage(userId, "seao_matches");
   return used < 5;

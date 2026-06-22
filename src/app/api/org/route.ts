@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createApiKey } from "@/lib/api-auth";
+import { isFreeTestMode } from "@/lib/free-test";
 import { randomBytes } from "crypto";
 import { z } from "zod";
 import { rateLimitAsync, rateLimitResponse, clientIp } from "@/lib/rate-limit";
 import { auditLog } from "@/lib/audit";
 import { getRequestId } from "@/lib/request-id";
+import { assertPublicWebhookUrl } from "@/lib/security/webhook-url";
 
 const inviteSchema = z.object({
   action: z.literal("invite"),
@@ -59,10 +61,12 @@ export async function GET(req: NextRequest) {
 
     const org =
       (await prisma.organization.findUnique({ where: { ownerId: user.id } })) ??
-      (await prisma.orgMember.findFirst({
-        where: { userId: user.id },
-        include: { org: { include: { members: true, apiKeys: true } } },
-      }))?.org;
+      (
+        await prisma.orgMember.findFirst({
+          where: { userId: user.id },
+          include: { org: { include: { members: true, apiKeys: true } } },
+        })
+      )?.org;
 
     if (!org) {
       return NextResponse.json({ org: null, members: [], apiKeys: [] });
@@ -71,9 +75,28 @@ export async function GET(req: NextRequest) {
     const full = await prisma.organization.findUnique({
       where: { id: org.id },
       include: {
-        members: { include: { user: { select: { id: true, email: true, name: true } } } },
-        apiKeys: { select: { id: true, name: true, keyPrefix: true, createdAt: true, lastUsedAt: true } },
-        webhooks: { select: { id: true, url: true, events: true, filters: true, active: true, createdAt: true } },
+        members: {
+          include: { user: { select: { id: true, email: true, name: true } } },
+        },
+        apiKeys: {
+          select: {
+            id: true,
+            name: true,
+            keyPrefix: true,
+            createdAt: true,
+            lastUsedAt: true,
+          },
+        },
+        webhooks: {
+          select: {
+            id: true,
+            url: true,
+            events: true,
+            filters: true,
+            active: true,
+            createdAt: true,
+          },
+        },
       },
     });
 
@@ -86,8 +109,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await requireUser();
-    if (user.plan !== "EQUIPE") {
-      return NextResponse.json({ error: "Équipe plan required" }, { status: 403 });
+    if (user.plan !== "EQUIPE" && !isFreeTestMode()) {
+      return NextResponse.json(
+        { error: "Équipe plan required" },
+        { status: 403 },
+      );
     }
 
     const limited = await rateLimitOrg(user.id, req);
@@ -97,7 +123,9 @@ export async function POST(req: NextRequest) {
     const requestId = getRequestId(req);
     const ip = clientIp(req);
 
-    let org = await prisma.organization.findUnique({ where: { ownerId: user.id } });
+    let org = await prisma.organization.findUnique({
+      where: { ownerId: user.id },
+    });
     if (!org) {
       org = await prisma.organization.create({
         data: {
@@ -112,7 +140,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (body.action === "create_api_key") {
-      const { key, keyPrefix } = await createApiKey(org.id, body.name ?? "Default");
+      const { key, keyPrefix } = await createApiKey(
+        org.id,
+        body.name ?? "Default",
+      );
       auditLog({
         action: "org.api_key.create",
         resource: org.id,
@@ -121,23 +152,41 @@ export async function POST(req: NextRequest) {
         ip,
         requestId,
       });
-      return NextResponse.json({ key, keyPrefix, message: "Save this key — shown once" });
+      return NextResponse.json({
+        key,
+        keyPrefix,
+        message: "Save this key — shown once",
+      });
     }
 
     if (body.action === "invite") {
-      const memberCount = await prisma.orgMember.count({ where: { orgId: org.id } });
+      const memberCount = await prisma.orgMember.count({
+        where: { orgId: org.id },
+      });
       if (memberCount >= 5) {
-        return NextResponse.json({ error: "5 seat limit reached" }, { status: 400 });
+        return NextResponse.json(
+          { error: "5 seat limit reached" },
+          { status: 400 },
+        );
       }
 
-      const invitee = await prisma.user.findUnique({ where: { email: body.email } });
+      const invitee = await prisma.user.findUnique({
+        where: { email: body.email },
+      });
       if (!invitee) {
-        return NextResponse.json({ error: "User must register first" }, { status: 404 });
+        return NextResponse.json(
+          { error: "User must register first" },
+          { status: 404 },
+        );
       }
 
       await prisma.orgMember.upsert({
         where: { orgId_userId: { orgId: org.id, userId: invitee.id } },
-        create: { orgId: org.id, userId: invitee.id, role: body.role ?? "member" },
+        create: {
+          orgId: org.id,
+          userId: invitee.id,
+          role: body.role ?? "member",
+        },
         update: {},
       });
 
@@ -155,7 +204,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (body.action === "revoke_api_key") {
-      await prisma.apiKey.deleteMany({ where: { id: body.keyId, orgId: org.id } });
+      await prisma.apiKey.deleteMany({
+        where: { id: body.keyId, orgId: org.id },
+      });
       auditLog({
         action: "org.api_key.revoke",
         resource: body.keyId,
@@ -168,6 +219,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (body.action === "create_webhook") {
+      await assertPublicWebhookUrl(body.url);
       const secret = randomBytes(32).toString("hex");
       const filters = body.filters ? JSON.stringify(body.filters) : null;
       const webhook = await prisma.orgWebhook.create({
@@ -195,7 +247,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (body.action === "delete_webhook") {
-      await prisma.orgWebhook.deleteMany({ where: { id: body.webhookId, orgId: org.id } });
+      await prisma.orgWebhook.deleteMany({
+        where: { id: body.webhookId, orgId: org.id },
+      });
       auditLog({
         action: "org.webhook.delete",
         resource: body.webhookId,

@@ -1,23 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
+import { isFreeTestMode } from "@/lib/free-test";
 import { ensureFreshForKey } from "@/lib/sync/auto";
-import { getIntelligenceByAddress } from "@/lib/intelligence";
+import { getIntelligenceByAddress, type PropertyIntelligence } from "@/lib/intelligence";
 import { computeVerdictTier } from "@/lib/verdict/compute-verdict";
 import { summarizeVerdict } from "@/lib/ai/verdict-summary";
 import { createHash } from "crypto";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { enforceRateLimit } from "@/lib/api-guard";
 import { z } from "zod";
+import { normalizeAddress } from "@/lib/datasets/parser";
 
 const FREE_VERDICTS_PER_DAY = 10;
 
-function slugFor(address: string, borough?: string) {
+function slugFor(address: string, borough?: string, city?: string) {
   const hash = createHash("sha256")
-    .update(`${address}|${borough ?? ""}`)
+    .update(
+      [normalizeAddress(address), normalizeAddress(borough ?? ""), normalizeAddress(city ?? "")]
+        .join("|"),
+    )
     .digest("hex")
     .slice(0, 12);
   return hash;
+}
+
+function parseStoredIntelligence(value: string | null): PropertyIntelligence {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as PropertyIntelligence)
+      : {};
+  } catch {
+    return {};
+  }
 }
 
 const verdictPostSchema = z.object({
@@ -52,7 +69,7 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  const intel = report.inputsJson ? JSON.parse(report.inputsJson) : {};
+  const intel = parseStoredIntelligence(report.inputsJson);
   const verdict = computeVerdictTier(intel);
 
   return NextResponse.json({
@@ -71,7 +88,7 @@ export async function POST(req: NextRequest) {
 
     const user = await getSessionUser();
 
-    if (!user || user.plan === "FREE") {
+    if (!isFreeTestMode() && (!user || user.plan === "FREE")) {
       const limited = await rateLimitAsync(
         `verdict:ip:${clientIp(req)}`,
         FREE_VERDICTS_PER_DAY,
@@ -82,11 +99,15 @@ export async function POST(req: NextRequest) {
 
     const borough = body.borough || undefined;
     const city = body.city || undefined;
-    const shareSlug = slugFor(address, borough);
+    const shareSlug = slugFor(address, borough, city);
 
     const existing = await prisma.verdictReport.findUnique({ where: { shareSlug } });
     if (existing) {
-      return NextResponse.json({ report: existing, cached: true });
+      const existingVerdict = computeVerdictTier(parseStoredIntelligence(existing.inputsJson));
+      return NextResponse.json({
+        report: { ...existing, tier: existingVerdict.tier, verdict: existingVerdict },
+        cached: true,
+      });
     }
 
     const intel = await getIntelligenceByAddress(address, borough, city);
@@ -110,6 +131,12 @@ export async function POST(req: NextRequest) {
       cached: false,
     });
   } catch (e) {
+    if (e instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Invalid verdict request", details: e.flatten().fieldErrors },
+        { status: 400 },
+      );
+    }
     const message = e instanceof Error ? e.message : "Verdict failed";
     return NextResponse.json({ error: message }, { status: 500 });
   }

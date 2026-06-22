@@ -4,15 +4,16 @@ import {
   DATASETS,
   type DatasetId,
 } from "@/lib/datasets/registry";
-import { syncDataset } from "@/lib/sync/runner";
+import { syncDataset, syncPermitsFull, type SyncResult } from "@/lib/sync/runner";
 import {
   syncNextBatch,
   syncLiveWatch,
   syncRgmWatch,
   alertIfCriticalStale,
+  shouldSkipUnchangedSync,
 } from "@/lib/sync/scheduler";
 import { runBootstrapBatches } from "@/lib/sync/bootstrap";
-import { getSyncBatchSize } from "@/lib/sync/live-watch";
+import { getSyncBatchSize, sortByPriority } from "@/lib/sync/live-watch";
 import { isSyncAuthorized } from "@/lib/sync/auth";
 import { isSyncAutomationEnabled } from "@/lib/env";
 
@@ -37,6 +38,20 @@ export async function GET(req: NextRequest) {
   const tier = searchParams.get("tier");
   const mode = searchParams.get("mode");
   const dataset = searchParams.get("dataset") as DatasetId | null;
+
+  if (mode === "backfill") {
+    // Full historical backfill for a dataset that left near-empty after an
+    // interrupted bootstrap (currently Montréal permits). Ignores the delta
+    // cursor; idempotent upserts. Scheduled weekly + on-demand.
+    if (dataset === "permits" || !dataset) {
+      const result = await syncPermitsFull();
+      return NextResponse.json({ ok: result.ok, mode: "backfill", results: [result] });
+    }
+    return NextResponse.json(
+      { error: "backfill not supported for this dataset" },
+      { status: 400 }
+    );
+  }
 
   if (dataset && dataset in DATASETS) {
     const result = await syncDataset(dataset);
@@ -131,21 +146,46 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid tier or dataset" }, { status: 400 });
   }
 
-  const results = [];
+  // Process the tier in priority order under a time budget so a single cron
+  // invocation never exceeds Vercel's max function duration (which surfaces as
+  // a 504 gateway timeout). Datasets that don't fit in the budget are returned
+  // as `remaining` and are picked up by the next cron tick or the 15-min
+  // scheduler, which re-selects stale datasets by priority. Unchanged sources
+  // are skipped to spend the budget on datasets that actually changed.
+  const TIME_BUDGET_MS = 240_000; // 4 min, under the 300s maxDuration
+  const ordered = sortByPriority(datasets);
+  const results: SyncResult[] = [];
+  const remaining: DatasetId[] = [];
   let totalProcessed = 0;
-  for (const id of datasets) {
+  const startedAt = Date.now();
+
+  // shouldSkipUnchangedSync already re-syncs datasets that ingested 0 rows or
+  // have a resumable offset in progress, so a fetcher fix (e.g. RBQ) actually
+  // takes effect instead of being skipped as "unchanged".
+  for (let i = 0; i < ordered.length; i++) {
+    if (Date.now() - startedAt > TIME_BUDGET_MS) {
+      remaining.push(...ordered.slice(i));
+      break;
+    }
+    const id = ordered[i];
+    if (await shouldSkipUnchangedSync(id)) {
+      results.push({ dataset: id, ok: true, processed: 0, source: "unchanged" });
+      continue;
+    }
     const result = await syncDataset(id);
     results.push(result);
     totalProcessed += result.processed;
   }
 
-  await runPostSyncAlerts();
+  void runPostSyncAlerts();
   const failed = results.filter((r) => !r.ok || r.error);
 
   return NextResponse.json({
     ok: failed.length === 0,
     tier,
     totalProcessed,
+    partial: remaining.length > 0,
+    remaining,
     results,
   });
 }

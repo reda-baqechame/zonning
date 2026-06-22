@@ -91,7 +91,11 @@ type ZoningRow = {
   intensificationLevel: string | null;
   description: string | null;
   densityThreshold: number | null;
+  zoneCode: string | null;
+  sourceUrl: string;
+  sourceFetchedAt: Date;
   city: string | null;
+  distanceMeters: number;
 };
 
 export async function findNearestZoningPoint(
@@ -108,7 +112,11 @@ export async function findNearestZoningPoint(
 
       const rows = await prisma.$queryRaw<ZoningRow[]>`
         SELECT id, latitude, longitude, "landUse", "intensificationLevel", description,
-               "densityThreshold", city
+               "densityThreshold", "zoneCode", "sourceUrl", "sourceFetchedAt", city,
+               ST_Distance(
+                 ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography,
+                 ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
+               ) AS "distanceMeters"
         FROM "ZoningPoint"
         WHERE latitude IS NOT NULL AND longitude IS NOT NULL
         ${cityFilter}
@@ -120,7 +128,7 @@ export async function findNearestZoningPoint(
       `;
       const hit = rows[0];
       if (!hit) return null;
-      return haversineKm(lat, lng, hit.latitude, hit.longitude) <= maxKm ? hit : null;
+      return hit.distanceMeters <= maxKm * 1000 ? hit : null;
     } catch {
       postgisAvailable = false;
     }
@@ -128,7 +136,7 @@ export async function findNearestZoningPoint(
 
   const points = await prisma.zoningPoint.findMany({
     where: city ? { city } : undefined,
-    take: 500,
+    take: 5000,
   });
   let best: (typeof points)[0] | null = null;
   let bestDist = Infinity;
@@ -139,7 +147,7 @@ export async function findNearestZoningPoint(
       best = p;
     }
   }
-  return best;
+  return best ? { ...best, distanceMeters: Math.round(bestDist * 1000) } : null;
 }
 
 type HeritageRow = {

@@ -1,12 +1,19 @@
 import { addDays, getDay, startOfDay, subDays } from "date-fns";
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { HIGH_VALUE_THRESHOLD } from "@/lib/format-cad";
 import {
   CITY_TO_PERMIT_DATASET,
+  getPermitCoverageStatusForCity,
   RGM_CITIES,
   QUEBEC_INTEL_REFRESH_IDS,
 } from "@/lib/quebec-coverage";
-import { COVERAGE_CITIES, getDatasetCount } from "@/lib/datasets/registry";
+import {
+  COVERAGE_CITIES,
+  getDatasetCount,
+  getRegisteredSourceCount,
+  type DatasetCoverageStatus,
+} from "@/lib/datasets/registry";
 
 export type CityPulseRow = {
   city: string;
@@ -17,6 +24,10 @@ export type CityPulseRow = {
   lastSyncAt: string | null;
   datasetId: string | null;
   isRgm: boolean;
+  coverageStatus: DatasetCoverageStatus;
+  coverageLabel: string;
+  coverageNote: string | null;
+  sourceUrl: string | null;
 };
 
 export type DataLayerCounts = {
@@ -49,6 +60,8 @@ export type MarketPulseStats = {
   permitsLastSuccessAt: string | null;
   datasetCount: number;
   coverageCities: number;
+  registeredSources: number;
+  searchableMunicipalities: number;
   cities: string[];
   rgm: {
     permitsToday: number;
@@ -65,39 +78,68 @@ async function fetchCityBreakdown(
   todayStart: Date,
   weekStart: Date
 ): Promise<CityPulseRow[]> {
-  const permitStates = await prisma.syncState.findMany({
-    where: {
-      datasetId: {
-        in: Object.values(CITY_TO_PERMIT_DATASET).filter(Boolean) as string[],
+  const coveredCities = [...COVERAGE_CITIES];
+  const [permitStates, totals, todayCounts, weekCounts, mappableCounts] = await Promise.all([
+    prisma.syncState.findMany({
+      where: {
+        datasetId: {
+          in: Object.values(CITY_TO_PERMIT_DATASET).filter(Boolean) as string[],
+        },
       },
-    },
-  });
-  const stateByDataset = new Map(permitStates.map((s) => [s.datasetId, s]));
+    }),
+    prisma.permit.groupBy({
+      by: ["city"],
+      where: { city: { in: coveredCities } },
+      _count: { _all: true },
+    }),
+    prisma.permit.groupBy({
+      by: ["city"],
+      where: { city: { in: coveredCities }, issueDate: { gte: todayStart } },
+      _count: { _all: true },
+    }),
+    prisma.permit.groupBy({
+      by: ["city"],
+      where: { city: { in: coveredCities }, issueDate: { gte: weekStart } },
+      _count: { _all: true },
+    }),
+    prisma.permit.groupBy({
+      by: ["city"],
+      where: {
+        city: { in: coveredCities },
+        latitude: { not: null },
+        longitude: { not: null },
+      },
+      _count: { _all: true },
+    }),
+  ]);
 
-  return Promise.all(
-    COVERAGE_CITIES.map(async (city) => {
-      const [permitsToday, permitsWeek, totalPermits, mappablePermits] = await Promise.all([
-        prisma.permit.count({ where: { city, issueDate: { gte: todayStart } } }),
-        prisma.permit.count({ where: { city, issueDate: { gte: weekStart } } }),
-        prisma.permit.count({ where: { city } }),
-        prisma.permit.count({
-          where: { city, latitude: { not: null }, longitude: { not: null } },
-        }),
-      ]);
-      const datasetId = CITY_TO_PERMIT_DATASET[city];
-      const state = datasetId ? stateByDataset.get(datasetId) : null;
-      return {
-        city,
-        permitsToday,
-        permitsWeek,
-        totalPermits,
-        mappablePermits,
-        lastSyncAt: state?.lastSuccessAt?.toISOString() ?? null,
-        datasetId,
-        isRgm: (RGM_CITIES as readonly string[]).includes(city),
-      };
-    })
-  );
+  const stateByDataset = new Map(permitStates.map((s) => [s.datasetId, s]));
+  const toCountMap = (rows: Array<{ city: string; _count: { _all: number } }>) =>
+    new Map(rows.map((row) => [row.city, row._count._all]));
+  const totalByCity = toCountMap(totals);
+  const todayByCity = toCountMap(todayCounts);
+  const weekByCity = toCountMap(weekCounts);
+  const mappableByCity = toCountMap(mappableCounts);
+
+  return COVERAGE_CITIES.map((city) => {
+    const coverage = getPermitCoverageStatusForCity(city);
+    const datasetId = CITY_TO_PERMIT_DATASET[city];
+    const state = datasetId ? stateByDataset.get(datasetId) : null;
+    return {
+      city,
+      permitsToday: todayByCity.get(city) ?? 0,
+      permitsWeek: weekByCity.get(city) ?? 0,
+      totalPermits: totalByCity.get(city) ?? 0,
+      mappablePermits: mappableByCity.get(city) ?? 0,
+      lastSyncAt: state?.lastSuccessAt?.toISOString() ?? null,
+      datasetId,
+      isRgm: (RGM_CITIES as readonly string[]).includes(city),
+      coverageStatus: coverage.status,
+      coverageLabel: coverage.label,
+      coverageNote: coverage.note,
+      sourceUrl: coverage.sourceUrl,
+    };
+  });
 }
 
 async function fetchDataLayerCounts(): Promise<DataLayerCounts> {
@@ -145,7 +187,7 @@ async function fetchDataLayerCounts(): Promise<DataLayerCounts> {
   };
 }
 
-export async function fetchMarketPulseStats(): Promise<MarketPulseStats> {
+async function loadMarketPulseStats(): Promise<MarketPulseStats> {
   const now = new Date();
   const todayStart = startOfDay(now);
   const weekStart = subDays(now, 7);
@@ -226,6 +268,8 @@ export async function fetchMarketPulseStats(): Promise<MarketPulseStats> {
     permitsLastSuccessAt: permitState?.lastSuccessAt?.toISOString() ?? null,
     datasetCount: getDatasetCount(),
     coverageCities: COVERAGE_CITIES.length,
+    registeredSources: getRegisteredSourceCount(),
+    searchableMunicipalities: cityBreakdown.filter((city) => city.totalPermits > 0).length,
     cities: [...COVERAGE_CITIES],
     rgm: {
       permitsToday: rgmRows.reduce((s, c) => s + c.permitsToday, 0),
@@ -238,5 +282,11 @@ export async function fetchMarketPulseStats(): Promise<MarketPulseStats> {
     updatedAt: now.toISOString(),
   };
 }
+
+export const fetchMarketPulseStats = unstable_cache(
+  loadMarketPulseStats,
+  ["market-pulse-stats-v1"],
+  { revalidate: 30, tags: ["market-pulse"] }
+);
 
 export { HIGH_VALUE_THRESHOLD } from "@/lib/format-cad";

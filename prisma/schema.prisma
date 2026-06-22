@@ -54,16 +54,20 @@ model User {
 }
 
 model SavedLead {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kind      String
-  itemId    String
-  notes     String?
-  createdAt DateTime @default(now())
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind         String
+  itemId       String
+  notes        String?
+  stage        String    @default("new")
+  nextActionAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
 
   @@unique([userId, kind, itemId])
   @@index([userId])
+  @@index([userId, stage, nextActionAt])
 }
 
 model Organization {
@@ -744,4 +748,38 @@ model MunicipalInspection {
   sourceFetchedAt DateTime  @default(now())
 
   @@index([city])
+}
+
+/// Pinned entity for the watch-list — notify the user on graph changes.
+model WatchItem {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String   // property | contractor | company | tender
+  identifier String  // matricule | rbq | neq | tenderId
+  label     String
+  note      String?
+  createdAt DateTime @default(now())
+
+  notifications WatchNotification[]
+
+  @@unique([userId, kind, identifier])
+  @@index([userId])
+  @@index([kind, identifier])
+}
+
+/// One notification per detected change on a watched entity.
+model WatchNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  watchItemId String
+  watchItem WatchItem @relation(fields: [watchItemId], references: [id], onDelete: Cascade)
+  signal    String   // new_permit | new_sale | new_infraction | zoning_change | tender_won
+  title     String
+  detail    String
+  sourceUrl String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([watchItemId])
 }

@@ -1,5 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { DATASETS, COVERAGE_CITIES, getDatasetCount, getActiveDatasetIds } from "@/lib/datasets/registry";
+import {
+  DATASETS,
+  COVERAGE_CITIES,
+  getDatasetCount,
+  getRegisteredDatasetIds,
+  getSyncEnabledDatasetIds,
+} from "@/lib/datasets/registry";
 import { getDatasetStaleness } from "@/lib/sync/scheduler";
 import { getLatestQualityByDataset } from "@/lib/sync/quality";
 import { isSyncAutomationEnabled } from "@/lib/env";
@@ -112,7 +118,7 @@ export async function buildSyncHealthSummary(options?: {
       anomalies,
       total: datasets.length,
       datasetCount: getDatasetCount(),
-      registeredDatasets: getActiveDatasetIds().length,
+      registeredDatasets: getRegisteredDatasetIds().length,
       coverageCities: [...COVERAGE_CITIES],
     },
     datasets: authorized
@@ -135,8 +141,8 @@ export function syncAutomationMeta(authorized: boolean) {
     enabled: isSyncAutomationEnabled(),
     schedule: authorized
       ? {
-          rgm: "*/3 min",
-          live: "*/5 min",
+          rgm: "*/15 min",
+          live: "*/15 min",
           scheduler: "*/15 min",
           daily: "*/4 h",
           weekly: "Sunday 08:00 UTC",
@@ -149,8 +155,8 @@ export function syncAutomationMeta(authorized: boolean) {
       ? {
           watchIntervalMinutes: getLiveMaxAgeMinutes(),
           batchSize: getSyncBatchSize(),
-          fastTier: TIER_DATASETS.fast,
-          crons: ["*/3 rgm", "*/5 live", "*/15 scheduler", "*/15 alerts live", "*/4h daily", "weekly Sunday"],
+          fastTier: TIER_DATASETS.fast.filter((id) => getSyncEnabledDatasetIds().includes(id)),
+          crons: ["*/15 rgm/live/scheduler/alerts", "*/4h daily", "nightly all", "weekly Sunday"],
         }
       : undefined,
   };

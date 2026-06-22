@@ -7,6 +7,8 @@ import TenderCountdown from "@/components/TenderCountdown";
 import { LeadCard } from "@/components/LeadCard";
 import { createAlert } from "@/lib/alerts/create-alert";
 import type { LeadSignal } from "@/lib/lead-signals";
+import type { OpportunityDossier } from "@/lib/domain/quebec";
+import type { TenderScoreResult } from "@/lib/tender-score";
 import {
   PageHeader,
   Input,
@@ -63,6 +65,8 @@ type Tender = {
     dominance: number;
     topIncumbents: { name: string; wins: number; avgAmount: number | null; avgOverrunPct: number | null }[];
   };
+  ranking?: TenderScoreResult;
+  opportunityDossier?: OpportunityDossier;
 };
 
 const DEFAULT_CATEGORIES = ["Construction", "Services", "Fournitures", "Services professionnels"];
@@ -190,7 +194,7 @@ export default function MarchesQcClient() {
         </div>
       )}
 
-      <div className="mt-6 grid gap-4 rounded-xl border border-slate-800 bg-slate-900/50 p-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="mt-6 grid gap-4 rounded-xl border border-line bg-surface-2 p-4 md:grid-cols-2 lg:grid-cols-5">
         <div>
           <FieldLabel htmlFor="search">{t("search")}</FieldLabel>
           <Input
@@ -221,12 +225,12 @@ export default function MarchesQcClient() {
           />
         </div>
         <div className="flex items-end">
-          <label className="flex items-center gap-2 text-sm text-slate-300">
+          <label className="flex items-center gap-2 text-sm text-muted">
             <input
               type="checkbox"
               checked={ampOnly}
               onChange={(e) => setAmpOnly(e.target.checked)}
-              className="rounded border-slate-600"
+              className="rounded border-line-strong"
             />
             AMP seulement
           </label>
@@ -235,7 +239,7 @@ export default function MarchesQcClient() {
           <button
             type="button"
             onClick={() => void load()}
-            className="w-full rounded-lg border border-slate-600 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+            className="w-full rounded-lg border border-line-strong px-3 py-2 text-sm text-ink hover:bg-surface-hover"
           >
             {t("applyFilters")}
           </button>
@@ -243,7 +247,7 @@ export default function MarchesQcClient() {
       </div>
 
       {loadError && (
-        <div className="mt-4 rounded-lg border border-red-500/40 bg-red-950/30 p-4 text-sm text-red-200">
+        <div className="mt-4 rounded-lg border border-danger/40 bg-danger-soft p-4 text-sm text-danger-ink">
           {loadError}
           <Button variant="secondary" size="sm" className="mt-2" onClick={() => void load()}>
             {c("retry")}
@@ -253,7 +257,7 @@ export default function MarchesQcClient() {
 
       <div className="mt-8 space-y-4">
         {loading ? (
-          <p className="text-slate-400">{c("loading")}</p>
+          <p className="text-muted">{c("loading")}</p>
         ) : tenders.length === 0 ? (
           <EmptyState
             icon={<FileSearch className="h-8 w-8" />}
@@ -281,6 +285,8 @@ export default function MarchesQcClient() {
                   plainSummary: tender.plainSummary,
                   sourceUrl: tender.sourceUrl,
                   amendmentCount: tender.amendmentCount,
+                  ranking: tender.ranking,
+                  opportunityDossier: tender.opportunityDossier,
                 }}
                 countdown={
                   <TenderCountdown
@@ -364,9 +370,9 @@ export default function MarchesQcClient() {
                 </div>
               )}
               {tender.similarAwards && tender.similarAwards.length > 0 && (
-                <div className="rounded-lg border border-slate-700/50 bg-slate-950/50 p-3">
-                  <p className="text-xs font-medium text-slate-400">{t("similarAwards")}</p>
-                  <ul className="mt-1 space-y-1 text-xs text-slate-500">
+                <div className="rounded-lg border border-line bg-surface-2 p-3">
+                  <p className="text-xs font-medium text-muted">{t("similarAwards")}</p>
+                  <ul className="mt-1 space-y-1 text-xs text-subtle">
                     {tender.similarAwards.map((a, i) => (
                       <li key={i}>
                         {a.companyName ?? a.winnerName ?? "—"}

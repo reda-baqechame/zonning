@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseGeoJsonCentroids, haversineKm } from "../geo";
+import { centroidFromGeometry, parseGeoJsonCentroids, haversineKm } from "../geo";
+import { pickProp, reprojectGeoJsonFeatures } from "../geo-fetch";
 
 const PUM2050_FIXTURE = {
   type: "FeatureCollection",
@@ -57,6 +58,38 @@ const LPC_FIXTURE = {
 };
 
 describe("GeoJSON centroid parsing for government datasets", () => {
+  it("reprojects Montreal EPSG:32188 geometry before spatial matching", () => {
+    const [feature] = reprojectGeoJsonFeatures(
+      [
+        {
+          geometry: { type: "Point", coordinates: [304800, 5_040_000] },
+          properties: {},
+        },
+      ],
+      "urn:ogc:def:crs:EPSG::32188",
+    );
+    const centroid = centroidFromGeometry(feature.geometry);
+    expect(centroid?.longitude).toBeCloseTo(-73.5, 2);
+    expect(centroid?.latitude).toBeGreaterThan(45);
+    expect(centroid?.latitude).toBeLessThan(46);
+  });
+
+  it("reprojects Montreal EPSG:2950 heritage points", () => {
+    const [feature] = reprojectGeoJsonFeatures(
+      [
+        {
+          geometry: { type: "Point", coordinates: [292146.5746, 5047730.7762] },
+          properties: {},
+        },
+      ],
+      "urn:ogc:def:crs:EPSG::2950",
+    );
+    const centroid = centroidFromGeometry(feature.geometry);
+    expect(centroid?.longitude).toBeGreaterThan(-74);
+    expect(centroid?.longitude).toBeLessThan(-73);
+    expect(centroid?.latitude).toBeGreaterThan(45);
+    expect(centroid?.latitude).toBeLessThan(46);
+  });
   it("extracts PUM 2050 polygon centroids with borough", () => {
     const rows = parseGeoJsonCentroids(
       PUM2050_FIXTURE.features,
@@ -90,5 +123,9 @@ describe("GeoJSON centroid parsing for government datasets", () => {
     }));
     expect(rows[0].name).toBe("Édifice patrimonial LPC");
     expect(haversineKm(rows[0].latitude, rows[0].longitude, 45.52, -73.58)).toBeLessThan(1);
+  });
+
+  it("reads uppercase ID fields used by Ville de Quebec zoning polygons", () => {
+    expect(pickProp({ ID: "21703Mc" }, "code_zone", "no_zone", "id")).toBe("21703Mc");
   });
 });

@@ -5,8 +5,8 @@ import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { z } from "zod";
 
 const schema = z.object({
-  email: z.string().email(),
-  password: z.string(),
+  email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
+  password: z.string().min(1).max(200),
 });
 
 export async function POST(req: NextRequest) {

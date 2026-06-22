@@ -3,6 +3,7 @@ import { DATASETS, getSyncLimit, type DatasetId } from "../registry";
 import { fetchDatasetGeoJson, mapGeoFeatures, pickProp } from "../geo-fetch";
 import { arcGisFeature } from "../adapters/ArcGisFeatureAdapter";
 import type { Pum2050ZoningRecord } from "./pum2050-zoning";
+import { buildZoningExternalId } from "@/lib/zoning/record-quality";
 
 type GeoCollection = { features?: { properties?: Record<string, unknown>; geometry?: unknown }[] };
 
@@ -16,16 +17,33 @@ async function fetchZoningFromDirectUrl(
   if (url.includes("FeatureServer") || url.includes("MapServer")) {
     const records = await arcGisFeature.queryAll(
       url,
-      (attrs, centroid, i) => ({
-        externalId: `${idPrefix}-${pickProp(attrs, "objectid", "id", "fid") || i}`,
-        city,
-        latitude: centroid.latitude,
-        longitude: centroid.longitude,
-        landUse: pickProp(attrs, "affectation", "usage", "zone", "descriptio") || undefined,
-        zoneCode: pickProp(attrs, "code_zone", "code", "zone", "zonage") || undefined,
-        description: pickProp(attrs, "description", "zone") || `Zonage ${city}`,
-        sourceUrl,
-      }),
+      (attrs, centroid) => {
+        const record = {
+          city,
+          latitude: centroid.latitude,
+          longitude: centroid.longitude,
+          landUse:
+            pickProp(attrs, "affectation", "usage", "groupeusage", "v_description", "descriptio") ||
+            undefined,
+          zoneCode:
+            pickProp(attrs, "code_zone", "code", "zone", "zonage", "zonagemunicipalid", "no_zone", "id") ||
+            undefined,
+          sourceUrl,
+        };
+        const externalId = buildZoningExternalId(
+          idPrefix,
+          pickProp(attrs, "objectid", "id", "fid", "uuid"),
+          record,
+        );
+        return externalId
+          ? {
+              externalId,
+              ...record,
+              description:
+                pickProp(attrs, "description", "v_description", "zone") || `Zonage ${city}`,
+            }
+          : null;
+      },
       { maxRecords: cap, returnGeometry: true, outFields: "*" }
     );
     return records;
@@ -35,16 +53,32 @@ async function fetchZoningFromDirectUrl(
   if (data?.features?.length) {
     return mapGeoFeatures(
       data.features as Parameters<typeof mapGeoFeatures>[0],
-      (props, lat, lng, i) => ({
-        externalId: `${idPrefix}-${pickProp(props, "id", "objectid") || i}`,
-        city,
-        latitude: lat,
-        longitude: lng,
-        landUse: pickProp(props, "affectation", "usage", "zone") || undefined,
-        zoneCode: pickProp(props, "code_zone", "code", "zone", "zonage") || undefined,
-        description: pickProp(props, "description", "zone") || `Zonage ${city}`,
-        sourceUrl,
-      }),
+      (props, lat, lng) => {
+        const record = {
+          city,
+          latitude: lat,
+          longitude: lng,
+          landUse:
+            pickProp(props, "affectation", "usage", "groupeusage", "v_description") || undefined,
+          zoneCode:
+            pickProp(props, "code_zone", "code", "zone", "zonage", "zonagemunicipalid", "no_zone", "id") ||
+            undefined,
+          sourceUrl,
+        };
+        const externalId = buildZoningExternalId(
+          idPrefix,
+          pickProp(props, "id", "objectid", "fid", "uuid"),
+          record,
+        );
+        return externalId
+          ? {
+              externalId,
+              ...record,
+              description:
+                pickProp(props, "description", "v_description", "zone") || `Zonage ${city}`,
+            }
+          : null;
+      },
       cap
     );
   }
@@ -78,16 +112,25 @@ async function fetchRegionalZoning(
   const features = await fetchDatasetGeoJson(datasetId, cap);
   return mapGeoFeatures(
     features,
-    (props, lat, lng, i) => ({
-      externalId: `${idPrefix}-${pickProp(props, "id", "objectid") || i}`,
-      city,
-      latitude: lat,
-      longitude: lng,
-      landUse: pickProp(props, "affectation", "usage", "zone") || undefined,
-      zoneCode: pickProp(props, "code", "zone", "zonage") || undefined,
-      description: `Zonage ${city}`,
-      sourceUrl: cfg.sourceUrl,
-    }),
+    (props, lat, lng) => {
+      const record = {
+        city,
+        latitude: lat,
+        longitude: lng,
+        landUse:
+          pickProp(props, "affectation", "usage", "groupeusage", "v_description") || undefined,
+        zoneCode:
+          pickProp(props, "code_zone", "code", "zone", "zonage", "zonagemunicipalid", "no_zone", "id") ||
+          undefined,
+        sourceUrl: cfg.sourceUrl,
+      };
+      const externalId = buildZoningExternalId(
+        idPrefix,
+        pickProp(props, "id", "objectid", "fid", "uuid", "no_zone"),
+        record,
+      );
+      return externalId ? { externalId, ...record, description: `Zonage ${city}` } : null;
+    },
     cap
   );
 }
@@ -101,17 +144,35 @@ export async function fetchZoningTroisRivieres(
 
   return mapGeoFeatures(
     features,
-    (props, lat, lng, i) => ({
-      externalId: `v3r-zoning-${pickProp(props, "id", "objectid", "zone") || i}`,
-      city: "Trois-Rivières",
-      borough: pickProp(props, "secteur", "quartier") || undefined,
-      latitude: lat,
-      longitude: lng,
-      landUse: pickProp(props, "affectation", "usage", "zone") || undefined,
-      zoneCode: pickProp(props, "code_zone", "zone", "zonage") || undefined,
-      description: pickProp(props, "description", "zone") || "Zonage V3R",
-      sourceUrl: cfg.sourceUrl,
-    }),
+    (props, lat, lng) => {
+      const status = pickProp(props, "statut", "status").toLowerCase();
+      if (status && !status.includes("en vigueur") && !status.includes("active")) return null;
+      const record = {
+        city: "Trois-Rivières",
+        latitude: lat,
+        longitude: lng,
+        landUse:
+          pickProp(props, "v_description", "groupeusage", "affectation", "usage") || undefined,
+        zoneCode:
+          pickProp(props, "zonagemunicipalid", "no_zone", "code_zone", "zone", "zonage") ||
+          undefined,
+        sourceUrl: cfg.sourceUrl,
+      };
+      const externalId = buildZoningExternalId(
+        "zoning-trois-rivieres",
+        pickProp(props, "id", "objectid", "fid", "uuid"),
+        record,
+      );
+      return externalId
+        ? {
+            externalId,
+            ...record,
+            borough: pickProp(props, "secteur", "quartier") || undefined,
+            description:
+              pickProp(props, "v_description", "description", "zone") || "Zonage V3R",
+          }
+        : null;
+    },
     cap
   );
 }

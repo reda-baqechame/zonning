@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui";
+import type { PublicUser } from "@/lib/user-dto";
 
 const PRO_PLANS = new Set(["PRO", "EQUIPE"]);
 const ESSENTIEL_PLUS = new Set(["ESSENTIEL", "PRO", "EQUIPE"]);
@@ -21,7 +22,8 @@ function NavLink({
   pathname: string;
   onClick?: () => void;
 }) {
-  const active = pathname === href || (href !== "/" && pathname.startsWith(href));
+  const active =
+    pathname === href || (href !== "/" && pathname.startsWith(href));
   return (
     <Link
       href={href}
@@ -29,8 +31,8 @@ function NavLink({
       className={cn(
         "rounded-lg px-3 py-2 text-sm transition",
         active
-          ? "bg-slate-800 font-medium text-white"
-          : "text-slate-300 hover:bg-slate-800/60 hover:text-white",
+          ? "bg-brand-soft font-medium text-brand"
+          : "text-muted hover:bg-surface-hover hover:text-ink",
       )}
     >
       {label}
@@ -38,46 +40,68 @@ function NavLink({
   );
 }
 
-export function NavBar({
-  user,
-}: {
-  user?: { name?: string | null; email: string; plan?: string } | null;
-}) {
+export function NavBar() {
   const t = useTranslations("nav");
   const locale = useLocale();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<PublicUser | null>(null);
 
-  const plan = user?.plan ?? "FREE";
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/auth/me", { signal: controller.signal })
+      .then((response) => (response.ok ? response.json() : { user: null }))
+      .then((payload: { user?: PublicUser | null }) => setUser(payload.user ?? null))
+      .catch(() => undefined);
+
+    return () => controller.abort();
+  }, []);
+
+  if (pathname === "/feed" || pathname.startsWith("/feed/")) return null;
+
+  const plan = user ? "EQUIPE" : "FREE";
 
   const links = [
-    ...(user
-      ? [{ href: "/feed", label: t("feed") }]
-      : [{ href: "/feed-preview", label: t("feedPreview") }]),
-    { href: "/verdict", label: t("verdict") },
-    { href: "/intelligence", label: t("intelligence") },
-    { href: "/carte", label: t("carte") },
+    { href: "/", label: t("search") },
+    { href: "/#atlas", label: t("map") },
+    { href: "/investigate", label: t("investigate") },
+    { href: "/verdict", label: t("dossier") },
+    { href: user ? "/feed" : "/feed-preview", label: t("opportunities") },
     { href: "/chantier-radar", label: t("chantierRadar") },
-    { href: "/marches-qc", label: t("marchesQc") },
+    { href: "/carte", label: t("carte") },
+    { href: "/coverage?view=municipalities", label: t("municipalities") },
+    { href: "/partenaires-ca", label: t("companies") },
     { href: "/coverage", label: t("coverage") },
-    { href: "/partenaires-ca", label: t("partenairesCa") },
-    ...(user ? [{ href: "/paiement-public", label: t("paiementPublic") }] : []),
-    ...(PRO_PLANS.has(plan) ? [{ href: "/compliance", label: t("compliance") }] : []),
-    ...(ESSENTIEL_PLUS.has(plan) ? [{ href: "/export", label: t("export") }] : []),
+    ...(PRO_PLANS.has(plan)
+      ? [{ href: "/compliance", label: t("compliance") }]
+      : []),
+    ...(ESSENTIEL_PLUS.has(plan)
+      ? [{ href: "/export", label: t("export") }]
+      : []),
     ...(plan === "EQUIPE" ? [{ href: "/equipe", label: t("equipe") }] : []),
-    { href: "/pricing", label: t("pricing") },
   ];
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/95 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-line bg-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-        <Link href="/" className="text-xl font-bold tracking-tight text-white">
-          ZON<span className="text-sky-400">NING</span>
+        <Link href="/" className="text-xl font-bold tracking-tight text-ink">
+          ZON<span className="text-brand">NING</span>
+          <span className="ml-1 align-super text-[10px] font-semibold text-brand">
+            Québec
+          </span>
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
+        <nav
+          className="hidden items-center gap-1 lg:flex"
+          aria-label={t("mainNavigation")}
+        >
           {links.map((l) => (
-            <NavLink key={l.href} href={l.href} label={l.label} pathname={pathname} />
+            <NavLink
+              key={l.href}
+              href={l.href}
+              label={l.label}
+              pathname={pathname}
+            />
           ))}
         </nav>
 
@@ -85,42 +109,49 @@ export function NavBar({
           <Link
             href="/"
             locale={locale === "fr" ? "en" : "fr"}
-            className="hidden rounded-lg px-2 py-1.5 text-slate-400 hover:bg-slate-800 hover:text-white sm:inline"
+            className="hidden rounded-lg px-2 py-1.5 text-muted hover:bg-surface-hover hover:text-ink sm:inline"
           >
             {locale === "fr" ? "EN" : "FR"}
           </Link>
 
           {user ? (
             <div className="hidden items-center gap-1 md:flex">
-              <NavLink href="/settings" label={t("settings")} pathname={pathname} />
+              <NavLink
+                href="/settings"
+                label={t("settings")}
+                pathname={pathname}
+              />
               <button
                 type="button"
                 onClick={async () => {
                   await fetch("/api/auth/logout", { method: "POST" });
                   window.location.href = `/${locale}`;
                 }}
-                className="rounded-lg px-3 py-2 text-slate-400 hover:bg-slate-800 hover:text-white"
+                className="rounded-lg px-3 py-2 text-muted hover:bg-surface-hover hover:text-ink"
               >
                 {t("logout")}
               </button>
             </div>
           ) : (
             <div className="hidden items-center gap-2 md:flex">
-              <Link href="/login" className="rounded-lg px-3 py-2 text-slate-300 hover:text-white">
+              <Link
+                href="/login"
+                className="rounded-lg px-3 py-2 text-muted hover:text-ink"
+              >
                 {t("login")}
               </Link>
               <Link
                 href="/register"
-                className="rounded-lg bg-sky-500 px-3 py-1.5 font-medium text-white hover:bg-sky-400"
+                className="rounded-lg bg-brand px-3 py-1.5 font-medium text-white shadow-sm hover:bg-brand-hover"
               >
-                {t("register")}
+                {t("createWorkspace")}
               </Link>
             </div>
           )}
 
           <button
             type="button"
-            className="rounded-lg p-2 text-slate-300 hover:bg-slate-800 lg:hidden"
+            className="rounded-lg p-2 text-muted hover:bg-surface-hover lg:hidden"
             onClick={() => setMobileOpen(true)}
             aria-label={t("openMenu")}
           >
@@ -132,23 +163,26 @@ export function NavBar({
       {mobileOpen && (
         <div className="fixed inset-0 z-[60] lg:hidden">
           <div
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-slate-900/25"
             onClick={() => setMobileOpen(false)}
             aria-hidden
           />
-          <div className="absolute right-0 top-0 flex h-full w-[min(100%,320px)] flex-col bg-slate-950 shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
-              <span className="font-semibold text-white">Menu</span>
+          <div className="absolute right-0 top-0 flex h-full w-[min(100%,320px)] flex-col bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-line px-4 py-3">
+              <span className="font-semibold text-ink">{t("menu")}</span>
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
-                className="rounded-lg p-2 text-slate-400 hover:bg-slate-800"
+                className="rounded-lg p-2 text-muted hover:bg-surface-hover"
                 aria-label={t("closeMenu")}
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3" aria-label="Mobile">
+            <nav
+              className="flex flex-1 flex-col gap-1 overflow-y-auto p-3"
+              aria-label={t("mobileNavigation")}
+            >
               {links.map((l) => (
                 <NavLink
                   key={l.href}
@@ -158,18 +192,23 @@ export function NavBar({
                   onClick={() => setMobileOpen(false)}
                 />
               ))}
-              <div className="my-2 border-t border-slate-800" />
+              <div className="my-2 border-t border-line" />
               <Link
                 href="/"
                 locale={locale === "fr" ? "en" : "fr"}
                 onClick={() => setMobileOpen(false)}
-                className="rounded-lg px-3 py-2 text-slate-400"
+                className="rounded-lg px-3 py-2 text-muted"
               >
                 {locale === "fr" ? "English" : "Français"}
               </Link>
               {user ? (
                 <>
-                  <NavLink href="/settings" label={t("settings")} pathname={pathname} onClick={() => setMobileOpen(false)} />
+                  <NavLink
+                    href="/settings"
+                    label={t("settings")}
+                    pathname={pathname}
+                    onClick={() => setMobileOpen(false)}
+                  />
                   <Button
                     variant="ghost"
                     className="justify-start"
@@ -183,9 +222,16 @@ export function NavBar({
                 </>
               ) : (
                 <>
-                  <NavLink href="/login" label={t("login")} pathname={pathname} onClick={() => setMobileOpen(false)} />
+                  <NavLink
+                    href="/login"
+                    label={t("login")}
+                    pathname={pathname}
+                    onClick={() => setMobileOpen(false)}
+                  />
                   <Link href="/register" onClick={() => setMobileOpen(false)}>
-                    <Button className="mt-2 w-full">{t("register")}</Button>
+                    <Button className="mt-2 w-full">
+                      {t("createWorkspace")}
+                    </Button>
                   </Link>
                 </>
               )}

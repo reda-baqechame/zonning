@@ -2,11 +2,12 @@ import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
 function databaseUrl(): string | undefined {
-  const candidates = [
-    process.env.DATABASE_URL,
-    process.env.POSTGRES_PRISMA_URL,
-    process.env.POSTGRES_URL,
-  ]
+  // Explicit DATABASE_URL wins (Prisma convention) so local CLI usage targets
+  // SQLite (file:./dev.db) even when Postgres marketplace vars are present.
+  const explicit = process.env.DATABASE_URL?.trim();
+  if (explicit) return explicit;
+
+  const candidates = [process.env.POSTGRES_PRISMA_URL, process.env.POSTGRES_URL]
     .map((s) => s?.trim())
     .filter(Boolean) as string[];
   const postgres = candidates.find(

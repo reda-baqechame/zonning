@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { differenceInDays, getDay } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
-import { differenceInDays, getDay } from "date-fns";
 import { ensureFreshForKey } from "@/lib/sync/auto";
 import { getPlanLimits } from "@/lib/plans";
 import { getSimilarAwards } from "@/lib/datasets/fetchers/awards";
@@ -13,51 +13,34 @@ import {
 } from "@/lib/usage";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { computeLeadSignals } from "@/lib/lead-signals";
+import { computeTenderScore } from "@/lib/tender-score";
+import { buildTenderOpportunityDossier } from "@/lib/opportunities/dossier";
 import {
   getIncumbentIntelligence,
   type IncumbentIntelligence,
 } from "@/lib/tenders/incumbent";
 import {
-  computeWinProbability,
   buildMatchReasons,
   computeBidRecommendation,
+  computeWinProbability,
 } from "@/lib/tenders/win-probability";
 
-function computeMatchScore(
+function computeMatchContext(
   userTrades: string[],
   userRegions: string[],
-  userAmp: boolean,
   tender: {
     category?: string | null;
     region?: string | null;
     title: string;
-    requiresAmp?: boolean;
-  }
-): { score: number; matchedTrades: string[]; matchedRegion: string | null } {
-  let score = 50;
+  },
+): { matchedTrades: string[]; matchedRegion: string | null } {
   const title = tender.title.toLowerCase();
   const region = (tender.region ?? "").toLowerCase();
-  const matchedTrades: string[] = [];
-  let matchedRegion: string | null = null;
+  const matchedTrades = userTrades.filter((trade) => title.includes(trade.toLowerCase()));
+  const matchedRegion =
+    userRegions.find((r) => region.includes(r.toLowerCase())) ?? null;
 
-  for (const trade of userTrades) {
-    if (title.includes(trade.toLowerCase())) {
-      score += 15;
-      matchedTrades.push(trade);
-    }
-  }
-  for (const r of userRegions) {
-    if (region.includes(r.toLowerCase())) {
-      score += 20;
-      matchedRegion = matchedRegion ?? r;
-    }
-  }
-  if (tender.category === "Construction") score += 5;
-  if (tender.requiresAmp) {
-    score += userAmp ? 15 : -20;
-  }
-
-  return { score: Math.min(100, Math.max(0, score)), matchedTrades, matchedRegion };
+  return { matchedTrades, matchedRegion };
 }
 
 function valueFit(
@@ -85,7 +68,6 @@ export async function GET(req: NextRequest) {
   const region = searchParams.get("region");
   const q = searchParams.get("q")?.trim();
   const ampOnly = searchParams.get("ampOnly") === "true";
-
   const standingOnly = searchParams.get("standing") === "true";
 
   const statusOpen = standingOnly
@@ -121,13 +103,14 @@ export async function GET(req: NextRequest) {
   const userRegions = parseJsonArray(user?.regions);
   const userCompany = (user?.companyName ?? "").toLowerCase();
 
-  // Memoize incumbent lookups per category/UNSPSC within this request.
   const incumbentCache = new Map<string, Promise<IncumbentIntelligence>>();
-  const incumbentFor = (unspsc: string | null, category: string | null, region: string | null) => {
-    const key = `${unspsc ?? ""}|${category ?? ""}|${region ?? ""}`;
+  const incumbentFor = (unspsc: string | null, tenderCategory: string | null) => {
+    const key = `${unspsc ?? ""}|${tenderCategory ?? ""}`;
     let p = incumbentCache.get(key);
     if (!p) {
-      p = getIncumbentIntelligence(unspsc, category, region);
+      // Incumbents operate across regions; filtering by region makes award
+      // history too sparse to be useful for bid/no-bid.
+      p = getIncumbentIntelligence(unspsc, tenderCategory, null);
       incumbentCache.set(key, p);
     }
     return p;
@@ -138,21 +121,21 @@ export async function GET(req: NextRequest) {
       const daysLeft = t.closesAt ? differenceInDays(t.closesAt, new Date()) : null;
       const isThursday = t.closesAt ? getDay(t.closesAt) === 4 : false;
       const urgent = daysLeft !== null && daysLeft <= 7;
-      const match = computeMatchScore(
-        userTrades,
-        userRegions,
-        user?.ampAuthorized ?? false,
-        t
-      );
-      const matchScore = match.score;
+      const ranking = computeTenderScore(t, {
+        trades: userTrades,
+        regions: userRegions,
+        ampAuthorized: user?.ampAuthorized ?? false,
+        minProjectCost: user?.minProjectCost,
+        maxProjectCost: user?.maxProjectCost,
+      });
+      const matchScore = ranking.score;
+      const match = computeMatchContext(userTrades, userRegions, t);
       const [similarAwards, amendmentCount, incumbent] = await Promise.all([
         limits.maxTenders > 5 ? getSimilarAwards(t.unspsc, t.category, 3) : Promise.resolve([]),
         t.externalId
           ? prisma.seaoAmendment.count({ where: { tenderExternalId: t.externalId } })
           : Promise.resolve(0),
-        // Incumbents operate across regions — don't hard-filter award history
-        // by the tender's region or matches become artificially sparse.
-        incumbentFor(t.unspsc, t.category, null),
+        incumbentFor(t.unspsc, t.category),
       ]);
 
       const isUserIncumbent =
@@ -203,12 +186,20 @@ export async function GET(req: NextRequest) {
           urgent,
           requiresAmp: t.requiresAmp,
           matchScore,
+          ranking,
           plainSummary: t.aiSummary || t.summary || "",
           sourceUrl: t.sourceUrl,
           hasSimilarAwards,
         },
-        { ampAuthorized: user?.ampAuthorized }
+        { ampAuthorized: user?.ampAuthorized },
       );
+      const opportunityDossier = buildTenderOpportunityDossier({
+        tender: { ...t, amendmentCount },
+        score: matchScore,
+        signals,
+        ranking,
+        hasSimilarAwards,
+      });
 
       return {
         ...t,
@@ -228,21 +219,23 @@ export async function GET(req: NextRequest) {
           topIncumbents: incumbent.topIncumbents,
         },
         signals,
+        ranking,
+        opportunityDossier,
         similarAwards,
         amendmentCount,
         plainSummary:
           t.aiSummary ||
           t.summary ||
-          `Appel d'offres ${t.category ?? "public"} — soumission avant la date de clôture indiquée.`,
+          `Appel d'offres ${t.category ?? "public"} - soumission avant la date de cloture indiquee.`,
       };
-    })
+    }),
   );
 
   let filtered = enriched.filter((t) =>
     matchesEssentielProfile(user?.plan, userTrades, userRegions, {
       title: t.title,
       region: t.region ?? undefined,
-    })
+    }),
   );
 
   filtered.sort((a, b) => b.matchScore - a.matchScore);
@@ -266,7 +259,7 @@ export async function GET(req: NextRequest) {
     tenders: filtered,
     categories: [
       ...new Set(
-        tenders.map((t) => t.category).filter((c): c is string => Boolean(c))
+        tenders.map((t) => t.category).filter((c): c is string => Boolean(c)),
       ),
     ].slice(0, 20),
     plan: user?.plan ?? "FREE",

@@ -70,24 +70,24 @@ export default function ComplianceClient({ entitled }: { entitled: boolean }) {
     return (
       <FadeIn className="mx-auto max-w-4xl px-4 py-10">
         <PageHeader title={t("title")} subtitle={t("subtitle")} />
-        <div className="relative mt-8 overflow-hidden rounded-xl border border-slate-800">
+        <div className="relative mt-8 overflow-hidden rounded-xl border border-line">
           <div className="pointer-events-none select-none blur-sm">
-            <div className="space-y-4 bg-slate-900/40 p-6">
-              <div className="h-10 rounded-lg bg-slate-800" />
-              <div className="h-10 rounded-lg bg-slate-800" />
-              <div className="h-10 rounded-lg bg-slate-800" />
-              <div className="h-16 rounded-lg bg-slate-800/80" />
+            <div className="space-y-4 bg-surface-2 p-6">
+              <div className="h-10 rounded-lg bg-line" />
+              <div className="h-10 rounded-lg bg-line" />
+              <div className="h-10 rounded-lg bg-line" />
+              <div className="h-16 rounded-lg bg-surface-hover" />
             </div>
             <div className="space-y-3 p-6">
               {[1, 2].map((i) => (
-                <div key={i} className="h-20 rounded-xl bg-slate-900/30" />
+                <div key={i} className="h-20 rounded-xl bg-surface-hover" />
               ))}
             </div>
           </div>
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/60 p-6">
+          <div className="absolute inset-0 flex items-center justify-center bg-ink/55 p-6">
             <Card className="max-w-md text-center">
-              <h2 className="text-lg font-semibold text-white">{t("upgradeTitle")}</h2>
-              <p className="mt-2 text-sm text-slate-400">{t("upgradeDesc")}</p>
+              <h2 className="text-lg font-semibold text-ink">{t("upgradeTitle")}</h2>
+              <p className="mt-2 text-sm text-muted">{t("upgradeDesc")}</p>
               <Link href="/pricing" className="mt-4 inline-block">
                 <Button>{t("upgradeCta")}</Button>
               </Link>
@@ -102,8 +102,8 @@ export default function ComplianceClient({ entitled }: { entitled: boolean }) {
     <FadeIn className="mx-auto max-w-4xl px-4 py-10">
       <PageHeader title={t("title")} subtitle={t("subtitle")} />
 
-      <form onSubmit={create} className="mt-8 space-y-4 rounded-xl border border-slate-800 bg-slate-900/40 p-6">
-        <h2 className="font-semibold text-white">{t("newCert")}</h2>
+      <form onSubmit={create} className="mt-8 space-y-4 rounded-xl border border-line bg-surface-2 p-6">
+        <h2 className="font-semibold text-ink">{t("newCert")}</h2>
         <div>
           <FieldLabel htmlFor="contactName" required>
             {t("contactName")}
@@ -132,7 +132,7 @@ export default function ComplianceClient({ entitled }: { entitled: boolean }) {
             onChange={(e) => setForm({ ...form, sourceUrl: e.target.value })}
           />
         </div>
-        <p className="text-xs text-slate-500">{t("lawfulBasis")}</p>
+        <p className="text-xs text-subtle">{t("lawfulBasis")}</p>
         <Button type="submit">{t("create")}</Button>
       </form>
 
@@ -140,11 +140,11 @@ export default function ComplianceClient({ entitled }: { entitled: boolean }) {
         {records.map((r) => (
           <div
             key={r.id}
-            className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/30 p-4"
+            className="flex items-center justify-between rounded-xl border border-line bg-surface p-4 shadow-sm"
           >
             <div>
-              <p className="font-medium text-white">{r.contactName}</p>
-              <p className="text-sm text-slate-400">
+              <p className="font-medium text-ink">{r.contactName}</p>
+              <p className="text-sm text-muted">
                 {r.sourceType} · {new Date(r.sourceFetchedAt).toLocaleDateString("fr-CA")}
               </p>
             </div>

@@ -75,14 +75,14 @@ export default function HomeStats() {
   return (
     <div className="mx-auto max-w-6xl px-4">
       {freshness && (
-        <p className="mb-4 text-center text-sm text-emerald-400">
+        <p className="mb-4 text-center text-sm text-success-ink">
           {t("freshness", {
             time: freshness,
             datasets: stats.datasetCount ?? 33,
             cities: stats.coverageCities ?? 10,
           })}
           {(stats.intelDatasets != null || stats.rbqLicenses != null) && (
-            <span className="mt-1 block text-xs text-slate-500">
+            <span className="mt-1 block text-xs text-muted">
               {stats.intelDatasets != null && t("intelLayers", { count: stats.intelDatasets })}
               {stats.intelDatasets != null && stats.rbqLicenses != null && " · "}
               {stats.rbqLicenses != null &&
@@ -92,7 +92,7 @@ export default function HomeStats() {
             </span>
           )}
           {stats.cities && stats.cities.length > 0 && (
-            <span className="mt-1 block text-xs text-slate-500">
+            <span className="mt-1 block text-xs text-muted">
               {stats.cities.join(" · ")}
             </span>
           )}
@@ -102,20 +102,20 @@ export default function HomeStats() {
         {cards.map((card) => (
           <div
             key={card.label}
-            className={`rounded-xl border p-4 text-center ${
+            className={`rounded-xl border p-4 text-center shadow-sm transition-shadow hover:shadow-2 ${
               card.hot
-                ? "border-amber-500/40 bg-gradient-to-b from-amber-950/30 to-slate-900/50"
-                : "border-slate-800 bg-slate-900/50"
+                ? "border-brand-border bg-brand-soft"
+                : "border-line bg-surface"
             }`}
           >
             <p
-              className={`text-2xl font-bold md:text-3xl ${
-                card.hot ? "text-amber-300" : "text-sky-300"
+              className={`text-2xl font-bold tabular-nums md:text-3xl ${
+                card.hot ? "text-brand" : "text-ink"
               }`}
             >
               {card.isText ? card.value : card.value}
             </p>
-            <p className="mt-1 text-xs text-slate-400 md:text-sm">{card.label}</p>
+            <p className="mt-1 text-xs text-muted md:text-sm">{card.label}</p>
           </div>
         ))}
       </div>

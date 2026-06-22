@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+/.claude/
+/artifacts/
 
 # debug
 npm-debug.log*
@@ -39,7 +41,6 @@ yarn-error.log*
 # local sqlite
 dev.db
 *.db
-!prisma/**/*.db
 
 # vercel
 .vercel

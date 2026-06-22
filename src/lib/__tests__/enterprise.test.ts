@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { collectEnvIssues, isSyncAutomationEnabled, isStripeDemoMode } from "@/lib/env";
+import { collectEnvIssues, getIntegrationStatus, isSyncAutomationEnabled } from "@/lib/env";
 import { getAdminEmails, isAdminEmail } from "@/lib/admin";
 
 describe("collectEnvIssues", () => {
@@ -66,24 +66,18 @@ describe("isSyncAutomationEnabled", () => {
   });
 });
 
-describe("isStripeDemoMode", () => {
+describe("Stripe integration status", () => {
   const env = process.env;
 
   afterEach(() => {
     process.env = env;
   });
 
-  it("blocks demo upgrades in production without ALLOW_STRIPE_DEMO", () => {
+  it("reports billing as disabled when Stripe is absent", () => {
     process.env = { ...env, NODE_ENV: "production" };
     delete process.env.STRIPE_SECRET_KEY;
-    delete process.env.ALLOW_STRIPE_DEMO;
-    expect(isStripeDemoMode()).toBe(false);
-  });
-
-  it("allows demo in production when explicitly enabled", () => {
-    process.env = { ...env, NODE_ENV: "production", ALLOW_STRIPE_DEMO: "true" };
-    delete process.env.STRIPE_SECRET_KEY;
-    expect(isStripeDemoMode()).toBe(true);
+    expect(getIntegrationStatus().stripe).toBe(false);
+    expect(getIntegrationStatus().stripeDisabled).toBe(true);
   });
 });
 
@@ -95,14 +89,21 @@ describe("admin emails", () => {
   });
 
   it("uses demo only in non-production when unset", () => {
-    process.env = { ...env, NODE_ENV: "development" };
+    process.env = { ...env, NODE_ENV: "development", ZONNING_FREE_TEST_MODE: "false" };
     delete process.env.ADMIN_EMAILS;
     expect(getAdminEmails()).toEqual(["demo@zonning.ca"]);
     expect(isAdminEmail("demo@zonning.ca")).toBe(true);
   });
 
-  it("returns empty in production when unset", () => {
+  it("opens admin checks while free test mode is active", () => {
     process.env = { ...env, NODE_ENV: "production" };
+    delete process.env.ADMIN_EMAILS;
+    expect(getAdminEmails()).toEqual([]);
+    expect(isAdminEmail("team@zonning.ca")).toBe(true);
+  });
+
+  it("returns empty in production when unset", () => {
+    process.env = { ...env, NODE_ENV: "production", ZONNING_FREE_TEST_MODE: "false" };
     delete process.env.ADMIN_EMAILS;
     expect(getAdminEmails()).toEqual([]);
     expect(isAdminEmail("demo@zonning.ca")).toBe(false);
@@ -110,11 +111,18 @@ describe("admin emails", () => {
 });
 
 describe("dataset count", () => {
-  it("returns 52 active datasets without EXPAND_ONTARIO", async () => {
+  it("separates runnable indexed datasets from registered coverage sources", async () => {
     const prev = process.env.EXPAND_ONTARIO;
     delete process.env.EXPAND_ONTARIO;
-    const { getDatasetCount, getActiveDatasetIds } = await import("@/lib/datasets/registry");
-    expect(getDatasetCount()).toBe(52);
+    const {
+      getDatasetCount,
+      getActiveDatasetIds,
+      getRegisteredSourceCount,
+      DATASETS,
+    } = await import("@/lib/datasets/registry");
+    expect(getDatasetCount()).toBeLessThan(getRegisteredSourceCount());
+    expect(getActiveDatasetIds()).not.toContain("permits-trois-rivieres");
+    expect(DATASETS["permits-trois-rivieres"].coverageStatus).toBe("document_only");
     expect(getActiveDatasetIds()).not.toContain("zoning");
     expect(getActiveDatasetIds()).not.toContain("toronto-permits");
     process.env.EXPAND_ONTARIO = prev;
