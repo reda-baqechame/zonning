@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
-import { ensureFreshForKey, ensureQuebecRealtimeFresh } from "@/lib/sync/auto";
 import { differenceInDays, getDay, subDays, addDays } from "date-fns";
 import { computeVerifiedRbqFit } from "@/lib/rbq-verify";
 import { computePipelineScore } from "@/lib/pipeline-score";
@@ -27,9 +26,6 @@ export async function GET(req: NextRequest) {
   const ip = clientIp(req);
   const limited = await rateLimitAsync(`api:feed:${ip}`, 90, 60_000);
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
-
-  ensureFreshForKey("feed");
-  ensureQuebecRealtimeFresh();
 
   const user = await getSessionUser();
   const limits = getPlanLimits(user?.plan);

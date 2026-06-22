@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateApiKey } from "@/lib/api-auth";
 import { FREE_TEST_PRINCIPAL_ID, isFreeTestMode } from "@/lib/free-test";
-import { ensureFreshForKey } from "@/lib/sync/auto";
 import { getIntelligenceByAddress } from "@/lib/intelligence";
 import { computeVerdictTier } from "@/lib/verdict/compute-verdict";
 import { rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
@@ -23,7 +22,6 @@ export async function GET(req: NextRequest) {
   }
 
   const borough = req.nextUrl.searchParams.get("borough")?.trim() || undefined;
-  ensureFreshForKey("verdict");
 
   const intel = await getIntelligenceByAddress(address, borough);
   const verdict = computeVerdictTier(intel);

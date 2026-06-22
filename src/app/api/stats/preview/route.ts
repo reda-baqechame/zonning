@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { subDays } from "date-fns";
 import { prisma } from "@/lib/prisma";
-import { ensureFreshForKey } from "@/lib/sync/auto";
 import { HIGH_VALUE_THRESHOLD, formatCad } from "@/lib/format-cad";
 import { fetchMarketPulseStats } from "@/lib/market-pulse";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
@@ -17,7 +16,6 @@ export async function GET(req: NextRequest) {
   const limited = await rateLimitAsync(`api:stats:preview:${ip}`, 60, 60_000);
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
-  ensureFreshForKey("stats");
   const since = subDays(new Date(), 14);
 
   const [permits, tenders, stats] = await Promise.all([

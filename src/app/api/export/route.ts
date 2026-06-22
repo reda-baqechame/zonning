@@ -5,7 +5,6 @@ import { getPlanLimits } from "@/lib/plans";
 import { computeVerifiedRbqFit } from "@/lib/rbq-verify";
 import { computePipelineScore } from "@/lib/pipeline-score";
 import { computeLeadSignals } from "@/lib/lead-signals";
-import { ensureFreshForKey } from "@/lib/sync/auto";
 import { matchesEssentielProfile, parseJsonArray } from "@/lib/usage";
 import { createIntelligenceCache } from "@/lib/scoring/batch";
 import { subDays } from "date-fns";
@@ -24,7 +23,6 @@ export async function GET(req: NextRequest) {
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
   try {
-    ensureFreshForKey("export");
     const user = await requireUser();
     const limits = getPlanLimits(user.plan);
     if (limits.maxPermits <= 15) {

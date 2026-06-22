@@ -2,12 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateApiKey } from "@/lib/api-auth";
 import { FREE_TEST_PRINCIPAL_ID, isFreeTestMode } from "@/lib/free-test";
-import { ensureFreshForKey } from "@/lib/sync/auto";
 import { rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { parseBoundedInt } from "@/lib/query-params";
 
 export async function GET(req: NextRequest) {
-  ensureFreshForKey("permits");
   const auth = await validateApiKey(req.headers.get("authorization"), "permits");
   if (!auth && !isFreeTestMode()) {
     return NextResponse.json({ error: "Invalid API key or missing permits scope" }, { status: 401 });

@@ -4,7 +4,6 @@ import {
   getIntelligenceByMatricule,
   hasIntelligenceData,
 } from "@/lib/intelligence";
-import { ensureFreshForKey } from "@/lib/sync/auto";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 import { clampQuery } from "@/lib/query-params";
 import { buildZoningExpertAnalysis } from "@/lib/zoning/expert-analysis";
@@ -20,7 +19,6 @@ export async function GET(req: NextRequest) {
   const limited = await rateLimitAsync(`api:intelligence:${ip}`, 60, 60_000);
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
-  ensureFreshForKey("intelligence");
   const { searchParams } = req.nextUrl;
   const matricule = clampQuery(searchParams.get("matricule"), 20);
   const address = clampQuery(searchParams.get("address"), 300);

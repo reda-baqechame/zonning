@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ensureFreshForKey } from "@/lib/sync/auto";
 import { subDays } from "date-fns";
 import { enforceRateLimit } from "@/lib/api-guard";
 
@@ -8,7 +7,6 @@ export async function GET(req: NextRequest) {
   const limited = await enforceRateLimit(req, "api:digest", 30, 60_000);
   if (limited) return limited;
 
-  ensureFreshForKey("digest");
   const weekAgo = subDays(new Date(), 7);
 
   const [permitsWeek, tendersOpen, companies] = await Promise.all([

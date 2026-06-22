@@ -3,7 +3,6 @@ import { fetchMarketPulseStats } from "@/lib/market-pulse";
 import { citySourceLabel } from "@/lib/quebec-coverage";
 import { COVERAGE_CITIES, DATASETS, getRegisteredDatasetIds } from "@/lib/datasets/registry";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
-import { ensureQuebecRealtimeFresh } from "@/lib/sync/auto";
 import { buildSyncHealthSummary } from "@/lib/sync/health-summary";
 
 export async function GET(req: NextRequest) {
@@ -11,7 +10,6 @@ export async function GET(req: NextRequest) {
   const limited = await rateLimitAsync(`api:coverage:${ip}`, 90, 60_000);
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
-  ensureQuebecRealtimeFresh();
   const [stats, health] = await Promise.all([
     fetchMarketPulseStats(),
     buildSyncHealthSummary({ authorized: false }),

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { differenceInDays, getDay } from "date-fns";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
-import { ensureFreshForKey } from "@/lib/sync/auto";
 import { getPlanLimits } from "@/lib/plans";
 import { getSimilarAwards } from "@/lib/datasets/fetchers/awards";
 import {
@@ -58,8 +57,6 @@ export async function GET(req: NextRequest) {
   const ip = clientIp(req);
   const limited = await rateLimitAsync(`api:tenders:${ip}`, 90, 60_000);
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
-
-  ensureFreshForKey("tenders");
 
   const user = await getSessionUser();
   const limits = getPlanLimits(user?.plan);

@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey } from "@/lib/api-auth";
 import { FREE_TEST_PRINCIPAL_ID, isFreeTestMode } from "@/lib/free-test";
 import { getIntelligenceByAddress } from "@/lib/intelligence";
-import { ensureFreshForKey } from "@/lib/sync/auto";
 import { rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
-  ensureFreshForKey("intelligence");
   const auth = await validateApiKey(req.headers.get("authorization"), "verdict");
   if (!auth && !isFreeTestMode()) {
     return NextResponse.json(

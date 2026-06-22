@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ensureFreshForKey } from "@/lib/sync/auto";
 import { expandSearchTerms } from "@/lib/datasets/registry";
 import { enforceRateLimit } from "@/lib/api-guard";
 import { clampQuery } from "@/lib/query-params";
@@ -9,7 +8,6 @@ export async function GET(req: NextRequest) {
   const limited = await enforceRateLimit(req, "api:companies", 60, 60_000);
   if (limited) return limited;
 
-  ensureFreshForKey("companies");
   const { searchParams } = req.nextUrl;
   const q = clampQuery(searchParams.get("q"), 80);
   const sector = clampQuery(searchParams.get("sector"), 60);

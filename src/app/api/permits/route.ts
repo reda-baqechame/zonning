@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { computeVerifiedRbqFit } from "@/lib/rbq-verify";
 import { computePipelineScore } from "@/lib/pipeline-score";
-import { ensureFreshForKey, ensureQuebecRealtimeFresh } from "@/lib/sync/auto";
 import { getPlanLimits } from "@/lib/plans";
 import { matchesEssentielProfile, parseJsonArray } from "@/lib/usage";
 import { haversineKm } from "@/lib/datasets/geo";
@@ -48,9 +47,6 @@ export async function GET(req: NextRequest) {
   const ip = clientIp(req);
   const limited = await rateLimitAsync(`api:permits:${ip}`, 120, 60_000);
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
-
-  ensureFreshForKey("permits");
-  ensureQuebecRealtimeFresh();
 
   const user = await getSessionUser();
   const limits = getPlanLimits(user?.plan);

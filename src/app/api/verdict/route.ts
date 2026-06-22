@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { isFreeTestMode } from "@/lib/free-test";
-import { ensureFreshForKey } from "@/lib/sync/auto";
 import { getIntelligenceByAddress, type PropertyIntelligence } from "@/lib/intelligence";
 import { computeVerdictTier } from "@/lib/verdict/compute-verdict";
 import { summarizeVerdict } from "@/lib/ai/verdict-summary";
@@ -81,7 +80,6 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  ensureFreshForKey("verdict");
   try {
     const body = verdictPostSchema.parse(await req.json());
     const address = body.address;
