@@ -2039,27 +2039,25 @@ export async function syncAll(
 }
 
 export async function getSyncStatus() {
-  const [logs, states, counts] = await Promise.all([
-    prisma.syncLog.findMany({ orderBy: { ranAt: "desc" }, take: 50 }),
-    prisma.syncState.findMany({ orderBy: { datasetId: "asc" } }),
-    Promise.all([
-      prisma.permit.count(),
-      prisma.tender.count(),
-      prisma.company.count(),
-      prisma.municipalSupplier.count(),
-      prisma.propertyUnit.count(),
-      prisma.propertyTransaction.count(),
-      prisma.contaminatedSite.count(),
-      prisma.commercialVacancy.count(),
-      prisma.propertyTax.count(),
-      prisma.tenderAward.count(),
-      prisma.rbqLicense.count(),
-      prisma.heritageSite.count(),
-      prisma.municipalContract.count(),
-      prisma.roadWork.count(),
-      prisma.boroughPermitStat.count(),
-    ]),
-  ]);
+  const logs = await prisma.syncLog.findMany({ orderBy: { ranAt: "desc" }, take: 50 });
+  const states = await prisma.syncState.findMany({ orderBy: { datasetId: "asc" } });
+  const counts = [
+    await prisma.permit.count(),
+    await prisma.tender.count(),
+    await prisma.company.count(),
+    await prisma.municipalSupplier.count(),
+    await prisma.propertyUnit.count(),
+    await prisma.propertyTransaction.count(),
+    await prisma.contaminatedSite.count(),
+    await prisma.commercialVacancy.count(),
+    await prisma.propertyTax.count(),
+    await prisma.tenderAward.count(),
+    await prisma.rbqLicense.count(),
+    await prisma.heritageSite.count(),
+    await prisma.municipalContract.count(),
+    await prisma.roadWork.count(),
+    await prisma.boroughPermitStat.count(),
+  ];
 
   const [
     permits,

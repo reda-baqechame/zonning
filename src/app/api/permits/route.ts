@@ -54,6 +54,7 @@ export async function GET(req: NextRequest) {
 
   const user = await getSessionUser();
   const limits = getPlanLimits(user?.plan);
+  const publicPreview = !user;
   const { searchParams } = req.nextUrl;
   const borough = searchParams.get("borough");
   const city = searchParams.get("city");
@@ -64,6 +65,10 @@ export async function GET(req: NextRequest) {
   const withIntel = searchParams.get("intelligence") !== "false";
   const sort = searchParams.get("sort") ?? "pipeline";
   const days = parseInt(searchParams.get("days") ?? "90", 10);
+  const requestedLimit = parseInt(searchParams.get("limit") ?? "", 10);
+  const maxPermits = publicPreview
+    ? Math.min(Number.isFinite(requestedLimit) ? requestedLimit : 20, 30)
+    : limits.maxPermits;
   const since = subDays(new Date(), Number.isFinite(days) ? days : 90);
 
   const userTrades = parseJsonArray(user?.trades);
@@ -79,13 +84,13 @@ export async function GET(req: NextRequest) {
       issueDate: { gte: since },
     },
     orderBy: { issueDate: "desc" },
-    take: limits.maxPermits * 2,
+    take: maxPermits * 2,
   });
 
   const enriched = await (async () => {
     const competitionMap = await batchCompetitionCounts(permits);
     const getIntel =
-      withIntel && limits.intelligenceFull ? createIntelligenceCache() : null;
+      withIntel && !publicPreview && limits.intelligenceFull ? createIntelligenceCache() : null;
 
     return Promise.all(
       permits.map(async (p) => {
@@ -219,10 +224,10 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    permits: filtered.slice(0, limits.maxPermits),
+    permits: filtered.slice(0, maxPermits),
     plan: user?.plan ?? "FREE",
-    complianceEntitled: getPlanLimits(user?.plan).complianceVault,
-    limits: { maxPermits: limits.maxPermits },
+    complianceEntitled: publicPreview ? false : getPlanLimits(user?.plan).complianceVault,
+    limits: { maxPermits },
     mappable,
     total: filtered.length,
     diagnostics: {
