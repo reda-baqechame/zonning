@@ -483,7 +483,12 @@
     "vacancy": "Vacant commercial",
     "lockedPreview": "Data layers detected",
     "layersDetected": "active signals",
-    "upgradeIntel": "Upgrade to Essentiel for full intelligence"
+    "upgradeIntel": "Upgrade to Essentiel for full intelligence",
+    "zoningDetermination": {
+      "confirmed": "Confirmed (polygon)",
+      "nearest_fallback": "Nearest point",
+      "unknown": "Unknown"
+    }
   },
   "digest": {
     "title": "Free weekly digest",

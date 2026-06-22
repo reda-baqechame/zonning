@@ -98,7 +98,21 @@ export default function SiteIntelligencePanel({
           {intel.zoning?.densityZone && (
             <>
               <dt className="text-slate-500">{t("zoning")}</dt>
-              <dd className="text-slate-200">{intel.zoning.densityZone}</dd>
+              <dd className="text-slate-200">
+                {intel.zoning.densityZone}
+                {intel.zoning.zoneCode ? ` · ${intel.zoning.zoneCode}` : ""}
+                {intel.zoning.determination && (
+                  <span
+                    className={`ml-2 inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                      intel.zoning.determination === "confirmed"
+                        ? "bg-emerald-500/20 text-emerald-300"
+                        : "bg-amber-500/20 text-amber-300"
+                    }`}
+                  >
+                    {t(`zoningDetermination.${intel.zoning.determination}`)}
+                  </span>
+                )}
+              </dd>
             </>
           )}
           {intel.marketHeat?.permitCount != null && (

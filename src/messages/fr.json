@@ -483,7 +483,12 @@
     "vacancy": "Locaux vacants",
     "lockedPreview": "Couches de données détectées",
     "layersDetected": "signaux actifs",
-    "upgradeIntel": "Passez Essentiel pour voir l'intelligence complète"
+    "upgradeIntel": "Passez Essentiel pour voir l'intelligence complète",
+    "zoningDetermination": {
+      "confirmed": "Confirmé (polygone)",
+      "nearest_fallback": "Point le plus proche",
+      "unknown": "Inconnu"
+    }
   },
   "digest": {
     "title": "Digest hebdomadaire gratuit",

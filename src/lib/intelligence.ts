@@ -7,6 +7,7 @@ import {
   findHeritageNearby,
   findNearestZoningPoint,
 } from "@/lib/spatial";
+import { lookupZoning } from "@/lib/zoning/lookup";
 
 /**
  * True when an intelligence payload carries at least one substantive layer.
@@ -74,7 +75,11 @@ export type PropertyIntelligence = {
     description?: string | null;
     intensificationLevel?: string | null;
     landUse?: string | null;
+    zoneCode?: string | null;
+    regulationUrl?: string | null;
     source?: "pum2050" | "legacy" | "regional";
+    /** confirmed = inside a real zoning polygon; nearest = reference only. */
+    determination?: "confirmed" | "nearest_fallback" | "unknown";
   };
   heritage?: {
     nearby: boolean;
@@ -253,7 +258,21 @@ export async function getIntelligenceForPermit(permit: {
           ? Math.round(zoningPoint.densityThreshold / 10)
           : undefined,
         source: zoningCity === "Montréal" ? "pum2050" : "regional",
+        // Default to nearest_fallback; upgraded to confirmed below if a real
+        // polygon actually encloses the parcel.
+        determination: "nearest_fallback",
       };
+
+      const lot = await lookupZoning(permit.latitude, permit.longitude, zoningCity);
+      if (lot.determination === "confirmed") {
+        intel.zoning.determination = "confirmed";
+        intel.zoning.zoneCode = lot.zoneCode;
+        intel.zoning.regulationUrl = lot.regulationUrl;
+        if (lot.landUse) {
+          intel.zoning.landUse = lot.landUse;
+          intel.zoning.densityZone = lot.landUse;
+        }
+      }
     }
 
     const heritageNearby = await findHeritageNearby(
