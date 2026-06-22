@@ -89,6 +89,18 @@
     "notEligible": "Non éligible",
     "createAlert": "Créer une alerte",
     "noPermits": "Aucun permis trouvé",
+    "zeroReason": {
+      "no_permits_indexed": "Aucun permis indexé pour cette ville. La source est peut-être document seulement ou pas encore synchronisée.",
+      "none_in_date_window": "Des permis existent, mais aucun dans la période sélectionnée. Élargissez la période.",
+      "none_pass_filters": "Des permis récents existent, mais aucun ne passe vos filtres (profil, éligibilité RBQ, GTC)."
+    },
+    "diag": {
+      "rawIndexed": "Permis indexés",
+      "afterDate": "Après filtre {days} jours",
+      "afterFilters": "Après filtres",
+      "mappable": "Sur la carte",
+      "lastSync": "Dernière sync"
+    },
     "days": "Période",
     "daysLabel": "jours",
     "layerDevProjects": "Projets dev. sur la carte",
@@ -159,6 +171,7 @@
   "footer": {
     "tagline": "ZONNING — Pipeline de revenus et conformité pour le Québec",
     "trust": "Données publiques · Conformité CASL · {datasets} jeux · {cities} villes · Registre RBQ",
+    "trustTruth": "{indexed} jeux indexés · {sources} sources répertoriées · {searchable} villes avec permis indexés · {monitored} villes surveillées",
     "buildLog": "Journal de construction",
     "dataHealth": "Santé des données",
     "coverage": "Couverture",

@@ -1,20 +1,27 @@
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
-import { COVERAGE_CITIES, getDatasetCount } from "@/lib/datasets/registry";
+import { buildPublicRuntimeSummary } from "@/lib/runtime-truth";
 
 export async function SiteFooter() {
   const t = await getTranslations("legal");
   const f = await getTranslations("footer");
-  const cities = COVERAGE_CITIES.length;
-  const datasets = getDatasetCount();
+  // Truth-aligned numbers computed from the live DB — not hardcoded marketing.
+  const truth = await buildPublicRuntimeSummary().catch(() => null);
 
   return (
     <footer className="border-t border-slate-800 py-10">
       <div className="mx-auto max-w-7xl px-4 text-center">
         <p className="text-sm text-slate-400">{f("tagline")}</p>
-        <p className="mt-2 text-xs text-slate-600">
-          {f("trust", { datasets, cities })}
-        </p>
+        {truth && (
+          <p className="mt-2 text-xs text-slate-600">
+            {f("trustTruth", {
+              indexed: truth.indexedDatasets,
+              sources: truth.registeredSources,
+              searchable: truth.searchableMunicipalities,
+              monitored: truth.monitoredCities,
+            })}
+          </p>
+        )}
         <nav className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-500">
           <Link href="/verdict" className="hover:text-slate-300">
             PERMIS.AI

@@ -89,6 +89,18 @@
     "notEligible": "Not eligible",
     "createAlert": "Create alert",
     "noPermits": "No permits found",
+    "zeroReason": {
+      "no_permits_indexed": "No permits indexed for this city. The source may be document-only or not synced yet.",
+      "none_in_date_window": "Permits exist, but none in the selected window. Widen the period.",
+      "none_pass_filters": "Recent permits exist, but none pass your filters (profile, RBQ eligibility, GTC)."
+    },
+    "diag": {
+      "rawIndexed": "Permits indexed",
+      "afterDate": "After {days}-day filter",
+      "afterFilters": "After filters",
+      "mappable": "On the map",
+      "lastSync": "Last sync"
+    },
     "days": "Period",
     "daysLabel": "days",
     "layerDevProjects": "Dev projects on map",
@@ -159,6 +171,7 @@
   "footer": {
     "tagline": "ZONNING — Revenue pipeline and compliance for Quebec",
     "trust": "Public data · CASL compliance · {datasets} datasets · {cities} cities · RBQ registry",
+    "trustTruth": "{indexed} indexed datasets · {sources} registered sources · {searchable} cities with indexed permits · {monitored} cities monitored",
     "buildLog": "Build log",
     "dataHealth": "Data health",
     "coverage": "Coverage",

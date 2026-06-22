@@ -154,14 +154,29 @@ function resolveRouteKey(pathname: string): string | null {
 
 export function ensureFreshForRoute(pathname: string): void {
   void bootstrapSyncIfNeeded();
+  if (!shouldRunPublicRequestSync()) return;
   const key = resolveRouteKey(pathname);
   if (!key) return;
   const datasets = ROUTE_DATASETS[key] ?? [];
   void ensureFreshMany(datasets, { background: true });
 }
 
+/**
+ * Whether per-request freshness syncs may run. User traffic should not own
+ * ingestion in production — cron/workers do — so the default is off in prod
+ * (DB reads only). Opt back in with PUBLIC_ROUTE_SYNC=true; force off in any
+ * env with PUBLIC_ROUTE_SYNC=false. The one-time empty-DB bootstrap is
+ * independent and still runs.
+ */
+export function shouldRunPublicRequestSync(): boolean {
+  if (process.env.PUBLIC_ROUTE_SYNC === "true") return true;
+  if (process.env.PUBLIC_ROUTE_SYNC === "false") return false;
+  return process.env.NODE_ENV !== "production";
+}
+
 export function ensureQuebecRealtimeFresh(): void {
   void bootstrapSyncIfNeeded();
+  if (!shouldRunPublicRequestSync()) return;
   if (process.env.NODE_ENV === "production") {
     const now = Date.now();
     const last = freshTriggerAt.get("quebec-realtime") ?? 0;
@@ -178,6 +193,7 @@ export function ensureQuebecRealtimeFresh(): void {
 
 export function ensureFreshForKey(key: keyof typeof ROUTE_DATASETS): void {
   void bootstrapSyncIfNeeded();
+  if (!shouldRunPublicRequestSync()) return;
   if (process.env.NODE_ENV === "production") {
     const now = Date.now();
     const last = freshTriggerAt.get(key) ?? 0;

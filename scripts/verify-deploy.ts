@@ -1,4 +1,6 @@
 import "dotenv/config";
+import fs from "node:fs";
+import path from "node:path";
 import { loadProdEnv } from "./load-prod-env";
 import { getBootstrapAllowlist, getActiveDatasetIds, COVERAGE_CITIES, getDatasetCount } from "../src/lib/datasets/registry";
 import { collectEnvIssues } from "../src/lib/env";
@@ -31,6 +33,34 @@ async function check(path: string, method = "GET", expectStatus?: number) {
   }
 }
 
+/**
+ * Fail fast if sync is enabled but vercel.json declares no crons — that's the
+ * "no ingestion in production" footgun (public routes no longer sync on
+ * request, so an empty cron list means the database never refreshes).
+ */
+function checkCronConfig(): boolean {
+  if (process.env.SYNC_ENABLED === "false") {
+    console.log("• SYNC_ENABLED=false — cron config check skipped");
+    return true;
+  }
+  try {
+    const cfg = JSON.parse(
+      fs.readFileSync(path.resolve(process.cwd(), "vercel.json"), "utf8"),
+    ) as { crons?: unknown[] };
+    const count = Array.isArray(cfg.crons) ? cfg.crons.length : 0;
+    if (count === 0) {
+      console.log("✗ vercel.json has no crons while SYNC_ENABLED is on — production will never ingest data.");
+      console.log("  Fix: copy vercel.hobby.json (daily) or vercel.pro.json (sub-hourly) into vercel.json.");
+      return false;
+    }
+    console.log(`✓ vercel.json declares ${count} crons`);
+    return true;
+  } catch (e) {
+    console.log(`✗ Could not read vercel.json: ${e instanceof Error ? e.message : e}`);
+    return false;
+  }
+}
+
 async function main() {
   console.log("ZONNING deploy verification\n");
   console.log(`Target: ${base}\n`);
@@ -38,6 +68,8 @@ async function main() {
   if (!secret) {
     console.warn("⚠ CRON_SECRET not set — full health check requires auth\n");
   }
+
+  const cronOk = checkCronConfig();
 
   const activeIds = getActiveDatasetIds();
   const requiredIds = activeIds.filter((id) => !BOOTSTRAP_ALLOWLIST.has(id));
@@ -157,7 +189,7 @@ async function main() {
   }
 
   console.log(`\n${passed}/${checks.length} checks passed`);
-  if (passed < checks.length) process.exit(1);
+  if (passed < checks.length || !cronOk) process.exit(1);
 }
 
 main().catch((e) => {
