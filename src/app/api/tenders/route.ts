@@ -150,7 +150,9 @@ export async function GET(req: NextRequest) {
         t.externalId
           ? prisma.seaoAmendment.count({ where: { tenderExternalId: t.externalId } })
           : Promise.resolve(0),
-        incumbentFor(t.unspsc, t.category, t.region),
+        // Incumbents operate across regions — don't hard-filter award history
+        // by the tender's region or matches become artificially sparse.
+        incumbentFor(t.unspsc, t.category, null),
       ]);
 
       const isUserIncumbent =
