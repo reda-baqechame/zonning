@@ -68,6 +68,7 @@ async function wipe() {
   await prisma.commercialVacancy.deleteMany();
   await prisma.contaminatedSite.deleteMany();
   await prisma.zoningPoint.deleteMany();
+  await prisma.zoningPolygon.deleteMany();
   await prisma.boroughZoning.deleteMany();
   await prisma.heritageSite.deleteMany();
   await prisma.developmentProject.deleteMany();
@@ -175,6 +176,7 @@ async function main() {
   await prisma.commercialVacancy.createMany({ data: intel.vacancies as never });
   await prisma.contaminatedSite.createMany({ data: intel.contamination as never });
   await prisma.zoningPoint.createMany({ data: intel.zoningPoints as never });
+  await prisma.zoningPolygon.createMany({ data: intel.zoningPolygons as never });
   await prisma.boroughZoning.createMany({ data: intel.boroughZoning as never });
   await prisma.heritageSite.createMany({ data: intel.heritage as never });
   await prisma.developmentProject.createMany({ data: intel.devProjects as never });

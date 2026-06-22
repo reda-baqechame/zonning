@@ -196,12 +196,43 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  const mappable = filtered.filter((p) => p.latitude && p.longitude).length;
+
+  // Honest zero-state diagnostics: explain *why* results may be empty instead
+  // of silently showing "0 résultats". Counts are scoped to the active
+  // city/borough so the user sees the funnel from raw indexed → on the map.
+  const scope = {
+    ...(borough ? { borough } : {}),
+    ...(city ? { city } : {}),
+  };
+  const [rawIndexed, afterDateFilter, permitState] = await Promise.all([
+    prisma.permit.count({ where: scope }),
+    prisma.permit.count({ where: { ...scope, issueDate: { gte: since } } }),
+    prisma.syncState.findUnique({ where: { datasetId: "permits" } }),
+  ]);
+
+  let zeroReason: string | null = null;
+  if (filtered.length === 0) {
+    if (rawIndexed === 0) zeroReason = "no_permits_indexed";
+    else if (afterDateFilter === 0) zeroReason = "none_in_date_window";
+    else zeroReason = "none_pass_filters";
+  }
+
   return NextResponse.json({
     permits: filtered.slice(0, limits.maxPermits),
     plan: user?.plan ?? "FREE",
     complianceEntitled: getPlanLimits(user?.plan).complianceVault,
     limits: { maxPermits: limits.maxPermits },
-    mappable: filtered.filter((p) => p.latitude && p.longitude).length,
+    mappable,
     total: filtered.length,
+    diagnostics: {
+      rawIndexed,
+      afterDateFilter,
+      afterFilters: filtered.length,
+      mappable,
+      days: Number.isFinite(days) ? days : 90,
+      lastSyncAt: permitState?.lastSuccessAt?.toISOString() ?? null,
+      zeroReason,
+    },
   });
 }

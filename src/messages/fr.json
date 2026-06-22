@@ -27,6 +27,7 @@
     "coverage": "Couverture",
     "intelligence": "Intelligence",
     "investigate": "Investigation",
+    "carte": "Carte",
     "paiementPublic": "Paiement public",
     "validation": "Validation",
     "dashboard": "Tableau de bord",
@@ -159,6 +160,16 @@
     "upgradeDesc": "Générez des certificats CASL PDF pour chaque contact issu de registres publics vérifiables.",
     "upgradeCta": "Passer au plan Pro"
   },
+  "feedPreview": {
+    "title": "Apercu du fil",
+    "subtitle": "Un echantillon public de permis et d'appels d'offres. Le fil complet, personnalise selon votre profil RBQ, est reserve aux membres.",
+    "notice": "Apercu en lecture seule - creez un compte pour les scores de pipeline, la probabilite de gain et les alertes.",
+    "openFeed": "Ouvrir mon fil",
+    "signUp": "Creer un compte",
+    "emptyTitle": "Aucune opportunite pour l'instant",
+    "emptyDesc": "Reessayez apres la prochaine synchronisation des donnees publiques.",
+    "ctaTitle": "Pret pour un fil personnalise selon votre licence RBQ, vos metiers et vos regions?"
+  },
   "footer": {
     "tagline": "ZONNING — Recherche et couverture des données de construction au Québec",
     "trust": "Sources publiques · {datasets} jeux indexés · {cities} villes suivies · Liens vers les sources officielles",
@@ -167,7 +178,8 @@
     "coverage": "Couverture",
     "intelligence": "Intelligence",
     "developers": "API",
-    "coverageApi": "API couverture"
+    "coverageApi": "API couverture",
+    "trustTruth": "{indexed} jeux indexes ? {sources} sources repertoriees ? {searchable} villes avec permis indexes ? {monitored} villes surveillees"
   },
   "common": {
     "loading": "Chargement…",
@@ -616,7 +628,9 @@
     "colWeek": "7 jours",
     "colSync": "Dernière sync",
     "apiLink": "Documentation API",
-    "intelLink": "Explorateur intelligence"
+    "intelLink": "Explorateur intelligence",
+    "truthLine": "{indexed} jeux indexes ? {sources} sources repertoriees ? {searchable} villes avec permis indexes ? {monitored} villes surveillees",
+    "colStatus": "Statut"
   },
   "developers": {
     "title": "API Québec construction",
@@ -660,7 +674,14 @@
     "vacancy": "Locaux vacants",
     "lockedPreview": "Couches de données détectées",
     "layersDetected": "signaux actifs",
-    "upgradeIntel": "Passez Essentiel pour voir l'intelligence complète"
+    "upgradeIntel": "Passez Essentiel pour voir l'intelligence complète",
+    "zoningDetermination": {
+      "confirmed": "Confirme (polygone)",
+      "nearest_fallback": "Point le plus proche",
+      "unknown": "Inconnu",
+      "indicative": "Contexte indicatif",
+      "review_required": "Verification requise"
+    }
   },
   "zoningExpert": {
     "title": "Analyse réglementaire du zonage",
@@ -769,5 +790,37 @@
     "title": "Une erreur est survenue",
     "description": "Réessayez ou contactez le support si le problème persiste.",
     "retry": "Réessayer"
+  },
+  "carte": {
+    "title": "Carte Quebec",
+    "subtitle": "Disponibilite couche par couche. Les donnees par points ou documents seulement sont indiquees avant inspection.",
+    "layer": {
+      "permits": "Permis",
+      "tenders": "SEAO",
+      "zoning": "Zonage",
+      "contamination": "Terrains contamines",
+      "heritage": "Patrimoine",
+      "roadworks": "Travaux"
+    },
+    "status": {
+      "AVAILABLE": "Disponible",
+      "PARTIAL": "Partiel",
+      "POINT_ONLY": "Points seulement",
+      "LIST_ONLY": "Liste seulement",
+      "NONE": "Non disponible"
+    },
+    "layerCount": "{count} enregistrements indexes",
+    "polygonCount": "{count} polygones",
+    "notMapped": {
+      "title": "Cette couche n'est pas encore une carte complete",
+      "none": "Cette couche n'est pas encore disponible",
+      "tenders": "Les dossiers SEAO sont listes et scores, mais pas geocodes comme points cartographiques.",
+      "zoning": "Le zonage montre les polygones disponibles et les points de reference comme solution de repli.",
+      "contamination": "Les terrains contamines sont disponibles comme points lorsque des coordonnees existent.",
+      "heritage": "Le patrimoine est disponible comme points lorsque des coordonnees existent.",
+      "roadworks": "Les travaux routiers sont disponibles comme points lorsque des coordonnees existent."
+    },
+    "openIntelligence": "Ouvrir l'analyse intelligence",
+    "openMarches": "Ouvrir les appels SEAO"
   }
 }

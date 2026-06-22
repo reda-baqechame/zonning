@@ -1,21 +1,27 @@
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
-import { COVERAGE_CITIES, getDatasetCount } from "@/lib/datasets/registry";
+import { buildPublicRuntimeSummary } from "@/lib/runtime-truth";
 
 export async function SiteFooter() {
   const t = await getTranslations("legal");
   const f = await getTranslations("footer");
   const n = await getTranslations("nav");
-  const cities = COVERAGE_CITIES.length;
-  const datasets = getDatasetCount();
+  const truth = await buildPublicRuntimeSummary().catch(() => null);
 
   return (
     <footer className="border-t border-line bg-white py-10">
       <div className="mx-auto max-w-7xl px-4 text-center">
         <p className="text-sm text-muted">{f("tagline")}</p>
-        <p className="mt-2 text-xs text-subtle">
-          {f("trust", { datasets, cities })}
-        </p>
+        {truth && (
+          <p className="mt-2 text-xs text-subtle">
+            {f("trustTruth", {
+              indexed: truth.indexedDatasets,
+              sources: truth.registeredSources,
+              searchable: truth.searchableMunicipalities,
+              monitored: truth.monitoredCities,
+            })}
+          </p>
+        )}
         <nav className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted">
           <Link href="/" className="hover:text-brand">
             {n("search")}
@@ -25,6 +31,9 @@ export async function SiteFooter() {
           </Link>
           <Link href="/#atlas" className="hover:text-brand">
             {n("map")}
+          </Link>
+          <Link href="/carte" className="hover:text-brand">
+            {n("carte")}
           </Link>
           <Link href="/partenaires-ca" className="hover:text-brand">
             {n("companies")}

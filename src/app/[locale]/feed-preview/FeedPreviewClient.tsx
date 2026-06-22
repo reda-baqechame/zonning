@@ -1,0 +1,135 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { Lock } from "lucide-react";
+import { LeadCard } from "@/components/LeadCard";
+import { Button, EmptyState, SkeletonList } from "@/components/ui";
+import type { LeadSignal } from "@/lib/lead-signals";
+
+type PermitItem = {
+  id: string;
+  pipelineScore?: number;
+  rbqFit?: { eligible: boolean; score: number };
+  signals?: LeadSignal[];
+  permitType: string;
+  address: string;
+  borough?: string | null;
+  estimatedCost?: number | null;
+  sourceUrl?: string;
+  applicantName?: string | null;
+};
+type TenderItem = {
+  id: string;
+  score?: number;
+  matchScore?: number;
+  signals?: LeadSignal[];
+  title: string;
+  organization?: string | null;
+  daysLeft?: number | null;
+  isThursday?: boolean;
+  urgent?: boolean;
+  requiresAmp?: boolean;
+  plainSummary?: string;
+  sourceUrl: string;
+};
+
+const SAMPLE_LIMIT = 10;
+
+export default function FeedPreviewClient({ signedIn }: { signedIn: boolean }) {
+  const t = useTranslations("feedPreview");
+  const locale = useLocale();
+  const [permits, setPermits] = useState<PermitItem[]>([]);
+  const [tenders, setTenders] = useState<TenderItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/permits?days=180").then((r) => r.json()).catch(() => ({})),
+      fetch("/api/tenders").then((r) => r.json()).catch(() => ({})),
+    ]).then(([p, t]) => {
+      setPermits((p.permits ?? []).slice(0, SAMPLE_LIMIT));
+      setTenders((t.tenders ?? []).slice(0, SAMPLE_LIMIT));
+      setLoading(false);
+    });
+  }, []);
+
+  const empty = !loading && permits.length === 0 && tenders.length === 0;
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-10">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white">{t("title")}</h1>
+          <p className="mt-2 text-slate-400">{t("subtitle")}</p>
+        </div>
+        <Link href={signedIn ? "/feed" : "/register"}>
+          <Button>{signedIn ? t("openFeed") : t("signUp")}</Button>
+        </Link>
+      </div>
+
+      <div className="mt-6 flex items-center gap-2 rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-2 text-sm text-sky-200">
+        <Lock className="h-4 w-4 shrink-0" />
+        <span>{t("notice")}</span>
+      </div>
+
+      <div className="mt-8 space-y-3">
+        {loading ? (
+          <SkeletonList count={4} />
+        ) : empty ? (
+          <EmptyState title={t("emptyTitle")} description={t("emptyDesc")} />
+        ) : (
+          <>
+            {tenders.map((t) => (
+              <LeadCard
+                key={t.id}
+                locale={locale}
+                item={{
+                  kind: "tender",
+                  id: t.id,
+                  score: t.score ?? t.matchScore ?? 50,
+                  signals: t.signals ?? [],
+                  title: t.title,
+                  organization: t.organization,
+                  daysLeft: t.daysLeft,
+                  isThursday: t.isThursday,
+                  urgent: t.urgent,
+                  requiresAmp: t.requiresAmp,
+                  plainSummary: t.plainSummary,
+                  sourceUrl: t.sourceUrl,
+                }}
+              />
+            ))}
+            {permits.map((p) => (
+              <LeadCard
+                key={p.id}
+                locale={locale}
+                item={{
+                  kind: "permit",
+                  id: p.id,
+                  score: p.pipelineScore ?? p.rbqFit?.score ?? 50,
+                  signals: p.signals ?? [],
+                  permitType: p.permitType,
+                  address: p.address,
+                  borough: p.borough,
+                  estimatedCost: p.estimatedCost,
+                  rbqFit: p.rbqFit,
+                  sourceUrl: p.sourceUrl,
+                  applicantName: p.applicantName,
+                }}
+              />
+            ))}
+          </>
+        )}
+      </div>
+
+      <div className="mt-10 rounded-xl border border-slate-800 bg-slate-900/40 p-6 text-center">
+        <p className="text-slate-300">{t("ctaTitle")}</p>
+        <Link href={signedIn ? "/feed" : "/register"}>
+          <Button className="mt-4">{signedIn ? t("openFeed") : t("signUp")}</Button>
+        </Link>
+      </div>
+    </div>
+  );
+}

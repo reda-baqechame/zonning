@@ -7,6 +7,7 @@ import {
   findHeritageNearby,
   findNearestZoningPoint,
 } from "@/lib/spatial";
+import { lookupZoning } from "@/lib/zoning/lookup";
 
 export function hasIntelligenceData(intel: PropertyIntelligence): boolean {
   return Boolean(
@@ -67,15 +68,17 @@ export type PropertyIntelligence = {
     description?: string | null;
     intensificationLevel?: string | null;
     landUse?: string | null;
-    source?: "pum2050" | "legacy" | "regional";
     zoneCode?: string | null;
+    regulationUrl?: string | null;
+    source?: "pum2050" | "legacy" | "regional";
     densityThreshold?: number | null;
     sourceUrl?: string | null;
     sourceFetchedAt?: string | null;
     matchMethod?: "nearest_centroid" | "borough_summary" | "parcel_intersection";
     matchDistanceMeters?: number | null;
     evidenceScope?: "planning_area_nearby" | "borough_summary" | "parcel";
-    determination?: "confirmed" | "indicative" | "review_required";
+    /** confirmed = inside a real zoning polygon; nearest_fallback/indicative = reference only. */
+    determination?: "confirmed" | "nearest_fallback" | "unknown" | "indicative" | "review_required";
   };
   heritage?: {
     nearby: boolean;
@@ -263,9 +266,22 @@ export async function getIntelligenceForPermit(permit: {
         matchMethod: "nearest_centroid",
         matchDistanceMeters: zoningPoint.distanceMeters,
         evidenceScope: "planning_area_nearby",
-        determination: "indicative",
         source: zoningCity === "Montréal" ? "pum2050" : "regional",
+        // Default to nearest_fallback; upgraded to confirmed below if a real
+        // polygon actually encloses the parcel.
+        determination: "nearest_fallback",
       };
+
+      const lot = await lookupZoning(permit.latitude, permit.longitude, zoningCity);
+      if (lot.determination === "confirmed") {
+        intel.zoning.determination = "confirmed";
+        intel.zoning.zoneCode = lot.zoneCode;
+        intel.zoning.regulationUrl = lot.regulationUrl;
+        if (lot.landUse) {
+          intel.zoning.landUse = lot.landUse;
+          intel.zoning.densityZone = lot.landUse;
+        }
+      }
     }
 
     const heritageNearby = await findHeritageNearby(

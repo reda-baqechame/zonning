@@ -457,6 +457,34 @@ model ZoningPoint {
   @@index([borough])
 }
 
+// Real (polygon) zoning, so we can answer "what zoning applies to THIS lot"
+// via point-in-polygon — not just "nearest zoning point". Geometry is stored
+// as GeoJSON text for Prisma portability; on Postgres a PostGIS geom column +
+// GIST index is added out of band (prisma/postgis-scaffold.sql) for fast
+// ST_Contains. ZoningPoint remains a labelled fallback only.
+model ZoningPolygon {
+  id              String   @id @default(cuid())
+  externalId      String   @unique
+  city            String
+  borough         String?
+  zoneCode        String?
+  landUse         String?
+  regulationUrl   String?
+  /// Pre-computed bounding box for cheap candidate filtering before the
+  /// exact point-in-polygon test (and before PostGIS is available).
+  minLat          Float?
+  maxLat          Float?
+  minLng          Float?
+  maxLng          Float?
+  geometryJson    String
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([city])
+  @@index([zoneCode])
+  @@index([minLat, maxLat])
+}
+
 model BoroughPermitDelay {
   id              String   @id @default(cuid())
   externalId      String   @unique

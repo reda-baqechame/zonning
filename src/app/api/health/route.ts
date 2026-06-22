@@ -36,16 +36,15 @@ export async function GET(req: NextRequest) {
   const ready = dbOk && errors.length === 0;
 
   if (!authorized) {
+    // Public health is intentionally minimal: readiness + DB liveness only.
+    // Missing env var names, dbError detail, and version are infra signals we
+    // do not hand to unauthenticated callers (avoids a vuln/config checklist).
     return jsonWithRequestId(
       req,
       {
         ok: ready,
         ready,
         db: dbOk,
-        missing: missing.length > 0 ? missing : undefined,
-        dbError: !dbOk ? dbError : undefined,
-        version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
-        latencyMs: Date.now() - started,
         checkedAt: new Date().toISOString(),
       },
       { status: ready ? 200 : 503 }

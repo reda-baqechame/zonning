@@ -9,6 +9,7 @@
  */
 import { Rng, hashSeed } from "./rng";
 import { CITY_GEO, COVERAGE_CITY_NAMES, scatter, streetsFor } from "./geo";
+import { squarePolygon, geometryBBox } from "../../src/lib/zoning/geometry";
 
 const QC = "https://www.donneesquebec.ca/recherche/dataset";
 
@@ -60,6 +61,7 @@ type Bag = {
   vacancies: Record<string, unknown>[];
   contamination: Record<string, unknown>[];
   zoningPoints: Record<string, unknown>[];
+  zoningPolygons: Record<string, unknown>[];
   boroughZoning: Record<string, unknown>[];
   heritage: Record<string, unknown>[];
   devProjects: Record<string, unknown>[];
@@ -73,7 +75,7 @@ type Bag = {
 export function generateIntelligence(): Bag {
   const bag: Bag = {
     permits: [], propertyUnits: [], transactions: [], taxes: [], vacancies: [],
-    contamination: [], zoningPoints: [], boroughZoning: [], heritage: [],
+    contamination: [], zoningPoints: [], zoningPolygons: [], boroughZoning: [], heritage: [],
     devProjects: [], roadworks: [], contracts: [], delays: [], stats: [], inspections: [],
   };
 
@@ -137,18 +139,39 @@ export function generateIntelligence(): Bag {
       sourceUrl: `${QC}/vmtl-taxes-fonciere`,
     });
 
+    const zoneCode = `Z-${rng.int(100, 999)}`;
+    const landUse = rng.pick(["Mixte (M)", "Résidentiel (H)", "Commercial (C)"]);
     bag.zoningPoints.push({
       externalId: `seed-zoning-${s.key}`,
       city: s.city,
       borough: s.borough,
       latitude: s.lat + 0.0003,
       longitude: s.lng + 0.0003,
-      landUse: rng.pick(["Mixte (M)", "Résidentiel (H)", "Commercial (C)"]),
+      landUse,
       intensificationLevel: s.intensification,
       densityThreshold: INTENSITY_THRESHOLD[s.intensification] + rng.int(0, 20),
-      zoneCode: `Z-${rng.int(100, 999)}`,
+      zoneCode,
       description: `Aire d'intensification ${s.intensification.toLowerCase()} — PUM 2050`,
       sourceUrl: `${QC}/pum-2050`,
+    });
+
+    // A real zoning polygon enclosing the showcase parcel so the lookup returns
+    // a *confirmed* determination (not just nearest-point) in dev.
+    const geom = squarePolygon(s.lat, s.lng, 0.003);
+    const bbox = geometryBBox(geom);
+    bag.zoningPolygons.push({
+      externalId: `seed-zpoly-${s.key}`,
+      city: s.city,
+      borough: s.borough,
+      zoneCode,
+      landUse,
+      regulationUrl: `${QC}/reglement-zonage`,
+      minLat: bbox.minLat,
+      maxLat: bbox.maxLat,
+      minLng: bbox.minLng,
+      maxLng: bbox.maxLng,
+      geometryJson: JSON.stringify(geom),
+      sourceUrl: `${QC}/zonage`,
     });
 
     bag.vacancies.push({

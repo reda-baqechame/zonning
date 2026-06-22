@@ -27,6 +27,7 @@
     "coverage": "Coverage",
     "intelligence": "Intelligence",
     "investigate": "Investigation",
+    "carte": "Map",
     "paiementPublic": "Public payments",
     "validation": "Validation",
     "dashboard": "Dashboard",
@@ -159,9 +160,20 @@
     "upgradeDesc": "Generate CASL PDF certificates for every contact from verifiable public registries.",
     "upgradeCta": "Upgrade to Pro"
   },
+  "feedPreview": {
+    "title": "Feed preview",
+    "subtitle": "A public sample of permits and tenders. The full feed, personalized to your RBQ profile, is for members.",
+    "notice": "Read-only preview - create an account for pipeline scores, win probability and alerts.",
+    "openFeed": "Open my feed",
+    "signUp": "Create an account",
+    "emptyTitle": "No opportunities yet",
+    "emptyDesc": "Try again after the next public-data sync.",
+    "ctaTitle": "Ready for a feed personalized to your RBQ license, trades and regions?"
+  },
   "footer": {
     "tagline": "ZONNING — Quebec construction data search and coverage",
     "trust": "Public sources · {datasets} indexed datasets · {cities} tracked cities · Official source links",
+    "trustTruth": "{indexed} indexed datasets ? {sources} registered sources ? {searchable} cities with indexed permits ? {monitored} cities monitored",
     "buildLog": "System evidence",
     "dataHealth": "Data health",
     "coverage": "Coverage",
@@ -604,6 +616,7 @@
   "coverage": {
     "title": "Quebec coverage — data trust",
     "subtitle": "Current status of public sources, synchronization runs, and records actually indexed.",
+    "truthLine": "{indexed} indexed datasets ? {sources} registered sources ? {searchable} cities with indexed permits ? {monitored} cities monitored",
     "datasets": "Active datasets",
     "cities": "Coverage cities",
     "citiesLive": "Live / tracked municipalities",
@@ -612,6 +625,7 @@
     "cityTable": "Permits by city",
     "colCity": "City",
     "colPermits": "Indexed permits",
+    "colStatus": "Status",
     "colMap": "Map",
     "colWeek": "7 days",
     "colSync": "Last sync",
@@ -660,7 +674,46 @@
     "vacancy": "Vacant commercial",
     "lockedPreview": "Data layers detected",
     "layersDetected": "active signals",
-    "upgradeIntel": "Upgrade to Essentiel for full intelligence"
+    "upgradeIntel": "Upgrade to Essentiel for full intelligence",
+    "zoningDetermination": {
+      "confirmed": "Confirmed (polygon)",
+      "nearest_fallback": "Nearest point",
+      "unknown": "Unknown",
+      "indicative": "Indicative context",
+      "review_required": "Verification required"
+    }
+  },
+  "carte": {
+    "title": "Quebec map",
+    "subtitle": "Layer-by-layer availability. Marker-only and document-only data are labelled before you inspect them.",
+    "layer": {
+      "permits": "Permits",
+      "tenders": "SEAO",
+      "zoning": "Zoning",
+      "contamination": "Contaminated sites",
+      "heritage": "Heritage",
+      "roadworks": "Roadworks"
+    },
+    "status": {
+      "AVAILABLE": "Available",
+      "PARTIAL": "Partial",
+      "POINT_ONLY": "Points only",
+      "LIST_ONLY": "List only",
+      "NONE": "Unavailable"
+    },
+    "layerCount": "{count} indexed records",
+    "polygonCount": "{count} polygons",
+    "notMapped": {
+      "title": "This layer is not a full map yet",
+      "none": "This layer is not available yet",
+      "tenders": "SEAO records are listed and scored, but not geocoded as map points.",
+      "zoning": "Zoning shows polygon coverage where available and point references as fallback.",
+      "contamination": "Contamination layers are available as point overlays where coordinates exist.",
+      "heritage": "Heritage layers are available as point overlays where coordinates exist.",
+      "roadworks": "Roadwork records are available as points where coordinates exist."
+    },
+    "openIntelligence": "Open intelligence lookup",
+    "openMarches": "Open SEAO tenders"
   },
   "zoningExpert": {
     "title": "Regulatory zoning analysis",

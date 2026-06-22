@@ -69,6 +69,15 @@ export default function ChantierRadarClient() {
   >([]);
   const [mappableCount, setMappableCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [diagnostics, setDiagnostics] = useState<{
+    rawIndexed: number;
+    afterDateFilter: number;
+    afterFilters: number;
+    mappable: number;
+    days: number;
+    lastSyncAt: string | null;
+    zeroReason: string | null;
+  } | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [borough, setBorough] = useState("");
   const [city, setCity] = useState("");
@@ -135,6 +144,7 @@ export default function ChantierRadarClient() {
       setUserPlan(data.plan ?? "FREE");
       setMappableCount(data.mappable ?? 0);
       setTotalCount(data.total ?? data.permits?.length ?? 0);
+      setDiagnostics(data.diagnostics ?? null);
 
       if (delaysRes) {
         const delaysData = await delaysRes.json();
@@ -469,7 +479,27 @@ export default function ChantierRadarClient() {
           {loading ? (
             <SkeletonList count={3} />
           ) : permits.length === 0 ? (
-            <EmptyState title={t("noPermits")} />
+            <EmptyState
+              title={t("noPermits")}
+              description={
+                diagnostics?.zeroReason
+                  ? t(`zeroReason.${diagnostics.zeroReason}`)
+                  : undefined
+              }
+              action={
+                diagnostics ? (
+                  <div className="w-full max-w-sm space-y-1 rounded-lg border border-slate-800 bg-slate-950/60 p-3 text-left text-xs text-slate-400">
+                    <div className="flex justify-between"><span>{t("diag.rawIndexed")}</span><span className="font-mono text-slate-200">{diagnostics.rawIndexed.toLocaleString()}</span></div>
+                    <div className="flex justify-between"><span>{t("diag.afterDate", { days: diagnostics.days })}</span><span className="font-mono text-slate-200">{diagnostics.afterDateFilter.toLocaleString()}</span></div>
+                    <div className="flex justify-between"><span>{t("diag.afterFilters")}</span><span className="font-mono text-slate-200">{diagnostics.afterFilters.toLocaleString()}</span></div>
+                    <div className="flex justify-between"><span>{t("diag.mappable")}</span><span className="font-mono text-slate-200">{diagnostics.mappable.toLocaleString()}</span></div>
+                    {diagnostics.lastSyncAt && (
+                      <div className="flex justify-between border-t border-slate-800 pt-1"><span>{t("diag.lastSync")}</span><span className="text-slate-300">{new Date(diagnostics.lastSyncAt).toLocaleString(locale === "fr" ? "fr-CA" : "en-CA")}</span></div>
+                    )}
+                  </div>
+                ) : undefined
+              }
+            />
           ) : (
             permits.map((p) => (
               <LeadCard

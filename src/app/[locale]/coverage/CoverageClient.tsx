@@ -46,6 +46,29 @@ type CoverageData = {
   rbqLicenses: number;
 };
 
+type CoverageStatus =
+  | "LIVE_INDEXED"
+  | "PARTIAL_INDEXED"
+  | "DOCUMENT_ONLY"
+  | "REGISTERED_NOT_SYNCED"
+  | "BROKEN";
+
+type InitialTruth = {
+  registeredSources: number;
+  indexedDatasets: number;
+  searchableMunicipalities: number;
+  monitoredCities: number;
+  cities: { city: string; permitStatus: CoverageStatus; zoningStatus: CoverageStatus }[];
+};
+
+const STATUS_STYLES: Record<CoverageStatus, string> = {
+  LIVE_INDEXED: "bg-emerald-500/20 text-emerald-300",
+  PARTIAL_INDEXED: "bg-sky-500/20 text-sky-300",
+  DOCUMENT_ONLY: "bg-amber-500/20 text-amber-300",
+  REGISTERED_NOT_SYNCED: "bg-slate-500/20 text-slate-300",
+  BROKEN: "bg-red-500/20 text-red-300",
+};
+
 function statusTone(status?: string) {
   if (status === "authoritative") return "bg-success-soft text-success";
   if (status === "partial") return "bg-warning-soft text-warning";
@@ -53,11 +76,14 @@ function statusTone(status?: string) {
   return "bg-surface-2 text-subtle";
 }
 
-export default function CoverageClient() {
+export default function CoverageClient({ initialTruth }: { initialTruth?: InitialTruth | null }) {
   const t = useTranslations("coverage");
   const locale = useLocale();
   const dateLocale = locale === "fr" ? fr : enCA;
   const [data, setData] = useState<CoverageData | null>(null);
+  const statusByCity = new Map(
+    (initialTruth?.cities ?? []).map((c) => [c.city, c.permitStatus]),
+  );
 
   useEffect(() => {
     fetch("/api/coverage/public")
@@ -70,6 +96,17 @@ export default function CoverageClient() {
     <div className="mx-auto max-w-7xl px-4 py-10 text-ink">
       <h1 className="text-3xl font-bold text-ink">{t("title")}</h1>
       <p className="mt-2 max-w-2xl text-muted">{t("subtitle")}</p>
+
+      {initialTruth && (
+        <p className="mt-4 rounded-lg border border-line bg-surface px-4 py-2 text-sm text-muted">
+          {t("truthLine", {
+            indexed: initialTruth.indexedDatasets,
+            sources: initialTruth.registeredSources,
+            searchable: initialTruth.searchableMunicipalities,
+            monitored: initialTruth.monitoredCities,
+          })}
+        </p>
+      )}
 
       <div className="mt-8">
         <QuebecCoverageBar />
@@ -107,12 +144,12 @@ export default function CoverageClient() {
 
           <h2 className="mt-10 text-lg font-semibold text-ink">{t("cityTable")}</h2>
           <div className="mt-4 overflow-x-auto rounded-xl border border-line bg-surface shadow-sm">
-            <table className="w-full min-w-[640px] text-left text-sm">
+            <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="border-b border-line bg-surface-2 text-subtle">
                 <tr>
                   <th className="px-4 py-3">{t("colCity")}</th>
                   <th className="px-4 py-3">{t("colPermits")}</th>
-                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">{t("colStatus")}</th>
                   <th className="px-4 py-3">{t("colMap")}</th>
                   <th className="px-4 py-3">{t("colWeek")}</th>
                   <th className="px-4 py-3">{t("colSync")}</th>
@@ -131,12 +168,19 @@ export default function CoverageClient() {
                     </td>
                     <td className="px-4 py-3 text-muted">{row.totalPermits.toLocaleString()}</td>
                     <td className="px-4 py-3">
-                      <span className={`rounded-full px-2 py-1 text-[10px] uppercase tracking-wide ${statusTone(row.coverageStatus)}`}>
-                        {row.coverageStatus ?? "unknown"}
-                      </span>
-                      {row.coverageNote && (
-                        <p className="mt-1 max-w-xs text-xs text-subtle">{row.coverageNote}</p>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {statusByCity.has(row.city) && (
+                          <span className={`w-fit rounded px-2 py-0.5 text-[10px] font-medium ${STATUS_STYLES[statusByCity.get(row.city)!]}`}>
+                            {statusByCity.get(row.city)}
+                          </span>
+                        )}
+                        <span className={`w-fit rounded-full px-2 py-1 text-[10px] uppercase tracking-wide ${statusTone(row.coverageStatus)}`}>
+                          {row.coverageStatus ?? "unknown"}
+                        </span>
+                        {row.coverageNote && (
+                          <p className="mt-1 max-w-xs text-xs text-subtle">{row.coverageNote}</p>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-muted">
                       {row.mapPercent ?? 0}%
@@ -152,7 +196,7 @@ export default function CoverageClient() {
                             addSuffix: true,
                             locale: dateLocale,
                           })
-                        : "—"}
+                        : "-"}
                     </td>
                   </tr>
                 ))}
