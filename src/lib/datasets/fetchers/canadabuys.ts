@@ -42,8 +42,12 @@ type OgpResource = {
   datastore_active?: boolean;
 };
 
+type ResolvedTenderResource =
+  | { kind: "datastore"; id: string }
+  | { kind: "csv"; url: string };
+
 /** Resolve the datastore resource for open tender notices. */
-async function resolveOpenTendersResource(): Promise<string | null> {
+async function resolveOpenTendersResource(): Promise<ResolvedTenderResource | null> {
   const url = `${OGP_CKAN_API}/package_show?id=${OGP_DATASET_ID}`;
   try {
     const res = await politeFetchWithRetry(url, undefined, { timeoutMs: 60_000 });
@@ -66,12 +70,24 @@ async function resolveOpenTendersResource(): Promise<string | null> {
       resources.find(
         (r) => r.datastore_active && r.format?.toUpperCase() === "JSON",
       ) ??
-      resources.find((r) => /open/i.test(r.name ?? ""));
+      resources.find(
+        (r) =>
+          /open/i.test(r.name ?? "") &&
+          (r.format?.toUpperCase() === "CSV" || /openTenderNotice/i.test(r.url)),
+      );
     if (!preferred) {
       dataWarn("canadabuys.no-open-resource", { count: resources.length });
       return null;
     }
-    return preferred.id;
+    if (preferred.datastore_active) {
+      return { kind: "datastore", id: preferred.id };
+    }
+
+    const csvUrl =
+      preferred.format?.toUpperCase() === "CSV" && !preferred.url.endsWith(".csv")
+        ? `${preferred.url}.csv`
+        : preferred.url;
+    return { kind: "csv", url: csvUrl };
   } catch (e) {
     dataWarn("canadabuys.package_show.error", { error: String(e) });
     return null;
@@ -82,6 +98,7 @@ async function resolveOpenTendersResource(): Promise<string | null> {
 export function toCanadaBuysRecord(row: Record<string, unknown>, now: number): CanadaBuysRecord | null {
   const title =
     str(row, ["title", "title_en", "titre", "notice_title", "objet"]) ??
+    str(row, ["title-titre-eng", "title-titre-fra"]) ??
     str(row, ["solicitation", "reference_number"]);
   if (!title) return null;
 
@@ -93,31 +110,76 @@ export function toCanadaBuysRecord(row: Record<string, unknown>, now: number): C
       "notice_ref_number",
       "ocid",
       "id",
+      "referenceNumber-numeroReference",
+      "solicitationNumber-numeroSollicitation",
     ]) ?? "";
   if (!externalId) return null;
 
-  const statusRaw = str(row, ["status", "notice_status", "status_en"])?.toLowerCase() ?? "";
+  const statusRaw =
+    str(row, [
+      "status",
+      "notice_status",
+      "status_en",
+      "tenderStatus-appelOffresStatut-eng",
+      "tenderStatus-appelOffresStatut-fra",
+    ])?.toLowerCase() ?? "";
   // Skip explicitly closed/cancelled notices (we want open ones).
   if (statusRaw.includes("cancel") || statusRaw.includes("expired")) return null;
 
   const closesAt = dateOf(
     row,
-    ["closing_date", "tender_period_enddate", "end_date", "closing", "date_de_cloture"],
+    [
+      "closing_date",
+      "tender_period_enddate",
+      "end_date",
+      "closing",
+      "date_de_cloture",
+      "tenderClosingDate-appelOffresDateCloture",
+    ],
   );
   if (closesAt && closesAt.getTime() < now - 7 * 86_400_000) return null;
 
   const publishedAt = dateOf(
     row,
-    ["publication_date", "publish_date", "amendment_date", "date_publication", "start_date"],
+    [
+      "publication_date",
+      "publish_date",
+      "amendment_date",
+      "date_publication",
+      "start_date",
+      "publicationDate-datePublication",
+      "amendmentDate-dateModification",
+    ],
   );
   const estimatedValue = num(row, ["estimated_value", "contract_value", "value"]);
-  const unspsc = str(row, ["unspsc", "classification_code", "commodity_code"]);
+  const unspsc = str(row, ["unspsc", "classification_code", "commodity_code", "gsin-nibs"]);
   const organization =
-    str(row, ["buying_organization", "owner_org", "department", "organization_en", "buyer"]) ??
+    str(row, [
+      "buying_organization",
+      "owner_org",
+      "department",
+      "organization_en",
+      "buyer",
+      "contractingEntityName-nomEntitContractante-eng",
+      "contractingEntityName-nomEntitContractante-fra",
+    ]) ??
     "Government of Canada";
   const category =
-    str(row, ["procurement_method", "notice_type", "opportunity_type"]) ?? undefined;
-  const region = str(row, ["region", "region_of_delivery", "delivery_location"]) ?? "Canada";
+    str(row, [
+      "procurement_method",
+      "notice_type",
+      "opportunity_type",
+      "procurementMethod-methodeApprovisionnement-eng",
+      "noticeType-avisType-eng",
+    ]) ?? undefined;
+  const region =
+    str(row, [
+      "region",
+      "region_of_delivery",
+      "delivery_location",
+      "regionsOfDelivery-regionsLivraison-eng",
+      "regionsOfOpportunity-regionAppelOffres-eng",
+    ]) ?? "Canada";
 
   return {
     externalId: `canadabuys-${externalId}`,
@@ -129,18 +191,67 @@ export function toCanadaBuysRecord(row: Record<string, unknown>, now: number): C
     publishedAt,
     closesAt,
     summary:
-      str(row, ["description", "description_en", "summary", "abstract"]) ?? undefined,
+      str(row, [
+        "description",
+        "description_en",
+        "summary",
+        "abstract",
+        "tenderDescription-descriptionAppelOffres-eng",
+        "tenderDescription-descriptionAppelOffres-fra",
+      ]) ?? undefined,
     requiresAmp: false, // AMP is a Quebec mechanism; not applicable federally.
-    sourceUrl: DATASETS.canadabuys.sourceUrl,
+    sourceUrl:
+      str(row, ["noticeURL-URLavis-eng", "noticeURL-URLavis-fra"]) ??
+      DATASETS.canadabuys.sourceUrl,
     unspsc: unspsc ?? undefined,
-    status: str(row, ["status", "notice_status"]) ?? "open",
+    status:
+      str(row, [
+        "status",
+        "notice_status",
+        "tenderStatus-appelOffresStatut-eng",
+        "tenderStatus-appelOffresStatut-fra",
+      ]) ?? "open",
   };
 }
 
 export async function fetchCanadaBuys(limit?: number): Promise<{ records: CanadaBuysRecord[] }> {
   const cap = limit ?? getSyncLimit("canadabuys");
-  const resourceId = await resolveOpenTendersResource();
-  if (!resourceId) return { records: [] };
+  const resource = await resolveOpenTendersResource();
+  if (!resource) return { records: [] };
+
+  if (resource.kind === "csv") {
+    try {
+      const res = await politeFetchWithRetry(
+        resource.url,
+        {
+          headers: {
+            Accept: "text/csv,*/*",
+            "User-Agent": "ZONNING/0.1 (+https://zonning.vercel.app)",
+          },
+        },
+        { timeoutMs: 90_000 },
+      );
+      if (!res.ok) {
+        dataWarn("canadabuys.csv", { status: res.status });
+        return { records: [] };
+      }
+      const rows = parseCsvRows(await res.text(), cap * 3);
+      const seen = new Set<string>();
+      const records: CanadaBuysRecord[] = [];
+      const now = Date.now();
+      for (const row of rows) {
+        const rec = toCanadaBuysRecord(row, now);
+        if (!rec || seen.has(rec.externalId)) continue;
+        seen.add(rec.externalId);
+        records.push(rec);
+        if (records.length >= cap) break;
+      }
+      return { records };
+    } catch (e) {
+      dataWarn("canadabuys.csv.error", { error: String(e) });
+      return { records: [] };
+    }
+  }
 
   const seen = new Set<string>();
   const records: CanadaBuysRecord[] = [];
@@ -150,7 +261,7 @@ export async function fetchCanadaBuys(limit?: number): Promise<{ records: Canada
 
   while (records.length < cap) {
     const url =
-      `${OGP_CKAN_API}/datastore_search?resource_id=${resourceId}` +
+      `${OGP_CKAN_API}/datastore_search?resource_id=${resource.id}` +
       `&limit=${pageSize}&offset=${offset}`;
     let rows: Record<string, unknown>[];
     try {
@@ -183,6 +294,64 @@ export async function fetchCanadaBuys(limit?: number): Promise<{ records: Canada
   }
 
   return { records };
+}
+
+export function parseCsvRows(text: string, maxRows = Number.POSITIVE_INFINITY): Record<string, string>[] {
+  const parsed: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === "\"") {
+        if (text[i + 1] === "\"") {
+          field += "\"";
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += ch;
+      }
+      continue;
+    }
+
+    if (ch === "\"") {
+      inQuotes = true;
+    } else if (ch === ",") {
+      row.push(field);
+      field = "";
+    } else if (ch === "\n") {
+      row.push(field);
+      parsed.push(row);
+      if (parsed.length > maxRows) break;
+      row = [];
+      field = "";
+    } else if (ch !== "\r") {
+      field += ch;
+    }
+  }
+
+  if (field.length > 0 || row.length > 0) {
+    row.push(field);
+    parsed.push(row);
+  }
+
+  const [headersRaw, ...dataRows] = parsed;
+  if (!headersRaw) return [];
+  const headers = headersRaw.map((h) => h.replace(/^\uFEFF/, "").trim());
+  const out: Record<string, string>[] = [];
+  for (const cells of dataRows) {
+    if (out.length >= maxRows) break;
+    const record: Record<string, string> = {};
+    headers.forEach((h, idx) => {
+      record[h] = cells[idx]?.trim() ?? "";
+    });
+    if (Object.values(record).some((v) => v.length > 0)) out.push(record);
+  }
+  return out;
 }
 
 /* ---------- field extraction helpers ---------- */

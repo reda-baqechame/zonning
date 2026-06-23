@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toCanadaBuysRecord } from "@/lib/datasets/fetchers/canadabuys";
+import { parseCsvRows, toCanadaBuysRecord } from "@/lib/datasets/fetchers/canadabuys";
 
 const NOW = new Date("2026-06-23T12:00:00Z").getTime();
 
@@ -55,5 +55,22 @@ describe("toCanadaBuysRecord", () => {
       NOW,
     );
     expect(rec!.externalId.startsWith("canadabuys-")).toBe(true);
+  });
+
+  it("parses official CanadaBuys bilingual CSV rows with embedded newlines", () => {
+    const rows = parseCsvRows(
+      `"title-titre-eng","referenceNumber-numeroReference","publicationDate-datePublication","tenderClosingDate-appelOffresDateCloture","tenderStatus-appelOffresStatut-eng","contractingEntityName-nomEntitContractante-eng","regionsOfDelivery-regionsLivraison-eng","noticeURL-URLavis-eng","tenderDescription-descriptionAppelOffres-eng"\n` +
+        `"Roof repairs","MX-444","2026-06-05","2026-07-15T14:00:00","Open","PSPC","Quebec","https://canadabuys.canada.ca/en/tender-opportunities/tender-notice/mx-444","Line one\nLine two"`,
+    );
+    expect(rows).toHaveLength(1);
+
+    const rec = toCanadaBuysRecord(rows[0], NOW);
+    expect(rec).not.toBeNull();
+    expect(rec!.externalId).toBe("canadabuys-MX-444");
+    expect(rec!.title).toBe("Roof repairs");
+    expect(rec!.organization).toBe("PSPC");
+    expect(rec!.region).toBe("Quebec");
+    expect(rec!.sourceUrl).toContain("canadabuys.canada.ca");
+    expect(rec!.summary).toContain("Line two");
   });
 });
