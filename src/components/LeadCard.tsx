@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { formatDistanceToNow } from "date-fns";
 import { fr, enCA } from "date-fns/locale";
-import { ChevronDown, ExternalLink, FolderPlus, Star } from "lucide-react";
+import { AlertTriangle, CheckSquare, ChevronDown, ExternalLink, FolderPlus, Star } from "lucide-react";
 import { Badge, Button, Card } from "@/components/ui";
 import type { LeadSignal } from "@/lib/lead-signals";
 import { formatCad } from "@/lib/format-cad";
@@ -131,6 +131,7 @@ export function LeadCard({
   const ranking = item.kind === "permit" ? item.pipeline : item.ranking;
   const dossier = item.opportunityDossier;
   const triage = dossier?.triage;
+  const mission = dossier?.governmentMission;
   const topLeadAllowed =
     dossier?.evidenceThresholds.canCallTopLead ??
     (item.score >= 80 && (ranking?.confidence ?? 0) >= 65);
@@ -341,6 +342,134 @@ export function LeadCard({
                   {tf("dossier.notTopLead")}
                 </p>
               ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        {mission ? (
+          <div className="mt-3 border-l-4 border-brand bg-white px-3 py-2.5 text-xs text-muted">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+                  <CheckSquare className="h-4 w-4 text-brand" aria-hidden="true" />
+                  {tf("mission.title")}
+                </p>
+                <p className="mt-1 text-ink">
+                  {tf("mission.verdictLabel")}:{" "}
+                  <span className="font-semibold">
+                    {tf(`mission.verdict.${mission.verdict}`)}
+                  </span>
+                </p>
+              </div>
+              <div className="text-right">
+                <p
+                  className={
+                    mission.worthBuyingDocuments
+                      ? "font-semibold text-success-ink"
+                      : "font-semibold text-warning-ink"
+                  }
+                >
+                  {mission.worthBuyingDocuments
+                    ? tf("mission.worthBuying")
+                    : tf("mission.doNotBuyYet")}
+                </p>
+                <p>
+                  {tf("mission.deadlineRisk", {
+                    value: tf(`mission.deadline.${mission.deadlineRisk}`),
+                  })}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-2 grid gap-3 md:grid-cols-2">
+              <div>
+                <p className="font-semibold uppercase text-subtle">
+                  {tf("mission.officialAction")}
+                </p>
+                <p className="mt-1 text-ink">{mission.officialSiteAction}</p>
+                <p className="mt-1">{mission.deadlineLabel}</p>
+              </div>
+              <div>
+                <p className="font-semibold uppercase text-subtle">
+                  {tf("mission.documents")}
+                </p>
+                <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                  {mission.requiredDocuments.slice(0, 4).map((document) => (
+                    <li key={document}>{document}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-2 grid gap-3 md:grid-cols-2">
+              {mission.missingReadiness.length ? (
+                <div>
+                  <p className="font-semibold uppercase text-subtle">
+                    {tf("mission.missing")}
+                  </p>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                    {mission.missingReadiness.slice(0, 3).map((gap) => (
+                      <li key={gap}>{gap}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              <div>
+                <p className="flex items-center gap-1 font-semibold uppercase text-subtle">
+                  <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+                  {tf("mission.rejectionRisks")}
+                </p>
+                <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                  {mission.rejectionRisks.slice(0, 3).map((risk) => (
+                    <li key={risk}>{risk}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {mission.nextButtons.map((nextButton) => {
+                if (nextButton.href) {
+                  return (
+                    <a
+                      key={`${nextButton.kind}:${nextButton.label}`}
+                      href={nextButton.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <Button variant="ghost" size="sm">
+                        <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                        {nextButton.label}
+                      </Button>
+                    </a>
+                  );
+                }
+                if (nextButton.kind === "pipeline" && onSave && !saved) {
+                  return (
+                    <Button
+                      key={`${nextButton.kind}:${nextButton.label}`}
+                      variant="primary"
+                      size="sm"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onSave();
+                      }}
+                    >
+                      <FolderPlus className="h-4 w-4" aria-hidden="true" />
+                      {nextButton.label}
+                    </Button>
+                  );
+                }
+                return (
+                  <span
+                    key={`${nextButton.kind}:${nextButton.label}`}
+                    className="rounded-md border border-line bg-slate-50 px-2 py-1 font-medium text-muted"
+                  >
+                    {nextButton.label}
+                  </span>
+                );
+              })}
             </div>
           </div>
         ) : null}

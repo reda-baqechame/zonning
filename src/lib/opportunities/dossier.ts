@@ -217,6 +217,205 @@ function evidenceThresholds(input: {
   };
 }
 
+type TriageRecommendation = OpportunityDossier["triage"]["recommendation"];
+type GovernmentMission = NonNullable<OpportunityDossier["governmentMission"]>;
+
+function missionVerdict(recommendation: TriageRecommendation): GovernmentMission["verdict"] {
+  if (recommendation === "act_now") return "pursue";
+  if (recommendation === "verify_first") return "verify_before_spend";
+  if (recommendation === "watch") return "watch";
+  return "skip";
+}
+
+function tenderDeadline(
+  closesAt: Date | null | undefined,
+  locale: DossierLocale,
+): Pick<GovernmentMission, "deadlineRisk" | "deadlineLabel"> {
+  if (!closesAt) {
+    return {
+      deadlineRisk: "unknown",
+      deadlineLabel: copy(locale, "Date limite non publiée : confirmer l'heure exacte dans SEAO.", "Deadline not published: confirm the exact time in SEAO."),
+    };
+  }
+
+  const days = differenceInCalendarDays(closesAt, new Date());
+  if (days < 0) {
+    return {
+      deadlineRisk: "missed",
+      deadlineLabel: copy(locale, "La date limite publiée est passée.", "The published deadline has passed."),
+    };
+  }
+  if (days <= 2) {
+    return {
+      deadlineRisk: "urgent",
+      deadlineLabel: copy(locale, "Échéance sous 48 heures : soumettre seulement si le dossier est déjà prêt.", "Deadline inside 48 hours: submit only if the file is already ready."),
+    };
+  }
+  if (days <= 7) {
+    return {
+      deadlineRisk: "soon",
+      deadlineLabel: copy(locale, `Échéance dans ${days} jour${days > 1 ? "s" : ""}.`, `Deadline in ${days} day${days > 1 ? "s" : ""}.`),
+    };
+  }
+
+  return {
+    deadlineRisk: "none",
+    deadlineLabel: copy(locale, `Échéance dans ${days} jours.`, `Deadline in ${days} days.`),
+  };
+}
+
+function permitDeadline(locale: DossierLocale): Pick<GovernmentMission, "deadlineRisk" | "deadlineLabel"> {
+  return {
+    deadlineRisk: "none",
+    deadlineLabel: copy(locale, "Aucune échéance de soumission publiée pour ce permis.", "No submission deadline is published for this permit."),
+  };
+}
+
+function readinessGapText(id: string, locale: DossierLocale): string {
+  const text: Record<string, [string, string]> = {
+    rbq_profile: ["Sous-catégories RBQ prêtes à comparer avec les travaux.", "RBQ subclasses ready to compare with the work."],
+    cost_or_budget: ["Plage de budget/projet cible de votre entreprise.", "Your company's target project budget range."],
+    market_activity: ["Preuve que ce marché local vaut un suivi commercial.", "Proof this local market is worth sales follow-up."],
+    issue_date: ["Date officielle d'émission du permis.", "Official permit issue date."],
+    site_intelligence: ["Contraintes du site et potentiel vérifiés.", "Verified site constraints and upside."],
+    zoning: ["Zonage, usage permis et règlement municipal vérifiés.", "Verified zoning, permitted use, and municipal bylaw."],
+    trade_profile: ["Métiers que votre entreprise veut réellement soumissionner.", "Trades your company actually wants to bid."],
+    region_profile: ["Territoires desservis par votre équipe.", "Regions served by your team."],
+    value_or_budget: ["Taille de contrat que votre entreprise accepte.", "Contract size your company accepts."],
+    amp_requirement: ["Statut d'autorisation AMP de votre entreprise.", "Your company's AMP authorization status."],
+    amp_review_required: ["Confirmation AMP avant toute soumission.", "AMP confirmation before any bid."],
+    closing_date: ["Date et heure exactes de dépôt dans SEAO.", "Exact SEAO submission date and time."],
+    permit_record_not_usable: ["Dossier municipal officiel assez complet pour agir.", "Municipal record complete enough to act on."],
+  };
+  const value = text[id];
+  return value
+    ? copy(locale, value[0], value[1])
+    : copy(locale, "Preuve de préparation encore manquante.", "Readiness proof is still missing.");
+}
+
+function buildPermitGovernmentMission(input: {
+  permit: PermitRecord;
+  recommendation: TriageRecommendation;
+  thresholds: ReturnType<typeof evidenceThresholds>;
+  dataQuality?: PermitDataQuality;
+  locale: DossierLocale;
+}): GovernmentMission {
+  const { permit, recommendation, thresholds, dataQuality, locale } = input;
+  const deadline = permitDeadline(locale);
+  const missingReadiness = unique([
+    ...thresholds.missingEvidence.map((item) => readinessGapText(item, locale)),
+    !permit.applicantName ? copy(locale, "Nom du demandeur/contact publié.", "Published applicant/contact name.") : "",
+    dataQuality?.sourceScope !== "record" ? copy(locale, "Lien vers le dossier municipal exact, pas seulement le jeu de données.", "Link to the exact municipal record, not only the dataset.") : "",
+  ]);
+
+  return {
+    verdict: missionVerdict(recommendation),
+    worthBuyingDocuments: false,
+    ...deadline,
+    officialSiteAction: copy(
+      locale,
+      "Ouvrir la source municipale, confirmer la portée des travaux et le demandeur, puis décider si un suivi conforme vaut la peine.",
+      "Open the municipal source, confirm work scope and applicant, then decide whether compliant follow-up is worth it.",
+    ),
+    requiredDocuments: unique([
+      copy(locale, "Dossier officiel du permis municipal.", "Official municipal permit record."),
+      copy(locale, "Vérification de la licence et sous-catégorie RBQ.", "RBQ licence and subclass check."),
+      copy(locale, "Vérification zonage/règlement si le site influence la faisabilité.", "Zoning/bylaw check if the site affects feasibility."),
+      permit.applicantName
+        ? copy(locale, "Certificat de source publique LCAP/CASL avant prospection.", "CASL public-source certificate before outreach.")
+        : "",
+    ]),
+    missingReadiness,
+    rejectionRisks: unique([
+      copy(locale, "Mauvaise sous-catégorie RBQ pour les travaux publiés.", "Wrong RBQ subclass for the published work."),
+      copy(locale, "Permis trop ancien, incomplet ou seulement disponible au niveau jeu de données.", "Permit too stale, incomplete, or only available at dataset level."),
+      copy(locale, "Prospection sans preuve de source publique et base LCAP/CASL.", "Outreach without public-source and CASL basis proof."),
+      copy(locale, "Zonage ou contraintes du site non confirmés avant d'évaluer l'occasion.", "Zoning or site constraints not confirmed before evaluating the opportunity."),
+    ]),
+    nextButtons: [
+      {
+        kind: "official_source",
+        label: copy(locale, "Ouvrir la source officielle", "Open official source"),
+        href: permit.sourceUrl,
+      },
+      {
+        kind: "pipeline",
+        label: copy(locale, "Ajouter au pipeline", "Add to pipeline"),
+      },
+      {
+        kind: "readiness",
+        label: copy(locale, "Vérifier la préparation", "Check readiness"),
+      },
+    ],
+  };
+}
+
+function buildTenderGovernmentMission(input: {
+  tender: TenderRecord;
+  recommendation: TriageRecommendation;
+  thresholds: ReturnType<typeof evidenceThresholds>;
+  ranking: TenderScoreResult;
+  locale: DossierLocale;
+}): GovernmentMission {
+  const { tender, recommendation, thresholds, ranking, locale } = input;
+  const deadline = tenderDeadline(tender.closesAt, locale);
+  const deadlineBlocksBuying = deadline.deadlineRisk === "urgent" || deadline.deadlineRisk === "missed" || deadline.deadlineRisk === "unknown";
+  const missingReadiness = unique([
+    ...thresholds.missingEvidence.map((item) => readinessGapText(item, locale)),
+    tender.requiresAmp ? readinessGapText("amp_review_required", locale) : "",
+    !tender.organization ? copy(locale, "Organisme acheteur confirmé.", "Confirmed buyer organization.") : "",
+  ]);
+
+  return {
+    verdict: missionVerdict(recommendation),
+    worthBuyingDocuments:
+      !deadlineBlocksBuying &&
+      (recommendation === "act_now" || (recommendation === "verify_first" && ranking.confidence >= 55)),
+    ...deadline,
+    officialSiteAction: copy(
+      locale,
+      "Ouvrir SEAO, vérifier l'avis, les addendas et les exigences obligatoires avant d'acheter ou télécharger les documents et avant d'assigner l'estimation.",
+      "Open SEAO, verify the notice, addenda, and mandatory requirements before buying/downloading documents and before assigning estimating time.",
+    ),
+    requiredDocuments: unique([
+      copy(locale, "Documents officiels de l'appel d'offres et devis.", "Official tender documents and specifications."),
+      copy(locale, "Registre des addendas/avis modificateurs SEAO.", "SEAO addenda/amendment log."),
+      copy(locale, "Formulaire de soumission et bordereau de prix.", "Bid form and pricing sheet."),
+      copy(locale, "Attestation Revenu Québec.", "Revenu Québec attestation."),
+      copy(locale, "Déclaration de lobbyisme ou non-collusion si exigée.", "Lobbying or non-collusion declaration if required."),
+      tender.requiresAmp ? copy(locale, "Autorisation AMP valide à la date de dépôt.", "Valid AMP authorization at submission date.") : "",
+      copy(locale, "Clauses assurances, cautionnements, CNESST, OQLF et RBQ à vérifier.", "Insurance, bonding, CNESST, OQLF, and RBQ clauses to verify."),
+    ]),
+    missingReadiness,
+    rejectionRisks: unique([
+      copy(locale, "Addenda non lus ou signés avant le dépôt.", "Unread or unsigned addenda before submission."),
+      copy(locale, "Attestation Revenu Québec absente ou expirée.", "Missing or expired Revenu Québec attestation."),
+      tender.requiresAmp ? copy(locale, "Autorisation AMP absente au moment de soumissionner.", "AMP authorization missing when bidding.") : "",
+      copy(locale, "Mauvaise méthode, heure ou lieu de dépôt.", "Wrong submission method, time, or place."),
+      copy(locale, "Cautionnement, assurance, CNESST, OQLF ou licence RBQ non conforme.", "Bonding, insurance, CNESST, OQLF, or RBQ licence non-compliant."),
+    ]),
+    nextButtons: [
+      {
+        kind: "official_source",
+        label: copy(locale, "Ouvrir SEAO", "Open SEAO"),
+        href: tender.sourceUrl,
+      },
+      {
+        kind: "document_check",
+        label: copy(locale, "Vérifier les documents", "Check documents"),
+      },
+      {
+        kind: "pipeline",
+        label: copy(locale, "Ajouter au pipeline", "Add to pipeline"),
+      },
+      {
+        kind: "readiness",
+        label: copy(locale, "Vérifier la préparation", "Check readiness"),
+      },
+    ],
+  };
+}
+
 function siteIntelligenceSummary(intelligence: PropertyIntelligence | null | undefined, locale: DossierLocale): OpportunityDossier["siteIntelligence"] | undefined {
   if (!intelligence) return undefined;
   const confirmedFacts: string[] = [];
@@ -310,6 +509,13 @@ export function buildPermitOpportunityDossier(input: PermitDossierInput): Opport
       blockers,
       recommendedStage: recommendation === "act_now" ? "pursuing" : recommendation === "verify_first" ? "researching" : "new",
     },
+    governmentMission: buildPermitGovernmentMission({
+      permit,
+      recommendation,
+      thresholds,
+      dataQuality,
+      locale,
+    }),
     siteIntelligence: siteIntelligenceSummary(intelligence, locale),
     pipelineBreakdown: pipeline.breakdown,
     complianceAction: {
@@ -396,6 +602,13 @@ export function buildTenderOpportunityDossier(input: TenderDossierInput): Opport
       blockers,
       recommendedStage: recommendation === "act_now" ? "pursuing" : recommendation === "verify_first" ? "researching" : "new",
     },
+    governmentMission: buildTenderGovernmentMission({
+      tender,
+      recommendation,
+      thresholds,
+      ranking,
+      locale,
+    }),
     pipelineBreakdown: ranking.breakdown,
     complianceAction: {
       enabled: false,

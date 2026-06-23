@@ -312,6 +312,30 @@
       "moderate": "Moderate verification",
       "heavy": "Deep review"
     },
+    "mission": {
+      "title": "Government work mission",
+      "verdictLabel": "Decision",
+      "verdict": {
+        "pursue": "Pursue",
+        "verify_before_spend": "Verify before spending",
+        "watch": "Watch",
+        "skip": "Skip"
+      },
+      "worthBuying": "Documents worth buying",
+      "doNotBuyYet": "Do not buy documents yet",
+      "deadlineRisk": "Deadline risk: {value}",
+      "deadline": {
+        "none": "normal",
+        "unknown": "unknown",
+        "soon": "soon",
+        "urgent": "urgent",
+        "missed": "missed"
+      },
+      "officialAction": "Official-site action",
+      "documents": "Documents/checks",
+      "missing": "Missing readiness",
+      "rejectionRisks": "Rejection risks"
+    },
     "briefing": {
       "title": "Today's decision queue",
       "subtitle": "Select a decision to isolate the records worth your capacity today.",

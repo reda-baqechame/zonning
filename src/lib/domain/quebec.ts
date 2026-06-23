@@ -159,6 +159,21 @@ export type OpportunityDossier = {
     blockers: string[];
     recommendedStage: "new" | "researching" | "pursuing";
   };
+  governmentMission?: {
+    verdict: "pursue" | "verify_before_spend" | "watch" | "skip";
+    worthBuyingDocuments: boolean;
+    deadlineRisk: "none" | "unknown" | "soon" | "urgent" | "missed";
+    deadlineLabel: string;
+    officialSiteAction: string;
+    requiredDocuments: string[];
+    missingReadiness: string[];
+    rejectionRisks: string[];
+    nextButtons: {
+      label: string;
+      href?: string;
+      kind: "official_source" | "pipeline" | "document_check" | "readiness";
+    }[];
+  };
   siteIntelligence?: {
     confirmedFacts: string[];
     inferredContext: string[];

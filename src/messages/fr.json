@@ -312,6 +312,30 @@
       "moderate": "Vérification modérée",
       "heavy": "Analyse approfondie"
     },
+    "mission": {
+      "title": "Mission de travail gouvernemental",
+      "verdictLabel": "Décision",
+      "verdict": {
+        "pursue": "Poursuivre",
+        "verify_before_spend": "Vérifier avant de dépenser",
+        "watch": "Surveiller",
+        "skip": "Ignorer"
+      },
+      "worthBuying": "Documents à acheter",
+      "doNotBuyYet": "Ne pas acheter les documents tout de suite",
+      "deadlineRisk": "Risque d'échéance : {value}",
+      "deadline": {
+        "none": "normal",
+        "unknown": "inconnu",
+        "soon": "proche",
+        "urgent": "urgent",
+        "missed": "manqué"
+      },
+      "officialAction": "Action sur le site officiel",
+      "documents": "Documents/contrôles",
+      "missing": "Préparation manquante",
+      "rejectionRisks": "Risques de rejet"
+    },
     "briefing": {
       "title": "File de décisions du jour",
       "subtitle": "Cliquez sur une décision pour isoler les dossiers qui méritent votre capacité aujourd'hui.",

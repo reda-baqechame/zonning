@@ -43,6 +43,26 @@ const weakTenderRanking: TenderScoreResult = {
   missingEvidence: ["trade_profile", "region_profile", "value_or_budget"],
 };
 
+const strongTenderRanking: TenderScoreResult = {
+  score: 88,
+  fitScore: 91,
+  confidence: 78,
+  confidenceLevel: "high",
+  breakdown: {
+    tradeFit: 95,
+    regionFit: 85,
+    budgetFit: 80,
+    ampFit: 100,
+    bidWindow: 75,
+  },
+  reasons: [
+    { id: "trade_match", impact: "positive" },
+    { id: "region_match", impact: "positive" },
+    { id: "bid_window", impact: "positive" },
+  ],
+  missingEvidence: [],
+};
+
 describe("OpportunityDossier", () => {
   it("allows top-lead treatment only when score and evidence both pass", () => {
     const dossier = buildPermitOpportunityDossier({
@@ -79,6 +99,14 @@ describe("OpportunityDossier", () => {
     expect(dossier.triage.recommendation).toBe("act_now");
     expect(dossier.triage.recommendedStage).toBe("pursuing");
     expect(dossier.nextAction).toContain("Open the municipal source");
+    expect(dossier.governmentMission?.verdict).toBe("pursue");
+    expect(dossier.governmentMission?.worthBuyingDocuments).toBe(false);
+    expect(dossier.governmentMission?.officialSiteAction).toContain(
+      "Open the municipal source",
+    );
+    expect(dossier.governmentMission?.requiredDocuments.join(" ")).toContain(
+      "RBQ licence",
+    );
   });
 
   it("blocks top-lead language when confidence is low even if score is high", () => {
@@ -116,6 +144,82 @@ describe("OpportunityDossier", () => {
     expect(dossier.limitations.join(" ")).not.toContain("trade_profile");
     expect(dossier.limitations.join(" ")).not.toContain("value_or_budget");
     expect(dossier.whyRanked.join(" ")).toContain("not high enough");
+    expect(dossier.governmentMission?.verdict).toBe("watch");
+    expect(dossier.governmentMission?.worthBuyingDocuments).toBe(false);
+    expect(dossier.governmentMission?.missingReadiness.join(" ")).toContain(
+      "Trades your company",
+    );
+    expect(dossier.governmentMission?.missingReadiness.join(" ")).not.toContain(
+      "trade_profile",
+    );
+  });
+
+  it("turns a qualified SEAO record into a document-buying mission", () => {
+    const dossier = buildTenderOpportunityDossier({
+      tender: {
+        id: "tender-strong",
+        title: "Library envelope rehabilitation",
+        organization: "Ville Test",
+        category: "Construction",
+        region: "Montreal",
+        estimatedValue: 1_200_000,
+        publishedAt: new Date(),
+        closesAt: new Date(Date.now() + 14 * 86_400_000),
+        requiresAmp: false,
+        sourceUrl: "https://seao.ca/OpportunityPublication/avis",
+        unspsc: null,
+        status: "open",
+        amendmentCount: 1,
+      },
+      score: 88,
+      signals: [{ id: "strong_match", severity: "positive" }],
+      ranking: strongTenderRanking,
+      hasSimilarAwards: true,
+    });
+
+    expect(dossier.triage.recommendation).toBe("act_now");
+    expect(dossier.governmentMission?.verdict).toBe("pursue");
+    expect(dossier.governmentMission?.worthBuyingDocuments).toBe(true);
+    expect(dossier.governmentMission?.deadlineRisk).toBe("none");
+    expect(dossier.governmentMission?.officialSiteAction).toContain("Open SEAO");
+    expect(dossier.governmentMission?.requiredDocuments.join(" ")).toContain(
+      "Revenu",
+    );
+    expect(dossier.governmentMission?.requiredDocuments.join(" ")).toContain(
+      "addenda",
+    );
+    expect(dossier.governmentMission?.nextButtons.some((button) => button.kind === "official_source")).toBe(true);
+  });
+
+  it("blocks SEAO document spend when AMP and readiness gaps are unresolved", () => {
+    const dossier = buildTenderOpportunityDossier({
+      tender: {
+        id: "tender-amp",
+        title: "Public building expansion",
+        organization: "Public buyer",
+        category: "Construction",
+        region: "Quebec",
+        estimatedValue: 5_000_000,
+        publishedAt: new Date(),
+        closesAt: new Date(Date.now() + 5 * 86_400_000),
+        requiresAmp: true,
+        sourceUrl: "https://seao.ca/OpportunityPublication/avis-amp",
+        unspsc: null,
+        status: "open",
+      },
+      score: 74,
+      signals: [{ id: "amp_required", severity: "warning" }],
+      ranking: { ...weakTenderRanking, confidence: 45 },
+    });
+
+    const mission = dossier.governmentMission;
+    expect(mission?.verdict).toBe("verify_before_spend");
+    expect(mission?.worthBuyingDocuments).toBe(false);
+    expect(mission?.deadlineRisk).toBe("soon");
+    expect(mission?.requiredDocuments.join(" ")).toContain("AMP authorization");
+    expect(mission?.missingReadiness.join(" ")).toContain("AMP confirmation");
+    expect(mission?.rejectionRisks.join(" ")).toContain("AMP authorization");
+    expect(mission?.missingReadiness.join(" ")).not.toContain("amp_review_required");
   });
 
   it("keeps permit quality codes out of contractor-facing limitations", () => {
