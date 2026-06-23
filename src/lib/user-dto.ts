@@ -18,6 +18,20 @@ export type PublicUser = {
   onboardingComplete: boolean;
   alertSmsEnabled: boolean;
   hasStripeCustomer: boolean;
+  // Government Readiness Passport — tracked compliance profile.
+  neq?: string | null;
+  revenuQuebecStatus?: string | null;
+  revenuQuebecExpiresAt?: string | null;
+  cnesstStatus?: string | null;
+  oqlfStatus?: string | null;
+  insuranceCarrier?: string | null;
+  insuranceExpiresAt?: string | null;
+  insuranceLimit?: number | null;
+  bidBondCapacity?: number | null;
+  lobbyismDeclarationOnFile?: boolean;
+  signingResolutionOnFile?: boolean;
+  referencesCount?: number;
+  employeesCount?: number;
 };
 
 export function toPublicUser(user: {
@@ -39,6 +53,19 @@ export function toPublicUser(user: {
   onboardingComplete: boolean;
   alertSmsEnabled: boolean;
   stripeCustomerId?: string | null;
+  neq?: string | null;
+  revenuQuebecStatus?: string | null;
+  revenuQuebecExpiresAt?: Date | string | null;
+  cnesstStatus?: string | null;
+  oqlfStatus?: string | null;
+  insuranceCarrier?: string | null;
+  insuranceExpiresAt?: Date | string | null;
+  insuranceLimit?: number | null;
+  bidBondCapacity?: number | null;
+  lobbyismDeclarationOnFile?: boolean;
+  signingResolutionOnFile?: boolean;
+  referencesCount?: number;
+  employeesCount?: number;
 }): PublicUser {
   return {
     id: user.id,
@@ -59,5 +86,24 @@ export function toPublicUser(user: {
     onboardingComplete: user.onboardingComplete,
     alertSmsEnabled: user.alertSmsEnabled,
     hasStripeCustomer: Boolean(user.stripeCustomerId),
+    neq: user.neq ?? null,
+    revenuQuebecStatus: user.revenuQuebecStatus ?? null,
+    revenuQuebecExpiresAt:
+      user.revenuQuebecExpiresAt instanceof Date
+        ? user.revenuQuebecExpiresAt.toISOString()
+        : (user.revenuQuebecExpiresAt ?? null),
+    cnesstStatus: user.cnesstStatus ?? null,
+    oqlfStatus: user.oqlfStatus ?? null,
+    insuranceCarrier: user.insuranceCarrier ?? null,
+    insuranceExpiresAt:
+      user.insuranceExpiresAt instanceof Date
+        ? user.insuranceExpiresAt.toISOString()
+        : (user.insuranceExpiresAt ?? null),
+    insuranceLimit: user.insuranceLimit ?? null,
+    bidBondCapacity: user.bidBondCapacity ?? null,
+    lobbyismDeclarationOnFile: user.lobbyismDeclarationOnFile ?? false,
+    signingResolutionOnFile: user.signingResolutionOnFile ?? false,
+    referencesCount: user.referencesCount ?? 0,
+    employeesCount: user.employeesCount ?? 0,
   };
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import {
+  BriefcaseBusiness,
   Building2,
   ChartNoAxesCombined,
   Crosshair,
@@ -55,6 +56,7 @@ export function CockpitSidebar({
     { href: "/", label: nav("search"), icon: Search },
     { href: "/#atlas", label: nav("map"), icon: MapPin },
     { href: "/verdict", label: nav("dossier"), icon: FolderOpen },
+    { href: "/opportunity-brief", label: "Brief QC", icon: BriefcaseBusiness },
     { href: "/feed", label: nav("opportunities"), icon: Crosshair },
     {
       href: "/coverage?view=municipalities",
@@ -83,7 +85,10 @@ export function CockpitSidebar({
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-2" aria-label={nav("mainNavigation")}>
         {links.map(({ href, label, icon: Icon }) => {
-          const selected = pathname === href || (href === "/feed" && pathname.startsWith("/feed"));
+          const selected =
+            pathname === href ||
+            (href === "/feed" && pathname.startsWith("/feed")) ||
+            (href === "/opportunity-brief" && pathname.startsWith("/opportunity-brief"));
           return (
             <Link
               key={href}

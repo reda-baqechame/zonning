@@ -35,8 +35,8 @@ Cursor will automatically:
 1. Pull all secrets from Vercel
 2. Push Postgres schema to Supabase
 3. Redeploy production
-4. Bootstrap 33 datasets
-5. Run 12/12 verify checks
+4. Bootstrap all sync-enabled datasets
+5. Run 18/18 verify checks
 6. Set GitHub secrets (if `gh` is logged in)
 
 Command used: `npm run auto-finish`
@@ -55,4 +55,4 @@ Command used: `npm run auto-finish`
 
 - ✅ App deployed: https://zonning.vercel.app
 - ✅ CRON_SECRET, SESSION_SECRET, ADMIN_EMAILS, NEXT_PUBLIC_APP_URL
-- ✅ Code hardened, 32 tests pass
+- ✅ Code hardened, ~200 tests pass

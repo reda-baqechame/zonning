@@ -8,6 +8,7 @@ export type DatasetId =
   | "permit-stats"
   | "permit-delays"
   | "tenders"
+  | "canadabuys"
   | "suppliers"
   | "transactions"
   | "transactions-2023"
@@ -50,6 +51,7 @@ export type DatasetId =
   | "zoning-longueuil"
   | "amp-registry"
   | "rbq-infractions"
+  | "cnesst"
   | "seao-standing-offers"
   | "inspection-violations-mtl"
   | "toronto-permits"
@@ -218,6 +220,22 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     refreshIntervalMinutes: 15,
     tier: "fast",
     syncSource: "ckan-tenders-ocds",
+  },
+  canadabuys: {
+    id: "canadabuys",
+    label: "CanadaBuys — avis de marchés fédéraux (Open Government)",
+    ckanId: "6abd20d4-7a1c-4b38-baa2-9525d0bb2fd2",
+    sourceUrl:
+      "https://open.canada.ca/data/en/dataset/6abd20d4-7a1c-4b38-baa2-9525d0bb2fd2",
+    preferredFormat: "JSON",
+    defaultLimit: 200,
+    productionLimit: 800,
+    refreshIntervalMinutes: 60,
+    tier: "daily",
+    syncSource: "canadabuys-ogp",
+    coverageStatus: "partial",
+    coverageNote:
+      "Avis fédéraux ouverts (Open Government Licence). Consulté via l'API datastore du Portail du gouvernement ouvert. / Open federal notices (Open Government Licence). Polled via the Open Government Portal datastore API.",
   },
   suppliers: {
     id: "suppliers",
@@ -851,11 +869,13 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
   },
   "amp-registry": {
     id: "amp-registry",
-    label: "Registre AMP (autorisation contracter)",
+    label: "Registre AMP (autorisation de contracter)",
     ckanId: "amp-autorises",
-    sourceUrl: "https://amp.quebec/",
+    sourceUrl:
+      "https://www.amp.gouv.qc.ca/en/authorization-to-enter-into-contracts/list-of-enterprises-authorized/",
     coverageStatus: "document_only",
-    coverageNote: "Corrected from RBQ active licences. Requires an AMP-supported source before automated sync.",
+    coverageNote:
+      "L'AMP publie la liste des entreprises autorisées comme page/recherche (pas de flux CKAN/CSV). Synchronisation automatique désactivée jusqu'à ce qu'une source lisible machine soit disponible. La vérification par entreprise se fait via la recherche officielle AMP. / AMP publishes the authorized-enterprises list as a page/search (no CKAN/CSV feed). Auto-sync disabled until a machine-readable source exists. Per-enterprise verification uses the official AMP search.",
     syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 500,
@@ -867,11 +887,13 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
   },
   "rbq-infractions": {
     id: "rbq-infractions",
-    label: "Infractions RBQ",
+    label: "Infractions / sanctions RBQ",
     ckanId: "rbq-infractions",
-    sourceUrl: "https://www.rbq.gouv.qc.ca/",
+    sourceUrl:
+      "https://www.rbq.gouv.qc.ca/lois-reglements-et-codes/penalites-financieres/",
     coverageStatus: "document_only",
-    coverageNote: "Corrected from RBQ active licences. Requires a verified infractions/sanctions source before automated sync.",
+    coverageNote:
+      "Aucun jeu de données ouvert autonome pour les infractions/sanctions RBQ — l'information est intégrée aux fiches du Registre des détenteurs de licence et publiée sur rbq.gouv.qc.ca. Synchronisation automatique désactivée (pas de flux CSV/CKAN). / No standalone open dataset for RBQ infractions/sanctions — the information is embedded in licensee registry records and on rbq.gouv.qc.ca. Auto-sync disabled (no CSV/CKAN feed).",
     syncEnabled: false,
     preferredFormat: "CSV",
     defaultLimit: 200,
@@ -879,6 +901,23 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     refreshIntervalMinutes: 1440,
     tier: "daily",
     syncSource: "rbq-infractions-scaffold",
+    bootstrapAllowlist: true,
+  },
+  cnesst: {
+    id: "cnesst",
+    label: "CNESST — permis d'agence / sécurité",
+    ckanId: "cnesst",
+    sourceUrl: "https://www.cnesst.gouv.qc.ca/en",
+    coverageStatus: "document_only",
+    coverageNote:
+      "Le permis d'agence de placement et les attestations CNESST ne sont pas publiés en flux ouvert. Synchronisation automatique désactivée ; statut modélisé comme déclaré par l'utilisateur dans le passeport. / CNESST agency permits and attestations are not published as an open feed. Auto-sync disabled; status is modelled as user-declared in the passport.",
+    syncEnabled: false,
+    preferredFormat: "CSV",
+    defaultLimit: 200,
+    productionLimit: 2000,
+    refreshIntervalMinutes: 1440,
+    tier: "daily",
+    syncSource: "cnesst-scaffold",
     bootstrapAllowlist: true,
   },
   "seao-standing-offers": {

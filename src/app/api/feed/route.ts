@@ -21,7 +21,7 @@ import {
   buildPermitOpportunityDossier,
   buildTenderOpportunityDossier,
 } from "@/lib/opportunities/dossier";
-import { buildGovernmentReadinessPassport } from "@/lib/readiness-passport";
+import { buildGovernmentReadinessPassport, profileFromUser } from "@/lib/readiness-passport";
 
 export async function GET(req: NextRequest) {
   const ip = clientIp(req);
@@ -37,18 +37,7 @@ export async function GET(req: NextRequest) {
   const userTrades = parseJsonArray(user?.trades);
   const userRegions = parseJsonArray(user?.regions);
   const readinessPassport = buildGovernmentReadinessPassport(
-    {
-      companyName: user?.companyName,
-      email: user?.email,
-      rbqLicenseClass: user?.rbqLicenseClass,
-      rbqLicenseNumber: user?.rbqLicenseNumber,
-      rbqVerified: user?.rbqVerified,
-      trades: userTrades,
-      regions: userRegions,
-      ampAuthorized: user?.ampAuthorized,
-      minProjectCost: user?.minProjectCost,
-      maxProjectCost: user?.maxProjectCost,
-    },
+    profileFromUser(user ?? {}),
     locale,
   );
   const userCtx = {

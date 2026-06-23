@@ -1,4 +1,4 @@
-import { fetchWithRetry } from "@/lib/http/resilience";
+import { politeFetchWithRetry } from "@/lib/http/polite-fetch";
 import { dataWarn } from "@/lib/datasets/log";
 
 const CKAN_BASES = {
@@ -21,7 +21,7 @@ export async function fetchCkanPackage(
   host: CkanHost = "quebec"
 ): Promise<{ resources: CkanResource[]; url: string } | null> {
   const base = CKAN_BASES[host];
-  const res = await fetchWithRetry(`${base}/package_show?id=${datasetId}`);
+  const res = await politeFetchWithRetry(`${base}/package_show?id=${datasetId}`);
   if (!res.ok) {
     dataWarn("fetchCkanPackage", { datasetId, host, status: res.status });
     return null;
@@ -79,7 +79,7 @@ export async function fetchCkanDatastoreTotal(
   host: CkanHost = "quebec"
 ): Promise<number | null> {
   const base = CKAN_BASES[host];
-  const res = await fetchWithRetry(
+  const res = await politeFetchWithRetry(
     `${base}/datastore_search?resource_id=${resourceId}&limit=0`
   );
   if (!res.ok) {
@@ -116,7 +116,7 @@ export async function fetchLatestSeaoJsonUrl(): Promise<string | null> {
 }
 
 export async function fetchText(url: string, maxBytes = 15_000_000): Promise<string | null> {
-  const res = await fetchWithRetry(url, undefined, { timeoutMs: 120_000 });
+  const res = await politeFetchWithRetry(url, undefined, { timeoutMs: 120_000 });
   if (!res.ok) {
     dataWarn("fetchText", { url, status: res.status });
     return null;
@@ -128,7 +128,7 @@ export async function fetchText(url: string, maxBytes = 15_000_000): Promise<str
 }
 
 export async function fetchJson<T>(url: string): Promise<T | null> {
-  const res = await fetchWithRetry(url);
+  const res = await politeFetchWithRetry(url);
   if (!res.ok) {
     dataWarn("fetchJson", { url, status: res.status });
     return null;
@@ -146,7 +146,7 @@ export async function fetchCkanDatastoreSearch(
   const base = CKAN_BASES[host];
   const sortParam = sort ? `&sort=${encodeURIComponent(sort)}` : "";
   const url = `${base}/datastore_search?resource_id=${resourceId}&limit=${limit}&offset=${offset}${sortParam}`;
-  const res = await fetchWithRetry(url);
+  const res = await politeFetchWithRetry(url);
   if (!res.ok) {
     dataWarn("fetchCkanDatastoreSearch", { resourceId, host, status: res.status });
     return [];

@@ -1,7 +1,7 @@
 # ZONNING — Final deploy steps
 
 **Live:** https://zonning.vercel.app  
-**CI:** 32 tests passing  
+**CI:** ~200 tests passing  
 **Vercel project:** [zonning](https://vercel.com/redabaquechame58-2565s-projects/zonning)
 
 ---
@@ -101,7 +101,7 @@ curl.exe -s https://zonning.vercel.app/api/health
 # Expect: "ready": true, "db": true, no "missing" array
 
 npm run verify:deploy
-# Expect: 12/12 checks pass
+# Expect: 18/18 checks pass
 ```
 
 ---

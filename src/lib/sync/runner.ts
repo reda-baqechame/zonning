@@ -8,6 +8,7 @@ import {
 } from "@/lib/datasets/registry";
 import { fetchPermitsPaginated } from "@/lib/datasets/fetchers/permits";
 import { fetchTenders } from "@/lib/datasets/fetchers/tenders";
+import { fetchCanadaBuys } from "@/lib/datasets/fetchers/canadabuys";
 import { fetchSuppliers } from "@/lib/datasets/fetchers/suppliers";
 import { fetchTransactions } from "@/lib/datasets/fetchers/transactions";
 import { fetchAssessments } from "@/lib/datasets/fetchers/assessment";
@@ -611,6 +612,37 @@ export async function syncTenders(limit?: number): Promise<SyncResult> {
 
       return {
         dataset: "tenders",
+        ok: true,
+        processed,
+        source: remote.length > 0 ? "live" : "empty",
+      };
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Sync failed";
+      await logSync(cfg.syncSource, "error", 0, message);
+      throw e;
+    }
+  });
+}
+
+export async function syncCanadaBuys(limit?: number): Promise<SyncResult> {
+  const cfg = DATASETS.canadabuys;
+  return runSync("canadabuys", async () => {
+    try {
+      const { records: remote } = await fetchCanadaBuys(limit ?? getSyncLimit("canadabuys"));
+      let processed = 0;
+      for (const t of remote) {
+        await prisma.tender.upsert({
+          where: { externalId: t.externalId },
+          create: { ...t, requiresAmp: t.requiresAmp ?? false },
+          update: { ...t, requiresAmp: t.requiresAmp ?? false },
+        });
+        processed++;
+      }
+      await persistSourceMetadata("canadabuys");
+      const status = remote.length > 0 ? "success" : "empty";
+      await logSync(cfg.syncSource, status, processed);
+      return {
+        dataset: "canadabuys",
         ok: true,
         processed,
         source: remote.length > 0 ? "live" : "empty",
@@ -1948,6 +1980,7 @@ const SYNC_FNS: Partial<Record<DatasetId, (limit?: number) => Promise<SyncResult
   "permits-gatineau": () => syncPermitsGatineau(),
   "permit-stats": syncPermitStats,
   tenders: syncTenders,
+  canadabuys: syncCanadaBuys,
   suppliers: syncSuppliers,
   transactions: syncTransactions,
   "transactions-2023": syncTransactions2023,
