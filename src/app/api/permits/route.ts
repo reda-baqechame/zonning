@@ -17,6 +17,15 @@ import { computeLeadSignals } from "@/lib/lead-signals";
 import { assessPermitQuality } from "@/lib/permits/quality";
 import { buildPermitOpportunityDossier } from "@/lib/opportunities/dossier";
 
+function isDatabaseConnectionError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes("timeout exceeded when trying to connect") ||
+    message.includes("Connection terminated due to connection timeout") ||
+    message.includes("Connection terminated unexpectedly")
+  );
+}
+
 async function loadGtcSites() {
   return prisma.contaminatedSite.findMany({
     where: {
@@ -48,6 +57,7 @@ export async function GET(req: NextRequest) {
   const limited = await rateLimitAsync(`api:permits:${ip}`, 120, 60_000);
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
+  try {
   const user = await getSessionUser();
   const limits = getPlanLimits(user?.plan);
   const publicPreview = !user;
@@ -236,4 +246,30 @@ export async function GET(req: NextRequest) {
       zeroReason,
     },
   });
+  } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      console.warn("[api/permits] database connection unavailable", {
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return NextResponse.json({
+        permits: [],
+        plan: "FREE",
+        complianceEntitled: false,
+        limits: { maxPermits: 0 },
+        mappable: 0,
+        total: 0,
+        dataUnavailable: true,
+        diagnostics: {
+          rawIndexed: 0,
+          afterDateFilter: 0,
+          afterFilters: 0,
+          mappable: 0,
+          days: 90,
+          lastSyncAt: null,
+          zeroReason: "database_unavailable",
+        },
+      });
+    }
+    throw error;
+  }
 }

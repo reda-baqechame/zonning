@@ -33,6 +33,7 @@ function NavLink({
   return (
     <Link
       href={href}
+      prefetch={false}
       onClick={onClick}
       className={cn(
         "rounded-lg px-3 py-2 text-sm transition",
@@ -102,7 +103,7 @@ export function NavBar() {
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-        <Link href="/" className="shrink-0 text-xl font-bold tracking-tight text-ink">
+        <Link href="/" prefetch={false} className="shrink-0 text-xl font-bold tracking-tight text-ink">
           ZON<span className="text-brand">NING</span>
           <span className="ml-1 align-super text-[10px] font-semibold text-brand">
             Québec
@@ -127,6 +128,7 @@ export function NavBar() {
           <Link
             href="/"
             locale={locale === "fr" ? "en" : "fr"}
+            prefetch={false}
             className="hidden rounded-lg px-2 py-1.5 text-muted hover:bg-surface-hover hover:text-ink sm:inline"
           >
             {locale === "fr" ? "EN" : "FR"}
@@ -154,12 +156,14 @@ export function NavBar() {
             <div className="hidden items-center gap-2 md:flex">
               <Link
                 href="/login"
+                prefetch={false}
                 className="rounded-lg px-3 py-2 text-muted hover:text-ink"
               >
                 {t("login")}
               </Link>
               <Link
                 href="/register"
+                prefetch={false}
                 className="rounded-lg bg-brand px-3 py-1.5 font-medium text-white shadow-sm hover:bg-brand-hover"
               >
                 {t("createWorkspace")}
@@ -214,6 +218,7 @@ export function NavBar() {
               <Link
                 href="/"
                 locale={locale === "fr" ? "en" : "fr"}
+                prefetch={false}
                 onClick={() => setMobileOpen(false)}
                 className="rounded-lg px-3 py-2 text-muted"
               >
@@ -246,7 +251,7 @@ export function NavBar() {
                     pathname={pathname}
                     onClick={() => setMobileOpen(false)}
                   />
-                  <Link href="/register" onClick={() => setMobileOpen(false)}>
+                  <Link href="/register" prefetch={false} onClick={() => setMobileOpen(false)}>
                     <Button className="mt-2 w-full">
                       {t("createWorkspace")}
                     </Button>

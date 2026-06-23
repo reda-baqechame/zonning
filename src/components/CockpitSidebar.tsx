@@ -68,7 +68,7 @@ export function CockpitSidebar({
   const navigation = (
     <>
       <div className="border-b border-line px-4 py-5">
-        <Link href="/" className="font-display text-xl font-bold text-ink">
+        <Link href="/" prefetch={false} className="font-display text-xl font-bold text-ink">
           ZON<span className="text-brand">NING</span>
         </Link>
         <p className="mt-1 text-[10px] font-medium uppercase leading-4 text-subtle">
@@ -88,6 +88,7 @@ export function CockpitSidebar({
             <Link
               key={href}
               href={href}
+              prefetch={false}
               onClick={() => setOpen(false)}
               className={cn(
                 "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition",
@@ -110,6 +111,7 @@ export function CockpitSidebar({
             <Link
               key={href}
               href={href}
+              prefetch={false}
               onClick={() => setOpen(false)}
               className={cn(
                 "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition",
@@ -127,6 +129,7 @@ export function CockpitSidebar({
       <div className="border-t border-line p-2">
         <Link
           href="/settings"
+          prefetch={false}
           className="flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium text-muted hover:bg-surface-hover hover:text-ink"
         >
           <Settings className="h-[18px] w-[18px]" strokeWidth={1.6} />
@@ -165,7 +168,7 @@ export function CockpitSidebar({
         {navigation}
       </aside>
       <header className="flex h-14 items-center justify-between border-b border-line bg-white px-4 lg:hidden">
-        <Link href="/" className="font-display text-lg font-bold text-ink">
+        <Link href="/" prefetch={false} className="font-display text-lg font-bold text-ink">
           ZON<span className="text-brand">NING</span>
         </Link>
         <button

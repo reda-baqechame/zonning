@@ -50,14 +50,16 @@ describe("pasted audit contracts", () => {
     expect(authorizedBlock).toContain("envWarnings");
   });
 
-  it("uses runtime truth for public summary and footer copy", () => {
+  it("keeps live runtime truth out of the global footer", () => {
     const runtimeTruth = read("src/lib/runtime-truth.ts");
     const publicRoute = read("src/app/api/public/runtime-summary/route.ts");
     const footer = read("src/components/SiteFooter.tsx");
 
     expect(runtimeTruth).toContain("searchableMunicipalities");
     expect(publicRoute).toContain("buildPublicRuntimeSummary");
-    expect(footer).toContain("buildPublicRuntimeSummary");
+    expect(footer).not.toContain("buildPublicRuntimeSummary");
+    expect(footer).not.toContain("@/lib/runtime-truth");
+    expect(footer).not.toContain("@/lib/prisma");
     expect(footer).toContain("trustTruth");
   });
 

@@ -19,7 +19,7 @@ function competitionKey(permitType: string, borough?: string | null): string {
   return `${borough ?? "_"}:${prefix}`;
 }
 
-/** Batch competition counts for a set of permits (one query per unique borough). */
+/** Batch competition counts for a set of permits with one grouped query. */
 export async function batchCompetitionCounts(
   permits: { permitType: string; borough?: string | null }[],
   days = 90
@@ -34,18 +34,14 @@ export async function batchCompetitionCounts(
     return map;
   }
 
-  await Promise.all(
-    boroughs.map(async (borough) => {
-      const rows = await prisma.permit.groupBy({
-        by: ["permitType"],
-        where: { issueDate: { gte: since }, borough },
-        _count: { _all: true },
-      });
-      for (const row of rows) {
-        map.set(competitionKey(row.permitType, borough), row._count._all);
-      }
-    })
-  );
+  const rows = await prisma.permit.groupBy({
+    by: ["borough", "permitType"],
+    where: { issueDate: { gte: since }, borough: { in: boroughs } },
+    _count: { _all: true },
+  });
+  for (const row of rows) {
+    map.set(competitionKey(row.permitType, row.borough), row._count._all);
+  }
 
   return map;
 }

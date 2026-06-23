@@ -23,15 +23,54 @@ import {
 } from "@/lib/opportunities/dossier";
 import { buildGovernmentReadinessPassport, profileFromUser } from "@/lib/readiness-passport";
 
+function isDatabaseConnectionError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes("timeout exceeded when trying to connect") ||
+    message.includes("Connection terminated due to connection timeout") ||
+    message.includes("Connection terminated unexpectedly")
+  );
+}
+
+function unavailableFeed(locale: "fr" | "en") {
+  return NextResponse.json({
+    items: [],
+    meta: {
+      plan: "FREE",
+      poolPermits: 0,
+      poolHighValue: 0,
+      poolUrgentTenders: 0,
+      shownPermits: 0,
+      shownTenders: 0,
+      hiddenHighValue: 0,
+      hiddenUrgent: 0,
+      estimatedValueHidden: 0,
+      dataUnavailable: true,
+    },
+    profile: null,
+    readinessPassport: buildGovernmentReadinessPassport(profileFromUser({}), locale),
+    plan: "FREE",
+    complianceEntitled: false,
+    dataUnavailable: true,
+    message:
+      locale === "fr"
+        ? "Les données prennent plus de temps que prévu. Réessayez dans un instant."
+        : "The data is taking longer than expected. Try again in a moment.",
+    generatedAt: new Date().toISOString(),
+  });
+}
+
 export async function GET(req: NextRequest) {
   const ip = clientIp(req);
   const limited = await rateLimitAsync(`api:feed:${ip}`, 90, 60_000);
   if (!limited.ok) return rateLimitResponse(limited.retryAfterSec);
 
+  const locale = req.nextUrl.searchParams.get("locale") === "en" ? "en" : "fr";
+
+  try {
   const user = await getSessionUser();
   const limits = getPlanLimits(user?.plan);
   const tab = req.nextUrl.searchParams.get("tab") ?? "all";
-  const locale = req.nextUrl.searchParams.get("locale") === "en" ? "en" : "fr";
   const isWatchlist = tab === "watchlist";
   const since = subDays(new Date(), 90);
   const userTrades = parseJsonArray(user?.trades);
@@ -424,4 +463,13 @@ export async function GET(req: NextRequest) {
     complianceEntitled: user ? getPlanLimits(user.plan).complianceVault : false,
     generatedAt: new Date().toISOString(),
   });
+  } catch (error) {
+    if (isDatabaseConnectionError(error)) {
+      console.warn("[api/feed] database connection unavailable", {
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return unavailableFeed(locale);
+    }
+    throw error;
+  }
 }

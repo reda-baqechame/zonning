@@ -87,6 +87,9 @@ export default function FeedClient({ dataMode }: { dataMode: RuntimeDataMode }) 
       }
       const loaded = (data.items ?? []) as FeedItem[];
       setItems(loaded);
+      if (data.dataUnavailable) {
+        setLoadError(data.message ?? common("error"));
+      }
       setProfile(data.profile ?? null);
       setReadinessPassport(data.readinessPassport ?? null);
       setUserPlan(data.plan ?? "FREE");
