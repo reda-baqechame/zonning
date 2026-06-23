@@ -57,7 +57,12 @@ export function NavBar() {
     return () => controller.abort();
   }, []);
 
-  if (pathname === "/feed" || pathname.startsWith("/feed/")) return null;
+  if (
+    pathname === "/feed" ||
+    pathname.startsWith("/feed/") ||
+    pathname.startsWith("/opportunity-brief")
+  )
+    return null;
 
   const plan = user ? "EQUIPE" : "FREE";
 
@@ -67,6 +72,12 @@ export function NavBar() {
     { href: "/investigate", label: t("investigate") },
     { href: "/verdict", label: t("dossier") },
     { href: user ? "/feed" : "/feed-preview", label: t("opportunities") },
+    ...(user
+      ? [
+          { href: "/triage", label: t("triage") },
+          { href: "/passport", label: t("passport") },
+        ]
+      : []),
     { href: "/chantier-radar", label: t("chantierRadar") },
     { href: "/carte", label: t("carte") },
     { href: "/coverage?view=municipalities", label: t("municipalities") },

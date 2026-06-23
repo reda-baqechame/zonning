@@ -31,6 +31,22 @@ model User {
   ampAuthorized        Boolean   @default(false)
   minProjectCost       Float?
   maxProjectCost       Float?
+
+  // Government Readiness Passport — tracked compliance profile.
+  // All status fields are user-declared unless a verified adapter exists.
+  neq                      String?
+  revenuQuebecStatus       String? // "valid" | "missing" | "expired"
+  revenuQuebecExpiresAt    DateTime?
+  cnesstStatus             String? // "valid" | "missing" | "agency_permit_required"
+  oqlfStatus               String? // "compliant" | "subject_to_francization" | "not_applicable"
+  insuranceCarrier         String?
+  insuranceExpiresAt       DateTime?
+  insuranceLimit          Float?
+  bidBondCapacity          Float?
+  lobbyismDeclarationOnFile Boolean @default(false)
+  signingResolutionOnFile   Boolean @default(false)
+  referencesCount          Int      @default(0)
+  employeesCount           Int      @default(0)
   plan                 Plan      @default(FREE)
   stripeCustomerId     String?
   stripeSubscriptionId String?

@@ -20,6 +20,20 @@ const schema = z.object({
   maxProjectCost: z.number().optional().nullable(),
   alertSmsEnabled: z.boolean().optional(),
   onboardingComplete: z.boolean().optional(),
+  // Government Readiness Passport — tracked compliance profile.
+  neq: z.string().optional().nullable(),
+  revenuQuebecStatus: z.string().optional().nullable(),
+  revenuQuebecExpiresAt: z.string().optional().nullable(),
+  cnesstStatus: z.string().optional().nullable(),
+  oqlfStatus: z.string().optional().nullable(),
+  insuranceCarrier: z.string().optional().nullable(),
+  insuranceExpiresAt: z.string().optional().nullable(),
+  insuranceLimit: z.number().optional().nullable(),
+  bidBondCapacity: z.number().optional().nullable(),
+  lobbyismDeclarationOnFile: z.boolean().optional(),
+  signingResolutionOnFile: z.boolean().optional(),
+  referencesCount: z.number().optional().nullable(),
+  employeesCount: z.number().optional().nullable(),
 });
 
 export async function GET(req: NextRequest) {
@@ -60,6 +74,33 @@ export async function PATCH(req: NextRequest) {
     if (body.rbqLicenseClass !== undefined) data.rbqLicenseClass = body.rbqLicenseClass;
     if (body.rbqLicenseNumber !== undefined) data.rbqLicenseNumber = body.rbqLicenseNumber;
 
+    // Government Readiness Passport fields.
+    if (body.neq !== undefined) data.neq = body.neq;
+    if (body.revenuQuebecStatus !== undefined) data.revenuQuebecStatus = body.revenuQuebecStatus;
+    if (body.revenuQuebecExpiresAt !== undefined) {
+      data.revenuQuebecExpiresAt = body.revenuQuebecExpiresAt
+        ? new Date(body.revenuQuebecExpiresAt)
+        : null;
+    }
+    if (body.cnesstStatus !== undefined) data.cnesstStatus = body.cnesstStatus;
+    if (body.oqlfStatus !== undefined) data.oqlfStatus = body.oqlfStatus;
+    if (body.insuranceCarrier !== undefined) data.insuranceCarrier = body.insuranceCarrier;
+    if (body.insuranceExpiresAt !== undefined) {
+      data.insuranceExpiresAt = body.insuranceExpiresAt
+        ? new Date(body.insuranceExpiresAt)
+        : null;
+    }
+    if (body.insuranceLimit !== undefined) data.insuranceLimit = body.insuranceLimit;
+    if (body.bidBondCapacity !== undefined) data.bidBondCapacity = body.bidBondCapacity;
+    if (body.lobbyismDeclarationOnFile !== undefined) {
+      data.lobbyismDeclarationOnFile = body.lobbyismDeclarationOnFile;
+    }
+    if (body.signingResolutionOnFile !== undefined) {
+      data.signingResolutionOnFile = body.signingResolutionOnFile;
+    }
+    if (body.referencesCount !== undefined) data.referencesCount = body.referencesCount;
+    if (body.employeesCount !== undefined) data.employeesCount = body.employeesCount;
+
     const updated = await prisma.user.update({
       where: { id: user.id },
       data,
@@ -94,6 +135,19 @@ export async function PATCH(req: NextRequest) {
         onboardingComplete: true,
         plan: true,
         stripeCustomerId: true,
+        neq: true,
+        revenuQuebecStatus: true,
+        revenuQuebecExpiresAt: true,
+        cnesstStatus: true,
+        oqlfStatus: true,
+        insuranceCarrier: true,
+        insuranceExpiresAt: true,
+        insuranceLimit: true,
+        bidBondCapacity: true,
+        lobbyismDeclarationOnFile: true,
+        signingResolutionOnFile: true,
+        referencesCount: true,
+        employeesCount: true,
       },
     });
 

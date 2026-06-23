@@ -51,6 +51,20 @@ export default function SettingsClient() {
     maxProjectCost: "",
     trades: [] as string[],
     regions: [] as string[],
+    // Government Readiness Passport — tracked compliance profile.
+    neq: "",
+    revenuQuebecStatus: "",
+    revenuQuebecExpiresAt: "",
+    cnesstStatus: "",
+    oqlfStatus: "",
+    insuranceCarrier: "",
+    insuranceExpiresAt: "",
+    insuranceLimit: "",
+    bidBondCapacity: "",
+    lobbyismDeclarationOnFile: false,
+    signingResolutionOnFile: false,
+    referencesCount: "",
+    employeesCount: "",
   });
   const [rbqVerified, setRbqVerified] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -86,6 +100,19 @@ export default function SettingsClient() {
           maxProjectCost: u.maxProjectCost?.toString() ?? "",
           trades: u.trades ? JSON.parse(u.trades) : [],
           regions: u.regions ? JSON.parse(u.regions) : [],
+          neq: u.neq ?? "",
+          revenuQuebecStatus: u.revenuQuebecStatus ?? "",
+          revenuQuebecExpiresAt: u.revenuQuebecExpiresAt ? u.revenuQuebecExpiresAt.slice(0, 10) : "",
+          cnesstStatus: u.cnesstStatus ?? "",
+          oqlfStatus: u.oqlfStatus ?? "",
+          insuranceCarrier: u.insuranceCarrier ?? "",
+          insuranceExpiresAt: u.insuranceExpiresAt ? u.insuranceExpiresAt.slice(0, 10) : "",
+          insuranceLimit: u.insuranceLimit?.toString() ?? "",
+          bidBondCapacity: u.bidBondCapacity?.toString() ?? "",
+          lobbyismDeclarationOnFile: u.lobbyismDeclarationOnFile ?? false,
+          signingResolutionOnFile: u.signingResolutionOnFile ?? false,
+          referencesCount: u.referencesCount?.toString() ?? "",
+          employeesCount: u.employeesCount?.toString() ?? "",
         });
       });
   }, []);
@@ -108,6 +135,17 @@ export default function SettingsClient() {
         ...form,
         minProjectCost: form.minProjectCost ? parseFloat(form.minProjectCost) : null,
         maxProjectCost: form.maxProjectCost ? parseFloat(form.maxProjectCost) : null,
+        neq: form.neq || null,
+        revenuQuebecStatus: form.revenuQuebecStatus || null,
+        revenuQuebecExpiresAt: form.revenuQuebecExpiresAt || null,
+        cnesstStatus: form.cnesstStatus || null,
+        oqlfStatus: form.oqlfStatus || null,
+        insuranceCarrier: form.insuranceCarrier || null,
+        insuranceExpiresAt: form.insuranceExpiresAt || null,
+        insuranceLimit: form.insuranceLimit ? parseFloat(form.insuranceLimit) : null,
+        bidBondCapacity: form.bidBondCapacity ? parseFloat(form.bidBondCapacity) : null,
+        referencesCount: form.referencesCount ? parseInt(form.referencesCount, 10) : null,
+        employeesCount: form.employeesCount ? parseInt(form.employeesCount, 10) : null,
         onboardingComplete: onboarding,
       }),
     });
@@ -248,6 +286,141 @@ export default function SettingsClient() {
                 {r}
               </button>
             ))}
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold text-ink">{t("complianceTitle")}</h2>
+          <p className="text-sm text-muted">{t("complianceSubtitle")}</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <FieldLabel htmlFor="neq">{t("neq")}</FieldLabel>
+              <Input
+                id="neq"
+                value={form.neq}
+                onChange={(e) => setForm({ ...form, neq: e.target.value })}
+                placeholder="1146123456"
+              />
+            </div>
+            <div>
+              <FieldLabel htmlFor="revenuQuebecStatus">{t("revenuQuebecStatus")}</FieldLabel>
+              <Select
+                id="revenuQuebecStatus"
+                value={form.revenuQuebecStatus}
+                onChange={(e) => setForm({ ...form, revenuQuebecStatus: e.target.value })}
+              >
+                <option value="">—</option>
+                <option value="valid">{t("statusValid")}</option>
+                <option value="expired">{t("statusExpired")}</option>
+                <option value="missing">{t("statusMissing")}</option>
+              </Select>
+            </div>
+            <div>
+              <FieldLabel htmlFor="revenuQuebecExpiresAt">{t("revenuQuebecExpiresAt")}</FieldLabel>
+              <Input
+                id="revenuQuebecExpiresAt"
+                type="date"
+                value={form.revenuQuebecExpiresAt}
+                onChange={(e) => setForm({ ...form, revenuQuebecExpiresAt: e.target.value })}
+              />
+            </div>
+            <div>
+              <FieldLabel htmlFor="cnesstStatus">{t("cnesstStatus")}</FieldLabel>
+              <Select
+                id="cnesstStatus"
+                value={form.cnesstStatus}
+                onChange={(e) => setForm({ ...form, cnesstStatus: e.target.value })}
+              >
+                <option value="">—</option>
+                <option value="valid">{t("statusValid")}</option>
+                <option value="agency_permit_required">{t("statusAgencyPermit")}</option>
+                <option value="missing">{t("statusMissing")}</option>
+              </Select>
+            </div>
+            <div>
+              <FieldLabel htmlFor="oqlfStatus">{t("oqlfStatus")}</FieldLabel>
+              <Select
+                id="oqlfStatus"
+                value={form.oqlfStatus}
+                onChange={(e) => setForm({ ...form, oqlfStatus: e.target.value })}
+              >
+                <option value="">—</option>
+                <option value="compliant">{t("oqlfCompliant")}</option>
+                <option value="subject_to_francization">{t("oqlfSubject")}</option>
+                <option value="not_applicable">{t("oqlfNA")}</option>
+              </Select>
+            </div>
+            <div>
+              <FieldLabel htmlFor="insuranceCarrier">{t("insuranceCarrier")}</FieldLabel>
+              <Input
+                id="insuranceCarrier"
+                value={form.insuranceCarrier}
+                onChange={(e) => setForm({ ...form, insuranceCarrier: e.target.value })}
+              />
+            </div>
+            <div>
+              <FieldLabel htmlFor="insuranceExpiresAt">{t("insuranceExpiresAt")}</FieldLabel>
+              <Input
+                id="insuranceExpiresAt"
+                type="date"
+                value={form.insuranceExpiresAt}
+                onChange={(e) => setForm({ ...form, insuranceExpiresAt: e.target.value })}
+              />
+            </div>
+            <div>
+              <FieldLabel htmlFor="insuranceLimit">{t("insuranceLimit")}</FieldLabel>
+              <Input
+                id="insuranceLimit"
+                type="number"
+                value={form.insuranceLimit}
+                onChange={(e) => setForm({ ...form, insuranceLimit: e.target.value })}
+              />
+            </div>
+            <div>
+              <FieldLabel htmlFor="bidBondCapacity">{t("bidBondCapacity")}</FieldLabel>
+              <Input
+                id="bidBondCapacity"
+                type="number"
+                value={form.bidBondCapacity}
+                onChange={(e) => setForm({ ...form, bidBondCapacity: e.target.value })}
+              />
+            </div>
+            <div>
+              <FieldLabel htmlFor="referencesCount">{t("referencesCount")}</FieldLabel>
+              <Input
+                id="referencesCount"
+                type="number"
+                value={form.referencesCount}
+                onChange={(e) => setForm({ ...form, referencesCount: e.target.value })}
+              />
+            </div>
+            <div>
+              <FieldLabel htmlFor="employeesCount">{t("employeesCount")}</FieldLabel>
+              <Input
+                id="employeesCount"
+                type="number"
+                value={form.employeesCount}
+                onChange={(e) => setForm({ ...form, employeesCount: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm text-muted">
+              <input
+                type="checkbox"
+                checked={form.lobbyismDeclarationOnFile}
+                onChange={(e) => setForm({ ...form, lobbyismDeclarationOnFile: e.target.checked })}
+              />
+              {t("lobbyismOnFile")}
+            </label>
+            <label className="flex items-center gap-2 text-sm text-muted">
+              <input
+                type="checkbox"
+                checked={form.signingResolutionOnFile}
+                onChange={(e) => setForm({ ...form, signingResolutionOnFile: e.target.checked })}
+              />
+              {t("signingResolutionOnFile")}
+            </label>
           </div>
         </section>
 

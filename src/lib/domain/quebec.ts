@@ -224,6 +224,21 @@ export type GovernmentReadinessPassport = {
     accountRequired: string;
     href: string;
   }[];
+  /**
+   * The default mission board for "get ready to bid on Quebec government work",
+   * ordered the way a contractor must complete it: identity -> licences ->
+   * attestations -> thresholds -> obligations -> submission. Each task links to
+   * the action or official site that resolves it.
+   */
+  missionBoard: {
+    id: string;
+    step: number;
+    title: string;
+    detail: string;
+    status: "ready" | "todo" | "blocked" | "verify";
+    buttonLabel: string;
+    href?: string;
+  }[];
 };
 
 export type PipelineStage =
