@@ -277,7 +277,7 @@
     "intelligence": "Intelligence",
     "developers": "API",
     "coverageApi": "API couverture",
-    "trustTruth": "{indexed} jeux indexes ? {sources} sources repertoriees ? {searchable} villes avec permis indexes ? {monitored} villes surveillees"
+    "trustTruth": "{indexed} jeux indexés · {sources} sources répertoriées · {searchable} villes avec permis indexés · {monitored} villes surveillées"
   },
   "common": {
     "loading": "Chargement…",
@@ -791,7 +791,7 @@
     "colSync": "Dernière sync",
     "apiLink": "Documentation API",
     "intelLink": "Explorateur intelligence",
-    "truthLine": "{indexed} jeux indexes ? {sources} sources repertoriees ? {searchable} villes avec permis indexes ? {monitored} villes surveillees",
+    "truthLine": "{indexed} jeux indexés · {sources} sources répertoriées · {searchable} villes avec permis indexés · {monitored} villes surveillées",
     "colStatus": "Statut"
   },
   "developers": {

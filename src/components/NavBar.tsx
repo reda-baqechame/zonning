@@ -11,6 +11,12 @@ import type { PublicUser } from "@/lib/user-dto";
 const PRO_PLANS = new Set(["PRO", "EQUIPE"]);
 const ESSENTIEL_PLUS = new Set(["ESSENTIEL", "PRO", "EQUIPE"]);
 
+type NavItem = {
+  href: string;
+  label: string;
+  desktop?: boolean;
+};
+
 function NavLink({
   href,
   label,
@@ -66,9 +72,8 @@ export function NavBar() {
 
   const plan = user ? "EQUIPE" : "FREE";
 
-  const links = [
+  const links: NavItem[] = [
     { href: "/", label: t("search") },
-    { href: "/#atlas", label: t("map") },
     { href: "/investigate", label: t("investigate") },
     { href: "/verdict", label: t("dossier") },
     { href: user ? "/feed" : "/feed-preview", label: t("opportunities") },
@@ -82,8 +87,8 @@ export function NavBar() {
     { href: "/chantier-radar", label: t("chantierRadar") },
     { href: "/carte", label: t("carte") },
     { href: "/guides", label: t("guidesNav") },
-    { href: "/coverage?view=municipalities", label: t("municipalities") },
-    { href: "/partenaires-ca", label: t("companies") },
+    { href: "/coverage?view=municipalities", label: t("municipalities"), desktop: false },
+    { href: "/partenaires-ca", label: t("companies"), desktop: false },
     { href: "/coverage", label: t("coverage") },
     ...(PRO_PLANS.has(plan)
       ? [{ href: "/compliance", label: t("compliance") }]
@@ -93,11 +98,12 @@ export function NavBar() {
       : []),
     ...(plan === "EQUIPE" ? [{ href: "/equipe", label: t("equipe") }] : []),
   ];
+  const desktopLinks = links.filter((link) => link.desktop !== false);
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-        <Link href="/" className="text-xl font-bold tracking-tight text-ink">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
+        <Link href="/" className="shrink-0 text-xl font-bold tracking-tight text-ink">
           ZON<span className="text-brand">NING</span>
           <span className="ml-1 align-super text-[10px] font-semibold text-brand">
             Québec
@@ -105,10 +111,10 @@ export function NavBar() {
         </Link>
 
         <nav
-          className="hidden items-center gap-1 lg:flex"
+          className="hidden min-w-0 flex-1 items-center justify-center gap-1 xl:flex"
           aria-label={t("mainNavigation")}
         >
-          {links.map((l) => (
+          {desktopLinks.map((l) => (
             <NavLink
               key={l.href}
               href={l.href}
@@ -118,7 +124,7 @@ export function NavBar() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex shrink-0 items-center gap-2 text-sm">
           <Link
             href="/"
             locale={locale === "fr" ? "en" : "fr"}
@@ -164,7 +170,7 @@ export function NavBar() {
 
           <button
             type="button"
-            className="rounded-lg p-2 text-muted hover:bg-surface-hover lg:hidden"
+            className="rounded-lg p-2 text-muted hover:bg-surface-hover xl:hidden"
             onClick={() => setMobileOpen(true)}
             aria-label={t("openMenu")}
           >
@@ -174,7 +180,7 @@ export function NavBar() {
       </div>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-[60] lg:hidden">
+        <div className="fixed inset-0 z-[60] xl:hidden">
           <div
             className="absolute inset-0 bg-slate-900/25"
             onClick={() => setMobileOpen(false)}

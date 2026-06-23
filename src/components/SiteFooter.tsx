@@ -29,9 +29,6 @@ export async function SiteFooter() {
           <Link href="/verdict" className="hover:text-brand">
             {n("dossier")}
           </Link>
-          <Link href="/#atlas" className="hover:text-brand">
-            {n("map")}
-          </Link>
           <Link href="/carte" className="hover:text-brand">
             {n("carte")}
           </Link>
