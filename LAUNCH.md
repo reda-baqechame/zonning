@@ -80,13 +80,13 @@ Verify:
 NEXT_PUBLIC_APP_URL=https://YOUR-PROJECT.vercel.app CRON_SECRET=... npm run verify:deploy
 ```
 
-Expect **12/12 checks pass**.
+Expect **18/18 checks pass**.
 
 ## Success
 
 - Login → onboarding → `/feed`
 - `/api/health` → `ok: true`
-- `/api/stats/public` → 33 datasets, 10 cities
+- `/api/stats/public` → all sync-enabled datasets, 10 cities
 - Vercel dashboard shows 8 cron jobs
 - Demo billing works until Stripe keys are added
 
@@ -106,6 +106,6 @@ When code wiring is complete, run this sequence once:
 | 6 | Cursor | `DATABASE_URL=... npm run setup:postgres` |
 | 7 | Cursor | `NEXT_PUBLIC_APP_URL=... CRON_SECRET=... npm run bootstrap:prod` |
 | 8 | You | GitHub → Settings → Secrets → `APP_URL` + `CRON_SECRET` |
-| 9 | Cursor | `npm run verify:deploy` → 12/12 |
+| 9 | Cursor | `npm run verify:deploy` → 18/18 |
 
 If `vercel login` is not done, Cursor cannot link or deploy — complete Step 1 first.
