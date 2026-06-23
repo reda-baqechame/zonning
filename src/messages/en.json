@@ -31,6 +31,7 @@
     "passport": "Readiness",
     "triage": "Triage",
     "guidesNav": "Guides",
+    "vaultNav": "Vault",
     "paiementPublic": "Public payments",
     "validation": "Validation",
     "dashboard": "Dashboard",
@@ -103,6 +104,22 @@
       "medium": "Medium",
       "high": "High"
     }
+  },
+  "vault": {
+    "title": "Document intelligence vault",
+    "subtitle": "Upload a tender/permit document you legally obtained. Get a plain action list: what to do, what's a blocker, what causes rejection.",
+    "privacy": "Your documents are private (Law 25). They are never shared, and you can delete them at any time.",
+    "analyze": "Analyze",
+    "uploadFailed": "Upload failed.",
+    "sourcePlaceholder": "Optional: the tender URL you downloaded it from",
+    "loading": "Loading your documents…",
+    "empty": "No documents yet. Upload one to begin.",
+    "delete": "Delete",
+    "taskSummary": "{blockers} blockers · {total} actions",
+    "taskSummaryDetail": "Do these in order. Blockers can cause automatic rejection.",
+    "rejectionRisks": "Rejection risks",
+    "requiredDocs": "Required documents",
+    "noExtraction": "No extraction available."
   },
   "guides": {
     "indexTitle": "Government website navigator",

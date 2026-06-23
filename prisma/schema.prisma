@@ -65,6 +65,7 @@ model User {
   conciergeRequest     ConciergeRequest?
   publicContracts      PublicContractPayment[]
   savedLeads           SavedLead[]
+  vaultDocuments       VaultDocument[]
 
   lastDigestAt DateTime?
 }
@@ -851,3 +852,34 @@ model WatchNotification {
   @@index([userId, read])
   @@index([watchItemId])
 }
+
+/// A tender/permit document the user uploaded to the Document Intelligence
+/// Vault for extraction. Files are user-private (Law 25) and never shared.
+/// The raw bytes are stored in private object storage; only the extracted
+/// structured analysis is persisted to the DB.
+model VaultDocument {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName    String
+  /// Detected/declared tender source link, if pasted alongside the upload.
+  sourceUrl   String?
+  /// Storage key for the uploaded bytes (private bucket).
+  storageKey  String
+  /// Detected mime type.
+  mimeType    String
+  byteSize    Int
+  /// Plain-text extracted from the document (truncated for analysis).
+  textPreview String?
+  /// Structured extraction result (JSON string of VaultExtraction).
+  extraction  String?
+  /// Whether the extraction used AI or fell back to deterministic heuristics.
+  extractedWithAi Boolean @default(false)
+  /// Soft delete / retention management (Law 25: user can purge on request).
+  deletedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+

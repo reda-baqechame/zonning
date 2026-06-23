@@ -31,6 +31,7 @@
     "passport": "Préparation",
     "triage": "Triage",
     "guidesNav": "Guides",
+    "vaultNav": "Coffre",
     "paiementPublic": "Paiement public",
     "validation": "Validation",
     "dashboard": "Tableau de bord",
@@ -103,6 +104,22 @@
       "medium": "Moyen",
       "high": "Élevé"
     }
+  },
+  "vault": {
+    "title": "Coffre-fort d'analyse de documents",
+    "subtitle": "Téléversez un document d'appel d'offres/permis obtenu légalement. Obtenez une liste d'actions claire : quoi faire, ce qui bloque, ce qui cause un rejet.",
+    "privacy": "Vos documents sont privés (Loi 25). Ils ne sont jamais partagés et vous pouvez les supprimer à tout moment.",
+    "analyze": "Analyser",
+    "uploadFailed": "Échec du téléversement.",
+    "sourcePlaceholder": "Optionnel : l'URL de l'appel d'où il provient",
+    "loading": "Chargement de vos documents…",
+    "empty": "Aucun document pour l'instant. Téléversez-en un pour commencer.",
+    "delete": "Supprimer",
+    "taskSummary": "{blockers} bloqueurs · {total} actions",
+    "taskSummaryDetail": "Faites-le dans l'ordre. Les bloqueurs peuvent causer un rejet automatique.",
+    "rejectionRisks": "Risques de rejet",
+    "requiredDocs": "Documents requis",
+    "noExtraction": "Aucune extraction disponible."
   },
   "guides": {
     "indexTitle": "Navigateur des sites gouvernementaux",
