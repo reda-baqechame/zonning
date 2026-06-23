@@ -68,6 +68,7 @@ export function OpportunityDetailPanel({
   }
 
   const dossier = getFeedDossier(item);
+  const mission = dossier?.governmentMission;
   const recommendation = dossier?.triage.recommendation ?? "deprioritize";
   const confirmed = unique([
     ...(dossier?.siteIntelligence?.confirmedFacts ?? []),
@@ -126,6 +127,65 @@ export function OpportunityDetailPanel({
             <span>{feed(`effort.${dossier?.triage.effort ?? "heavy"}`)}</span>
           </div>
         </section>
+
+        {mission ? (
+          <section>
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-ink">{feed("mission.taskBoard")}</h3>
+              <span className="text-xs font-semibold text-brand">
+                {feed(`mission.verdict.${mission.verdict}`)}
+              </span>
+            </div>
+            <div className="border border-line">
+              <div className="border-b border-line bg-surface-2 px-3 py-3">
+                <p className="text-sm font-semibold text-ink">
+                  {mission.worthBuyingDocuments
+                    ? feed("mission.worthBuying")
+                    : feed("mission.doNotBuyYet")}
+                </p>
+                <p className="mt-1 text-xs text-muted">{mission.deadlineLabel}</p>
+              </div>
+              <ol className="divide-y divide-line">
+                {mission.taskBoard.map((task, index) => (
+                  <li key={task.id} className="flex gap-3 px-3 py-3">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-surface-2 text-xs font-semibold text-muted">
+                      {index + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-sm font-semibold text-ink">{task.title}</p>
+                        <span className="shrink-0 rounded border border-line px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted">
+                          {feed(`mission.taskStatus.${task.status}`)}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs leading-5 text-muted">{task.detail}</p>
+                      {task.deadlineLabel ? (
+                        <p className="mt-1 text-xs font-medium text-warning-ink">
+                          {task.deadlineLabel}
+                        </p>
+                      ) : null}
+                      {task.href ? (
+                        <a
+                          href={task.href}
+                          target={task.href.startsWith("http") ? "_blank" : undefined}
+                          rel={task.href.startsWith("http") ? "noreferrer" : undefined}
+                          className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline"
+                        >
+                          {task.buttonLabel}
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      ) : (
+                        <p className="mt-2 text-xs font-semibold text-brand">
+                          {task.buttonLabel}
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </section>
+        ) : null}
 
         <section>
           <div className="mb-2 flex items-center justify-between">

@@ -334,7 +334,14 @@
       "officialAction": "Action sur le site officiel",
       "documents": "Documents/contrôles",
       "missing": "Préparation manquante",
-      "rejectionRisks": "Risques de rejet"
+      "rejectionRisks": "Risques de rejet",
+      "taskBoard": "Tableau de tâches ordonnées",
+      "taskStatus": {
+        "ready": "Prêt",
+        "todo": "À faire",
+        "blocked": "Bloqué",
+        "verify": "Vérifier"
+      }
     },
     "briefing": {
       "title": "File de décisions du jour",
@@ -371,6 +378,17 @@
       "generatedAt": "Analyse actualisée à {time}",
       "loadingData": "Actualisation des données",
       "summaryTitle": "Résumé opérationnel",
+      "readiness": {
+        "title": "Passeport de préparation gouvernementale",
+        "ready": "Prêt",
+        "missing": "Manquant",
+        "nextActions": "Prochaines actions",
+        "status": {
+          "ready": "Prêt",
+          "partial": "Partiellement prêt",
+          "blocked": "Bloqué"
+        }
+      },
       "signalsAnalyzed": "signaux analysés",
       "needVerification": "dossiers à vérifier",
       "followupsDue": "suivis dus sous 7 jours",

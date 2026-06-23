@@ -107,6 +107,12 @@ describe("OpportunityDossier", () => {
     expect(dossier.governmentMission?.requiredDocuments.join(" ")).toContain(
       "RBQ licence",
     );
+    expect(dossier.governmentMission?.taskBoard.map((task) => task.id)).toEqual([
+      "open-municipal-source",
+      "verify-rbq-class",
+      "check-zoning",
+      "casl-proof",
+    ]);
   });
 
   it("blocks top-lead language when confidence is low even if score is high", () => {
@@ -189,6 +195,14 @@ describe("OpportunityDossier", () => {
       "addenda",
     );
     expect(dossier.governmentMission?.nextButtons.some((button) => button.kind === "official_source")).toBe(true);
+    expect(dossier.governmentMission?.taskBoard.map((task) => task.id)).toEqual([
+      "open-seao",
+      "deadline-addenda",
+      "amp-threshold",
+      "revenue-quebec",
+      "lobbyism-declaration",
+      "price-submit",
+    ]);
   });
 
   it("blocks SEAO document spend when AMP and readiness gaps are unresolved", () => {
@@ -220,6 +234,7 @@ describe("OpportunityDossier", () => {
     expect(mission?.missingReadiness.join(" ")).toContain("AMP confirmation");
     expect(mission?.rejectionRisks.join(" ")).toContain("AMP authorization");
     expect(mission?.missingReadiness.join(" ")).not.toContain("amp_review_required");
+    expect(mission?.taskBoard.find((task) => task.id === "amp-threshold")?.status).toBe("blocked");
   });
 
   it("keeps permit quality codes out of contractor-facing limitations", () => {

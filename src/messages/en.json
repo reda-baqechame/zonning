@@ -334,7 +334,14 @@
       "officialAction": "Official-site action",
       "documents": "Documents/checks",
       "missing": "Missing readiness",
-      "rejectionRisks": "Rejection risks"
+      "rejectionRisks": "Rejection risks",
+      "taskBoard": "Ordered task board",
+      "taskStatus": {
+        "ready": "Ready",
+        "todo": "Todo",
+        "blocked": "Blocked",
+        "verify": "Verify"
+      }
     },
     "briefing": {
       "title": "Today's decision queue",
@@ -371,6 +378,17 @@
       "generatedAt": "Analysis refreshed at {time}",
       "loadingData": "Refreshing data",
       "summaryTitle": "Operating summary",
+      "readiness": {
+        "title": "Government readiness passport",
+        "ready": "Ready",
+        "missing": "Missing",
+        "nextActions": "Next actions",
+        "status": {
+          "ready": "Ready",
+          "partial": "Partially ready",
+          "blocked": "Blocked"
+        }
+      },
       "signalsAnalyzed": "signals analyzed",
       "needVerification": "records to verify",
       "followupsDue": "follow-ups due within 7 days",

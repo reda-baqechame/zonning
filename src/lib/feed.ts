@@ -4,9 +4,12 @@ import type { PermitDataQuality } from "@/lib/permits/quality";
 import type { PipelineScoreResult } from "@/lib/pipeline-score";
 import type { TenderScoreResult } from "@/lib/tender-score";
 import type {
+  GovernmentReadinessPassport,
   OpportunityDossier,
   PipelineStage,
 } from "@/lib/domain/quebec";
+
+export type { GovernmentReadinessPassport };
 
 type SavedOpportunity = {
   id: string;

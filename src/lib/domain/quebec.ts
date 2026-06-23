@@ -168,6 +168,15 @@ export type OpportunityDossier = {
     requiredDocuments: string[];
     missingReadiness: string[];
     rejectionRisks: string[];
+    taskBoard: {
+      id: string;
+      title: string;
+      detail: string;
+      status: "ready" | "todo" | "blocked" | "verify";
+      deadlineLabel?: string;
+      buttonLabel: string;
+      href?: string;
+    }[];
     nextButtons: {
       label: string;
       href?: string;
@@ -191,6 +200,30 @@ export type OpportunityDossier = {
     enabled: boolean;
     fields: string[];
   };
+};
+
+export type GovernmentReadinessPassport = {
+  score: number;
+  status: "ready" | "partial" | "blocked";
+  headline: string;
+  readyItems: string[];
+  missingItems: string[];
+  blockers: string[];
+  nextActions: {
+    id: string;
+    label: string;
+    detail: string;
+    buttonLabel: string;
+    href: string;
+    priority: "high" | "medium" | "low";
+  }[];
+  officialSites: {
+    id: string;
+    label: string;
+    purpose: string;
+    accountRequired: string;
+    href: string;
+  }[];
 };
 
 export type PipelineStage =

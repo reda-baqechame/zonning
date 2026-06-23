@@ -307,6 +307,8 @@ function buildPermitGovernmentMission(input: {
     !permit.applicantName ? copy(locale, "Nom du demandeur/contact publié.", "Published applicant/contact name.") : "",
     dataQuality?.sourceScope !== "record" ? copy(locale, "Lien vers le dossier municipal exact, pas seulement le jeu de données.", "Link to the exact municipal record, not only the dataset.") : "",
   ]);
+  const hasExactRecord = dataQuality?.sourceScope === "record";
+  const hasApplicant = Boolean(permit.applicantName);
 
   return {
     verdict: missionVerdict(recommendation),
@@ -332,6 +334,41 @@ function buildPermitGovernmentMission(input: {
       copy(locale, "Prospection sans preuve de source publique et base LCAP/CASL.", "Outreach without public-source and CASL basis proof."),
       copy(locale, "Zonage ou contraintes du site non confirmés avant d'évaluer l'occasion.", "Zoning or site constraints not confirmed before evaluating the opportunity."),
     ]),
+    taskBoard: [
+      {
+        id: "open-municipal-source",
+        title: copy(locale, "Ouvrir la source municipale", "Open the municipal source"),
+        detail: copy(locale, "Confirmer que le permis, l'adresse, la date et la portée correspondent au dossier affiché.", "Confirm the permit, address, date, and scope match the displayed record."),
+        status: hasExactRecord ? "todo" : "verify",
+        deadlineLabel: deadline.deadlineLabel,
+        buttonLabel: copy(locale, "Ouvrir la source", "Open source"),
+        href: permit.sourceUrl,
+      },
+      {
+        id: "verify-rbq-class",
+        title: copy(locale, "Vérifier la classe RBQ", "Verify RBQ class"),
+        detail: copy(locale, "Comparer la sous-catégorie RBQ de votre profil avec la portée des travaux publiés.", "Compare your RBQ subclass with the published work scope."),
+        status: thresholds.missingEvidence.includes("rbq_profile") ? "blocked" : "verify",
+        buttonLabel: copy(locale, "Vérifier RBQ", "Check RBQ"),
+        href: "/settings",
+      },
+      {
+        id: "check-zoning",
+        title: copy(locale, "Confirmer zonage et contraintes", "Confirm zoning and constraints"),
+        detail: copy(locale, "Vérifier l'usage, les contraintes patrimoniales/contaminées et les règles municipales avant d'évaluer le site.", "Verify use, heritage/contamination constraints, and municipal rules before evaluating the site."),
+        status: thresholds.missingEvidence.includes("zoning") ? "blocked" : "verify",
+        buttonLabel: copy(locale, "Ouvrir l'intelligence", "Open intelligence"),
+        href: "/intelligence",
+      },
+      {
+        id: "casl-proof",
+        title: copy(locale, "Préparer la preuve LCAP/CASL", "Prepare CASL proof"),
+        detail: copy(locale, "Ne pas prospecter avant d'avoir conservé la source publique et le contexte du contact.", "Do not prospect before saving the public source and contact context."),
+        status: hasApplicant ? "todo" : "blocked",
+        buttonLabel: copy(locale, "Créer la preuve", "Create proof"),
+        href: "/compliance",
+      },
+    ],
     nextButtons: [
       {
         kind: "official_source",
@@ -365,6 +402,13 @@ function buildTenderGovernmentMission(input: {
     tender.requiresAmp ? readinessGapText("amp_review_required", locale) : "",
     !tender.organization ? copy(locale, "Organisme acheteur confirmé.", "Confirmed buyer organization.") : "",
   ]);
+  const ampBlocked = Boolean(tender.requiresAmp);
+  const deadlineStatus: GovernmentMission["taskBoard"][number]["status"] =
+    deadline.deadlineRisk === "missed" || deadline.deadlineRisk === "urgent"
+      ? "blocked"
+      : deadline.deadlineRisk === "unknown"
+        ? "verify"
+        : "todo";
 
   return {
     verdict: missionVerdict(recommendation),
@@ -394,6 +438,57 @@ function buildTenderGovernmentMission(input: {
       copy(locale, "Mauvaise méthode, heure ou lieu de dépôt.", "Wrong submission method, time, or place."),
       copy(locale, "Cautionnement, assurance, CNESST, OQLF ou licence RBQ non conforme.", "Bonding, insurance, CNESST, OQLF, or RBQ licence non-compliant."),
     ]),
+    taskBoard: [
+      {
+        id: "open-seao",
+        title: copy(locale, "Ouvrir l'avis SEAO", "Open the SEAO notice"),
+        detail: copy(locale, "Confirmer l'acheteur, le numéro d'avis, les dates, la catégorie et la méthode de dépôt.", "Confirm buyer, notice number, dates, category, and submission method."),
+        status: "todo",
+        deadlineLabel: deadline.deadlineLabel,
+        buttonLabel: copy(locale, "Ouvrir SEAO", "Open SEAO"),
+        href: tender.sourceUrl,
+      },
+      {
+        id: "deadline-addenda",
+        title: copy(locale, "Vérifier échéance et addendas", "Check deadline and addenda"),
+        detail: copy(locale, "Relire les addendas publiés avant toute décision de prix ou dépôt.", "Review published addenda before any pricing or submission decision."),
+        status: deadlineStatus,
+        deadlineLabel: deadline.deadlineLabel,
+        buttonLabel: copy(locale, "Voir les addendas", "View addenda"),
+        href: tender.sourceUrl,
+      },
+      {
+        id: "amp-threshold",
+        title: copy(locale, "Valider AMP avant de payer", "Validate AMP before spending"),
+        detail: copy(locale, "Pour les seuils applicables, l'autorisation doit être détenue à la date de dépôt de la soumission.", "For applicable thresholds, authorization must be held on the bid submission date."),
+        status: ampBlocked ? "blocked" : "ready",
+        buttonLabel: copy(locale, "Vérifier AMP", "Check AMP"),
+        href: "https://www.amp.quebec/en/autorisation-de-contracter",
+      },
+      {
+        id: "revenue-quebec",
+        title: copy(locale, "Obtenir l'attestation Revenu Québec", "Get the Revenu Québec attestation"),
+        detail: copy(locale, "Confirmer que l'attestation sera valide pour la soumission et les exigences du dossier.", "Confirm the attestation will be valid for the bid and file requirements."),
+        status: "verify",
+        buttonLabel: copy(locale, "Préparer l'attestation", "Prepare attestation"),
+        href: "/settings",
+      },
+      {
+        id: "lobbyism-declaration",
+        title: copy(locale, "Préparer la déclaration obligatoire", "Prepare the mandatory declaration"),
+        detail: copy(locale, "Identifier les formulaires obligatoires, signatures, non-collusion/lobbyisme et causes de rejet automatique.", "Identify mandatory forms, signatures, non-collusion/lobbying, and automatic rejection clauses."),
+        status: "verify",
+        buttonLabel: copy(locale, "Lister les formulaires", "List forms"),
+      },
+      {
+        id: "price-submit",
+        title: copy(locale, "Préparer prix et dépôt", "Prepare price and submission"),
+        detail: copy(locale, "Assembler le bordereau, assurances/cautionnements et méthode de dépôt avant la date limite.", "Assemble pricing sheet, insurance/bonds, and submission method before the deadline."),
+        status: deadlineStatus,
+        deadlineLabel: deadline.deadlineLabel,
+        buttonLabel: copy(locale, "Ajouter au pipeline", "Add to pipeline"),
+      },
+    ],
     nextButtons: [
       {
         kind: "official_source",

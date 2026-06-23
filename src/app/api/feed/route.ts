@@ -21,6 +21,7 @@ import {
   buildPermitOpportunityDossier,
   buildTenderOpportunityDossier,
 } from "@/lib/opportunities/dossier";
+import { buildGovernmentReadinessPassport } from "@/lib/readiness-passport";
 
 export async function GET(req: NextRequest) {
   const ip = clientIp(req);
@@ -35,6 +36,21 @@ export async function GET(req: NextRequest) {
   const since = subDays(new Date(), 90);
   const userTrades = parseJsonArray(user?.trades);
   const userRegions = parseJsonArray(user?.regions);
+  const readinessPassport = buildGovernmentReadinessPassport(
+    {
+      companyName: user?.companyName,
+      email: user?.email,
+      rbqLicenseClass: user?.rbqLicenseClass,
+      rbqLicenseNumber: user?.rbqLicenseNumber,
+      rbqVerified: user?.rbqVerified,
+      trades: userTrades,
+      regions: userRegions,
+      ampAuthorized: user?.ampAuthorized,
+      minProjectCost: user?.minProjectCost,
+      maxProjectCost: user?.maxProjectCost,
+    },
+    locale,
+  );
   const userCtx = {
     minProjectCost: user?.minProjectCost,
     maxProjectCost: user?.maxProjectCost,
@@ -407,10 +423,14 @@ export async function GET(req: NextRequest) {
       trades: userTrades,
       regions: userRegions,
       ampAuthorized: user?.ampAuthorized ?? false,
+      rbqLicenseClass: user?.rbqLicenseClass ?? null,
+      rbqLicenseNumber: user?.rbqLicenseNumber ?? null,
+      rbqVerified: user?.rbqVerified ?? false,
       name: user?.name ?? null,
       email: user?.email ?? null,
       companyName: user?.companyName ?? null,
     },
+    readinessPassport,
     plan: user?.plan ?? "FREE",
     complianceEntitled: user ? getPlanLimits(user.plan).complianceVault : false,
     generatedAt: new Date().toISOString(),

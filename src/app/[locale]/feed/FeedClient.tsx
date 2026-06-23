@@ -2,7 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Building2, CheckCircle2, Clock3, RefreshCw, X } from "lucide-react";
+import {
+  Building2,
+  CheckCircle2,
+  CircleAlert,
+  Clock3,
+  ExternalLink,
+  RefreshCw,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 import { CockpitSidebar } from "@/components/CockpitSidebar";
 import { OpportunityDetailPanel } from "@/components/OpportunityDetailPanel";
 import {
@@ -17,6 +26,7 @@ import {
   getFeedDossier,
   getFeedLocation,
   getFeedTitle,
+  type GovernmentReadinessPassport,
   type FeedItem,
 } from "@/lib/feed";
 import type { PipelineStage } from "@/lib/domain/quebec";
@@ -46,6 +56,8 @@ export default function FeedClient({ dataMode }: { dataMode: RuntimeDataMode }) 
   const { error: toastError, success } = useToast();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [profile, setProfile] = useState<ContractorProfile | null>(null);
+  const [readinessPassport, setReadinessPassport] =
+    useState<GovernmentReadinessPassport | null>(null);
   const [userPlan, setUserPlan] = useState("FREE");
   const [complianceEntitled, setComplianceEntitled] = useState(false);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
@@ -76,6 +88,7 @@ export default function FeedClient({ dataMode }: { dataMode: RuntimeDataMode }) 
       const loaded = (data.items ?? []) as FeedItem[];
       setItems(loaded);
       setProfile(data.profile ?? null);
+      setReadinessPassport(data.readinessPassport ?? null);
       setUserPlan(data.plan ?? "FREE");
       setComplianceEntitled(data.complianceEntitled ?? false);
       setGeneratedAt(data.generatedAt ?? null);
@@ -334,6 +347,81 @@ export default function FeedClient({ dataMode }: { dataMode: RuntimeDataMode }) 
               </p>
             ) : null}
           </header>
+
+          {readinessPassport ? (
+            <section className="mb-4 border border-line bg-white p-4" aria-label={workspace("readiness.title")}>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-2 text-sm font-semibold text-ink">
+                    <ShieldCheck className="h-4 w-4 text-brand" />
+                    {workspace("readiness.title")}
+                  </p>
+                  <p className="mt-1 text-sm text-muted">{readinessPassport.headline}</p>
+                </div>
+                <div className="shrink-0">
+                  <p className="tabular-nums text-3xl font-semibold text-ink">
+                    {readinessPassport.score}%
+                  </p>
+                  <p className="text-xs font-medium text-muted">
+                    {workspace(`readiness.status.${readinessPassport.status}`)}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr_1.2fr]">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase text-subtle">
+                    {workspace("readiness.ready")}
+                  </p>
+                  <ul className="mt-2 space-y-1 text-xs text-muted">
+                    {readinessPassport.readyItems.slice(0, 4).map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase text-subtle">
+                    {workspace("readiness.missing")}
+                  </p>
+                  <ul className="mt-2 space-y-1 text-xs text-muted">
+                    {readinessPassport.missingItems.slice(0, 5).map((item) => (
+                      <li key={item} className="flex gap-2">
+                        <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase text-subtle">
+                    {workspace("readiness.nextActions")}
+                  </p>
+                  <div className="mt-2 grid gap-2">
+                    {readinessPassport.nextActions.slice(0, 3).map((action) => (
+                      <a
+                        key={action.id}
+                        href={action.href}
+                        target={action.href.startsWith("http") ? "_blank" : undefined}
+                        rel={action.href.startsWith("http") ? "noreferrer" : undefined}
+                        className="flex items-center justify-between gap-3 rounded-md border border-line px-3 py-2 text-xs hover:border-brand"
+                      >
+                        <span>
+                          <span className="block font-semibold text-ink">{action.label}</span>
+                          <span className="mt-0.5 block text-muted">{action.detail}</span>
+                        </span>
+                        <span className="inline-flex shrink-0 items-center gap-1 font-semibold text-brand">
+                          {action.buttonLabel}
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+          ) : null}
 
           <section className="mb-4 grid border border-line bg-white sm:grid-cols-3" aria-label={workspace("summaryTitle")}>
             <div className="flex items-center gap-3 border-b border-line px-4 py-4 sm:border-b-0 sm:border-r">
