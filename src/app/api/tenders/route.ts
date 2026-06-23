@@ -60,12 +60,17 @@ export async function GET(req: NextRequest) {
 
   const user = await getSessionUser();
   const limits = getPlanLimits(user?.plan);
+  const publicPreview = !user;
   const { searchParams } = req.nextUrl;
   const category = searchParams.get("category");
   const region = searchParams.get("region");
   const q = searchParams.get("q")?.trim();
   const ampOnly = searchParams.get("ampOnly") === "true";
   const standingOnly = searchParams.get("standing") === "true";
+  const requestedLimit = Number.parseInt(searchParams.get("limit") ?? "", 10);
+  const maxTenders = publicPreview
+    ? Math.min(Number.isFinite(requestedLimit) ? requestedLimit : 20, 30)
+    : limits.maxTenders;
 
   const statusOpen = standingOnly
     ? { status: "standing" }
@@ -93,7 +98,7 @@ export async function GET(req: NextRequest) {
       ],
     },
     orderBy: { closesAt: "asc" },
-    take: limits.maxTenders * 2,
+    take: maxTenders * 2,
   });
 
   const userTrades = parseJsonArray(user?.trades);
@@ -128,11 +133,20 @@ export async function GET(req: NextRequest) {
       const matchScore = ranking.score;
       const match = computeMatchContext(userTrades, userRegions, t);
       const [similarAwards, amendmentCount, incumbent] = await Promise.all([
-        limits.maxTenders > 5 ? getSimilarAwards(t.unspsc, t.category, 3) : Promise.resolve([]),
-        t.externalId
+        !publicPreview && limits.maxTenders > 5
+          ? getSimilarAwards(t.unspsc, t.category, 3)
+          : Promise.resolve([]),
+        !publicPreview && t.externalId
           ? prisma.seaoAmendment.count({ where: { tenderExternalId: t.externalId } })
           : Promise.resolve(0),
-        incumbentFor(t.unspsc, t.category),
+        publicPreview
+          ? Promise.resolve({
+              totalAwards: 0,
+              distinctWinners: 0,
+              dominance: 0,
+              topIncumbents: [],
+            } satisfies IncumbentIntelligence)
+          : incumbentFor(t.unspsc, t.category),
       ]);
 
       const isUserIncumbent =
@@ -249,7 +263,7 @@ export async function GET(req: NextRequest) {
       filtered = slice;
     }
   } else {
-    filtered = filtered.slice(0, limits.maxTenders);
+    filtered = filtered.slice(0, maxTenders);
   }
 
   return NextResponse.json({
@@ -260,7 +274,7 @@ export async function GET(req: NextRequest) {
       ),
     ].slice(0, 20),
     plan: user?.plan ?? "FREE",
-    complianceEntitled: getPlanLimits(user?.plan).complianceVault,
-    limits: { maxTenders: limits.maxTenders },
+    complianceEntitled: publicPreview ? false : getPlanLimits(user?.plan).complianceVault,
+    limits: { maxTenders },
   });
 }
