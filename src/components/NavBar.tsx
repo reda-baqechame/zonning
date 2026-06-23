@@ -80,6 +80,7 @@ export function NavBar() {
       : []),
     { href: "/chantier-radar", label: t("chantierRadar") },
     { href: "/carte", label: t("carte") },
+    { href: "/guides", label: t("guidesNav") },
     { href: "/coverage?view=municipalities", label: t("municipalities") },
     { href: "/partenaires-ca", label: t("companies") },
     { href: "/coverage", label: t("coverage") },

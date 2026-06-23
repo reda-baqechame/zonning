@@ -30,6 +30,7 @@
     "carte": "Map",
     "passport": "Readiness",
     "triage": "Triage",
+    "guidesNav": "Guides",
     "paiementPublic": "Public payments",
     "validation": "Validation",
     "dashboard": "Dashboard",
@@ -102,6 +103,20 @@
       "medium": "Medium",
       "high": "High"
     }
+  },
+  "guides": {
+    "indexTitle": "Government website navigator",
+    "indexSubtitle": "Plain-English guides for every official Quebec and federal site you need to win government work — what it's for, when you need it, what account you need, and what to click.",
+    "indexFooter": "ZONNING points you to official sources under an open licence. It never bypasses logins or paid documents.",
+    "whenNeeded": "When you need it",
+    "accountRequired": "Account required",
+    "produces": "What it produces",
+    "stepsTitle": "What to do, in order",
+    "problemsTitle": "Common problems",
+    "support": "Support",
+    "openOfficial": "Open {name}",
+    "checkSituation": "Check my situation on {name}",
+    "legalDisclaimer": "Editorial guidance only. Always confirm on the official site. ZONNING does not submit on your behalf."
   },
   "hero": {
     "badge": "{datasets} datasets · {cities} cities",

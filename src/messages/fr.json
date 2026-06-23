@@ -30,6 +30,7 @@
     "carte": "Carte",
     "passport": "Préparation",
     "triage": "Triage",
+    "guidesNav": "Guides",
     "paiementPublic": "Paiement public",
     "validation": "Validation",
     "dashboard": "Tableau de bord",
@@ -102,6 +103,20 @@
       "medium": "Moyen",
       "high": "Élevé"
     }
+  },
+  "guides": {
+    "indexTitle": "Navigateur des sites gouvernementaux",
+    "indexSubtitle": "Des guides en langage clair pour chaque site officiel québécois et fédéral dont vous avez besoin pour gagner des marchés publics — à quoi ça sert, quand vous en avez besoin, quel compte il faut et quoi cliquer.",
+    "indexFooter": "ZONNING vous oriente vers les sources officielles sous licence ouverte. Il ne contourne jamais les connexions ni les documents payants.",
+    "whenNeeded": "Quand vous en avez besoin",
+    "accountRequired": "Compte requis",
+    "produces": "Ce que ça produit",
+    "stepsTitle": "Ce qu'il faut faire, dans l'ordre",
+    "problemsTitle": "Problèmes fréquents",
+    "support": "Support",
+    "openOfficial": "Ouvrir {name}",
+    "checkSituation": "Vérifier ma situation sur {name}",
+    "legalDisclaimer": "Conseils éditoriaux seulement. Confirmez toujours sur le site officiel. ZONNING ne soumet pas en votre nom."
   },
   "hero": {
     "badge": "{datasets} jeux de données · {cities} villes",
