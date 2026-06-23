@@ -57,6 +57,14 @@ function value(item: FeedItem, locale: string) {
   return amount ? formatCad(amount, locale) : null;
 }
 
+function proofCount(item: FeedItem, dossier?: OpportunityDossier) {
+  let count = dossier?.siteIntelligence?.confirmedFacts?.length ?? 0;
+  if (item.kind === "permit" && item.permit.dataQuality?.officialSource) count += 1;
+  if (item.signals.some((signal) => signal.id === "rbq_eligible")) count += 1;
+  if (item.kind === "tender") count += 1;
+  return count;
+}
+
 export function OpportunityTable({
   items,
   selectedKey,
@@ -192,7 +200,9 @@ export function OpportunityTable({
                     </span>
                   )}
                 </div>
-                <span className="tabular-nums text-sm font-semibold text-brand">{dossier?.confidence ?? 0}%</span>
+                <span className="tabular-nums text-sm font-semibold text-brand">
+                  {t("proofCount", { count: proofCount(item, dossier) })}
+                </span>
               </div>
               <div className="mt-3 flex items-center justify-between gap-3">
                 <span className={cn("inline-flex items-center gap-2 text-xs font-semibold", decisionTone(recommendation))}>
@@ -279,12 +289,12 @@ export function OpportunityTable({
                       {itemDeadline ?? t("deadlineUnavailable")}
                     </span>
                   </span>
-                  <span role="cell" className="tabular-nums">
-                    <span className={cn("block text-sm font-semibold", dossier?.confidenceLevel === "high" ? "text-success-ink" : dossier?.confidenceLevel === "low" ? "text-warning-ink" : "text-brand")}>
-                      {dossier?.confidence ?? 0}%
+                  <span role="cell">
+                    <span className="block text-sm font-semibold text-ink">
+                      {t("proofCount", { count: proofCount(item, dossier) })}
                     </span>
                     <span className="mt-1 block text-xs text-muted">
-                      {feed(`confidenceLevels.${dossier?.confidenceLevel ?? "low"}`)}
+                      {item.kind === "permit" ? t("permitRecord") : t("tenderRecord")}
                     </span>
                   </span>
                   <span role="cell" className="min-w-0 pl-3">

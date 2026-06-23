@@ -282,7 +282,7 @@ function OpportunityCard({
             {item.value ? ` - ${formatCad(item.value, locale)}` : ""}
           </p>
           <p>
-            <span className="font-semibold text-ink">Confidence:</span> {confidenceLabel(item.confidenceScore)}
+            <span className="font-semibold text-ink">Proof level:</span> {confidenceLabel(item.confidenceScore)}
           </p>
           {item.complianceNotes.slice(0, 2).map((note) => (
             <p key={note} className="text-warning-ink">{note}</p>

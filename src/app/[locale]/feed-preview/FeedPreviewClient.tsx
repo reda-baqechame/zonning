@@ -36,6 +36,43 @@ type TenderItem = {
 };
 
 const SAMPLE_LIMIT = 10;
+const CONSTRUCTION_TERMS = [
+  "construction",
+  "renovation",
+  "rénovation",
+  "refection",
+  "réfection",
+  "travaux",
+  "toiture",
+  "batiment",
+  "bâtiment",
+  "ecole",
+  "école",
+  "aqueduc",
+  "route",
+  "pavage",
+  "parc",
+  "electric",
+  "électri",
+  "plomberie",
+  "mecanique",
+  "mécanique",
+];
+const SUMMARY_CONSTRUCTION_TERMS = CONSTRUCTION_TERMS.filter(
+  (term) => term !== "construction",
+);
+
+function isConstructionTender(tender: TenderItem) {
+  const titleAndBuyer = [tender.title, tender.organization]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  const summary = (tender.plainSummary ?? "").toLowerCase();
+  return (
+    CONSTRUCTION_TERMS.some((term) => titleAndBuyer.includes(term)) ||
+    SUMMARY_CONSTRUCTION_TERMS.some((term) => summary.includes(term))
+  );
+}
 
 export default function FeedPreviewClient({ signedIn }: { signedIn: boolean }) {
   const t = useTranslations("feedPreview");
@@ -50,7 +87,7 @@ export default function FeedPreviewClient({ signedIn }: { signedIn: boolean }) {
       fetch("/api/tenders").then((r) => r.json()).catch(() => ({})),
     ]).then(([p, t]) => {
       setPermits((p.permits ?? []).slice(0, SAMPLE_LIMIT));
-      setTenders((t.tenders ?? []).slice(0, SAMPLE_LIMIT));
+      setTenders((t.tenders ?? []).filter(isConstructionTender).slice(0, SAMPLE_LIMIT));
       setLoading(false);
     });
   }, []);
@@ -61,15 +98,15 @@ export default function FeedPreviewClient({ signedIn }: { signedIn: boolean }) {
     <div className="mx-auto max-w-3xl px-4 py-10">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">{t("title")}</h1>
-          <p className="mt-2 text-slate-400">{t("subtitle")}</p>
+          <h1 className="text-3xl font-bold text-ink">{t("title")}</h1>
+          <p className="mt-2 text-muted">{t("subtitle")}</p>
         </div>
         <Link href={signedIn ? "/feed" : "/register"}>
           <Button>{signedIn ? t("openFeed") : t("signUp")}</Button>
         </Link>
       </div>
 
-      <div className="mt-6 flex items-center gap-2 rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-2 text-sm text-sky-200">
+      <div className="mt-6 flex items-center gap-2 rounded-lg border border-brand-border bg-brand-soft px-4 py-2 text-sm text-brand">
         <Lock className="h-4 w-4 shrink-0" />
         <span>{t("notice")}</span>
       </div>
@@ -124,8 +161,8 @@ export default function FeedPreviewClient({ signedIn }: { signedIn: boolean }) {
         )}
       </div>
 
-      <div className="mt-10 rounded-xl border border-slate-800 bg-slate-900/40 p-6 text-center">
-        <p className="text-slate-300">{t("ctaTitle")}</p>
+      <div className="mt-10 rounded-xl border border-line bg-white p-6 text-center">
+        <p className="text-muted">{t("ctaTitle")}</p>
         <Link href={signedIn ? "/feed" : "/register"}>
           <Button className="mt-4">{signedIn ? t("openFeed") : t("signUp")}</Button>
         </Link>

@@ -115,6 +115,13 @@ export function OpportunityDetailPanel({
 
       <div className="space-y-5 p-5">
         <section className="border-l-2 border-brand pl-4">
+          <p className="text-[11px] font-semibold uppercase text-subtle">{t("nextActionTitle")}</p>
+          <p className="mt-1 text-base font-semibold leading-6 text-ink">
+            {dossier?.nextAction ?? t("selectOpportunity")}
+          </p>
+        </section>
+
+        <section className="border-l-2 border-brand pl-4">
           <p className="text-[11px] font-semibold uppercase text-subtle">{t("recommendation")}</p>
           <p className="mt-1 text-lg font-semibold text-brand">
             {feed(`triage.${recommendation}`)}
@@ -123,7 +130,7 @@ export function OpportunityDetailPanel({
             {dossier?.triage.reason ?? dossier?.nextAction}
           </p>
           <div className="mt-3 flex items-center gap-4 text-xs text-muted">
-            <span>{feed("dossier.confidence", { value: dossier?.confidence ?? 0, level: feed(`confidenceLevels.${dossier?.confidenceLevel ?? "low"}`) })}</span>
+            <span>{t("proofLevel", { count: confirmed.length })}</span>
             <span>{feed(`effort.${dossier?.triage.effort ?? "heavy"}`)}</span>
           </div>
         </section>
@@ -242,11 +249,6 @@ export function OpportunityDetailPanel({
               ) : null}
             </div>
           </div>
-        </section>
-
-        <section>
-          <h3 className="text-sm font-semibold text-ink">{t("nextActionTitle")}</h3>
-          <p className="mt-2 text-sm leading-6 text-muted">{dossier?.nextAction}</p>
         </section>
 
         {!item.saved ? (

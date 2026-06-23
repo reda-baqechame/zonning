@@ -175,6 +175,56 @@ export default function FeedClient({ dataMode }: { dataMode: RuntimeDataMode }) 
       }).length,
     };
   }, [generatedAt, items]);
+  const setupComplete = Boolean(
+    profile?.trades?.length &&
+      profile?.regions?.length &&
+      (profile?.companyName || profile?.name),
+  );
+  const startSteps = locale === "fr"
+    ? [
+        {
+          title: "Complétez votre profil RBQ",
+          body: "Vos métiers et régions filtrent les occasions qui ne valent pas votre temps.",
+          done: Boolean(profile?.trades?.length && profile?.regions?.length),
+        },
+        {
+          title: "Consultez les décisions du jour",
+          body: "Commencez par Poursuivre, puis Vérifier; laissez le reste en surveillance.",
+          done: items.length > 0,
+        },
+        {
+          title: "Ouvrez un dossier",
+          body: "Le panneau de droite montre les preuves, les blocages et la source officielle.",
+          done: Boolean(selectedItem),
+        },
+        {
+          title: "Ajoutez au suivi",
+          body: "Gardez seulement les dossiers que vous allez vraiment traiter.",
+          done: items.some((item) => item.saved),
+        },
+      ]
+    : [
+        {
+          title: "Complete your RBQ profile",
+          body: "Your trades and regions filter out work that is not worth your time.",
+          done: Boolean(profile?.trades?.length && profile?.regions?.length),
+        },
+        {
+          title: "Review today's decisions",
+          body: "Start with Pursue, then Verify; leave the rest on watch.",
+          done: items.length > 0,
+        },
+        {
+          title: "Open a dossier",
+          body: "The right panel shows proof, blockers, and the official source.",
+          done: Boolean(selectedItem),
+        },
+        {
+          title: "Add it to follow-up",
+          body: "Keep only the files you are actually going to work.",
+          done: items.some((item) => item.saved),
+        },
+      ];
 
   const changeSourceFilter = (filter: SourceFilter) => {
     setSourceFilter(filter);
@@ -420,6 +470,42 @@ export default function FeedClient({ dataMode }: { dataMode: RuntimeDataMode }) 
                   </div>
                 </div>
               </div>
+            </section>
+          ) : null}
+
+          {!setupComplete ? (
+            <section className="mb-4 border border-brand-border bg-white p-4" aria-label={locale === "fr" ? "Commencer ici" : "Start here"}>
+              <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-ink">
+                    {locale === "fr" ? "Commencer ici" : "Start here"}
+                  </h2>
+                  <p className="mt-1 text-sm text-muted">
+                    {locale === "fr"
+                      ? "Suivez ces étapes dans l'ordre pour transformer la liste en travail concret."
+                      : "Follow these steps in order to turn the list into actual work."}
+                  </p>
+                </div>
+                <a
+                  href={`/${locale}/settings`}
+                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-brand px-3 text-sm font-semibold text-brand hover:bg-brand-soft"
+                >
+                  {locale === "fr" ? "Compléter mon profil" : "Complete my profile"}
+                </a>
+              </div>
+              <ol className="mt-4 grid gap-3 lg:grid-cols-4">
+                {startSteps.map((step, index) => (
+                  <li key={step.title} className="border border-line bg-surface-2 p-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`grid h-6 w-6 place-items-center rounded-full text-xs font-semibold ${step.done ? "bg-success-soft text-success" : "bg-brand-soft text-brand"}`}>
+                        {step.done ? "✓" : index + 1}
+                      </span>
+                      <p className="text-sm font-semibold text-ink">{step.title}</p>
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-muted">{step.body}</p>
+                  </li>
+                ))}
+              </ol>
             </section>
           ) : null}
 

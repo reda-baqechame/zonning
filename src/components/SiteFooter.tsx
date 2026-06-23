@@ -38,9 +38,6 @@ export async function SiteFooter() {
           <Link href="/coverage" className="hover:text-brand">
             {f("coverage")}
           </Link>
-          <Link href="/intelligence" className="hover:text-brand">
-            {f("intelligence")}
-          </Link>
           <Link href="/terms" className="hover:text-brand">
             {t("footerTerms")}
           </Link>

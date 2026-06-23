@@ -9,7 +9,7 @@ const COPY = {
   fr: {
     title: "Forfaits ZONNING",
     subtitle:
-      "Choisissez le niveau d'exploitation adapté à votre équipe. Le montant officiel et les conditions sont affichés dans Stripe avant tout paiement.",
+      "Choisissez comment votre équipe classe, vérifie et suit les permis municipaux et avis SEAO. Le montant officiel et les conditions sont affichés dans Stripe avant tout paiement.",
     monthly: "Abonnement mensuel",
     oneTime: "Mandat unique",
     checkout: "Ouvrir le paiement sécurisé",
@@ -18,16 +18,16 @@ const COPY = {
     unavailable: "Le paiement n'est pas configuré pour ce forfait. Aucun changement n'a été effectué.",
     login: "Connectez-vous avant de choisir un forfait.",
     plans: {
-      essentiel: ["Fil personnalisé", "Alertes courriel", "Résumé d'intelligence de site"],
-      pro: ["Intelligence de site complète", "Compliance Vault", "Exports", "Alertes SMS configurables"],
+      essentiel: ["Décisions du jour", "Alertes courriel", "Preuves et sources officielles"],
+      pro: ["Analyse de dossier complète", "Coffre de conformité", "Exports", "Alertes SMS configurables"],
       equipe: ["Fonctions Pro", "Jusqu'à 5 membres", "Clés API", "Webhooks"],
-      concierge: ["Revue par analyste", "Opportunités qualifiées", "Livraison dans l'espace de travail"],
+      concierge: ["Revue par analyste", "Occasions qualifiées", "Livraison dans l'espace de travail"],
     },
   },
   en: {
     title: "ZONNING plans",
     subtitle:
-      "Choose the operating level that fits your team. Stripe displays the authoritative amount and terms before any payment.",
+      "Choose how your team classifies, verifies, and follows municipal permits and SEAO notices. Stripe displays the authoritative amount and terms before any payment.",
     monthly: "Monthly subscription",
     oneTime: "One-time engagement",
     checkout: "Open secure checkout",
@@ -36,8 +36,8 @@ const COPY = {
     unavailable: "Billing is not configured for this plan. No change was made.",
     login: "Sign in before choosing a plan.",
     plans: {
-      essentiel: ["Personalized feed", "Email alerts", "Site intelligence summary"],
-      pro: ["Full site intelligence", "Compliance Vault", "Exports", "Configurable SMS alerts"],
+      essentiel: ["Today's decisions", "Email alerts", "Proof and official sources"],
+      pro: ["Complete dossier review", "Compliance vault", "Exports", "Configurable SMS alerts"],
       equipe: ["Pro features", "Up to 5 members", "API keys", "Webhooks"],
       concierge: ["Analyst review", "Qualified opportunities", "Workspace delivery"],
     },

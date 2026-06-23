@@ -3,17 +3,13 @@
 import { useState } from "react";
 import {
   BriefcaseBusiness,
-  Building2,
   ChartNoAxesCombined,
-  Crosshair,
   Download,
   FolderOpen,
   MapPin,
   Menu,
-  Search,
   Settings,
   ShieldCheck,
-  Store,
   X,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -52,18 +48,15 @@ export function CockpitSidebar({
   const [open, setOpen] = useState(false);
   const effectivePlan = user ? "EQUIPE" : plan;
 
-  const links = [
-    { href: "/", label: nav("search"), icon: Search },
-    { href: "/#atlas", label: nav("map"), icon: MapPin },
-    { href: "/verdict", label: nav("dossier"), icon: FolderOpen },
-    { href: "/opportunity-brief", label: "Brief QC", icon: BriefcaseBusiness },
-    { href: "/feed", label: nav("opportunities"), icon: Crosshair },
-    {
-      href: "/coverage?view=municipalities",
-      label: nav("municipalities"),
-      icon: Building2,
-    },
-    { href: "/partenaires-ca", label: nav("companies"), icon: Store },
+  const primaryLinks = [
+    { href: "/feed", label: locale === "fr" ? "Aujourd'hui" : "Today", icon: BriefcaseBusiness },
+    { href: "/opportunity-brief", label: locale === "fr" ? "Dossiers" : "Dossiers", icon: FolderOpen },
+    { href: "/passport", label: nav("passport"), icon: ShieldCheck },
+    { href: "/vault", label: nav("vaultNav"), icon: FolderOpen },
+    { href: "/guides", label: nav("guidesNav"), icon: BriefcaseBusiness },
+  ];
+  const utilityLinks = [
+    { href: "/carte", label: nav("carte"), icon: MapPin },
     { href: "/coverage", label: nav("coverage"), icon: ChartNoAxesCombined },
     ...(PRO_PLANS.has(effectivePlan)
       ? [{ href: "/compliance", label: nav("compliance"), icon: ShieldCheck }]
@@ -72,7 +65,6 @@ export function CockpitSidebar({
       ? [{ href: "/export", label: nav("export"), icon: Download }]
       : []),
   ];
-
   const navigation = (
     <>
       <div className="border-b border-line px-4 py-5">
@@ -84,11 +76,36 @@ export function CockpitSidebar({
         </p>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-2" aria-label={nav("mainNavigation")}>
-        {links.map(({ href, label, icon: Icon }) => {
+        <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-subtle">
+          {locale === "fr" ? "Travail du jour" : "Daily work"}
+        </p>
+        {primaryLinks.map(({ href, label, icon: Icon }) => {
           const selected =
             pathname === href ||
             (href === "/feed" && pathname.startsWith("/feed")) ||
             (href === "/opportunity-brief" && pathname.startsWith("/opportunity-brief"));
+          return (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setOpen(false)}
+              className={cn(
+                "flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition",
+                selected
+                  ? "bg-brand-soft text-brand"
+                  : "text-muted hover:bg-surface-hover hover:text-ink",
+              )}
+            >
+              <Icon className="h-[18px] w-[18px]" strokeWidth={1.6} aria-hidden="true" />
+              {label}
+            </Link>
+          );
+        })}
+        <p className="px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-wide text-subtle">
+          {locale === "fr" ? "Outils" : "Tools"}
+        </p>
+        {utilityLinks.map(({ href, label, icon: Icon }) => {
+          const selected = pathname === href || pathname.startsWith(href);
           return (
             <Link
               key={href}

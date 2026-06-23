@@ -9,11 +9,10 @@ const PRIVATE_ENDPOINTS = [
   "GET /api/v2/sites/{id}/permits",
   "GET /api/v2/opportunities",
   "POST /api/v2/reports",
-  "POST /api/v2/assistant",
   "GET /api/v1/permits",
   "GET /api/v1/tenders",
   "GET /api/v1/verdict?address=...",
-  "GET /api/v1/intelligence?address=...",
+  "GET /api/v1/site-review?address=...",
 ];
 
 const PUBLIC_ENDPOINTS = [

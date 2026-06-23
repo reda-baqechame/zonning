@@ -4,18 +4,18 @@
     "description": "Recherche de permis, marchés publics, entreprises et sources municipales avec couverture et limites explicites."
   },
   "nav": {
-    "search": "Recherche",
+    "search": "Occasions",
     "map": "Carte",
-    "dossier": "Dossier",
-    "opportunities": "Opportunités",
+    "dossier": "Vérification permis",
+    "opportunities": "Aujourd'hui",
     "municipalities": "Municipalités",
     "companies": "Entreprises",
-    "createWorkspace": "Créer un espace",
+    "createWorkspace": "Créer mon espace",
     "mainNavigation": "Navigation principale",
     "mobileNavigation": "Navigation mobile",
     "menu": "Menu",
     "feed": "Fil",
-    "verdict": "PERMIS.AI",
+    "verdict": "Vérification permis",
     "settings": "Réglages",
     "chantierRadar": "ChantierRadar",
     "marchesQc": "MarchésQC",
@@ -25,8 +25,8 @@
     "equipe": "Équipe",
     "pricing": "Tarifs",
     "coverage": "Couverture",
-    "intelligence": "Intelligence",
-    "investigate": "Investigation",
+    "intelligence": "Preuves",
+    "investigate": "Dossiers",
     "carte": "Carte",
     "passport": "Préparation",
     "triage": "Triage",
@@ -119,7 +119,8 @@
     "taskSummaryDetail": "Faites-le dans l'ordre. Les bloqueurs peuvent causer un rejet automatique.",
     "rejectionRisks": "Risques de rejet",
     "requiredDocs": "Documents requis",
-    "noExtraction": "Aucune extraction disponible."
+    "noExtraction": "Aucune extraction disponible.",
+    "reviewedBadge": "Revu"
   },
   "guides": {
     "indexTitle": "Navigateur des sites gouvernementaux",
@@ -141,7 +142,7 @@
     "subtitle": "Fil unifié des permis municipaux actuellement indexés et des contrats SEAO, avec sources, fraîcheur et limites visibles.",
     "cta": "Ouvrir mon fil",
     "ctaSecondary": "Voir les tarifs",
-    "ctaVerdict": "Essayer PERMIS.AI",
+    "ctaVerdict": "Analyser un permis",
     "coverageCta": "Couverture Québec",
     "explore": "Explorer",
     "howItWorks": "Comment ça marche",
@@ -157,7 +158,7 @@
   "features": {
     "chantier": {
       "title": "ChantierRadar",
-      "desc": "Permis de construction au Québec — Montréal, Laval, Longueuil et 10 villes — score RBQ-Fit en direct."
+      "desc": "Permis de construction au Québec — Montréal, Laval, Longueuil et 10 villes — priorité RBQ-Fit en direct."
     },
     "marches": {
       "title": "MarchésQC",
@@ -259,14 +260,14 @@
     "upgradeCta": "Passer au plan Pro"
   },
   "feedPreview": {
-    "title": "Apercu du fil",
-    "subtitle": "Un echantillon public de permis et d'appels d'offres. Le fil complet, personnalise selon votre profil RBQ, est reserve aux membres.",
-    "notice": "Apercu en lecture seule - creez un compte pour les scores de pipeline, la probabilite de gain et les alertes.",
+    "title": "Décisions du jour - aperçu",
+    "subtitle": "Un échantillon public de permis et avis SEAO liés aux travaux. Créez votre espace pour voir les décisions adaptées à votre profil RBQ.",
+    "notice": "Aperçu en lecture seule - créez un compte pour les preuves, les prochaines actions et les alertes.",
     "openFeed": "Ouvrir mon fil",
-    "signUp": "Creer un compte",
-    "emptyTitle": "Aucune opportunite pour l'instant",
-    "emptyDesc": "Reessayez apres la prochaine synchronisation des donnees publiques.",
-    "ctaTitle": "Pret pour un fil personnalise selon votre licence RBQ, vos metiers et vos regions?"
+    "signUp": "Créer un compte",
+    "emptyTitle": "Aucune occasion de travaux pour l'instant",
+    "emptyDesc": "Revenez après la prochaine synchronisation des permis municipaux et avis SEAO.",
+    "ctaTitle": "Prêt pour des décisions personnalisées selon votre licence RBQ, vos métiers et vos régions?"
   },
   "footer": {
     "tagline": "ZONNING — Recherche et couverture des données de construction au Québec",
@@ -274,7 +275,7 @@
     "buildLog": "Preuves du système",
     "dataHealth": "Santé des données",
     "coverage": "Couverture",
-    "intelligence": "Intelligence",
+    "intelligence": "Preuves",
     "developers": "API",
     "coverageApi": "API couverture",
     "trustTruth": "{indexed} jeux indexés · {sources} sources répertoriées · {searchable} villes avec permis indexés · {monitored} villes surveillées"
@@ -359,7 +360,7 @@
     "noTenders": "Aucun contrat ouvert pour votre profil.",
     "noTendersHint": "Aucun dossier SEAO ouvert ne correspond à votre profil pour l'instant. Ajustez les filtres ou attendez la prochaine synchronisation vérifiée.",
     "subtitle": "Décidez où investir vos heures de vente et d'estimation, à partir de preuves publiques vérifiables.",
-    "localDataNotice": "En développement local, ces fiches peuvent provenir du jeu de données semé. Les scores et étiquettes d'opportunité servent à tester le produit; ils ne prouvent pas une qualification commerciale en direct.",
+    "localDataNotice": "En développement local, ces fiches peuvent provenir du jeu de données semé. Les classements et étiquettes d'occasion servent à tester le produit; ils ne prouvent pas une qualification commerciale en direct.",
     "testRank": "Classement test",
     "map": "Carte",
     "source": "Source",
@@ -370,7 +371,7 @@
     "thursday": "Jeudi SEAO",
     "match": "Match",
     "ampRequired": "AMP requis",
-    "verdictHint": "Vérification rapide PERMIS.AI — partageable avec vos clients.",
+    "verdictHint": "Vérification rapide de permis — partageable avec vos clients.",
     "addressPlaceholder": "Adresse civique",
     "boroughPlaceholder": "Arrondissement (optionnel)",
     "runVerdict": "Obtenir le verdict",
@@ -467,13 +468,13 @@
       }
     },
     "workspace": {
-      "brandLine": "Intelligence chantier Québec",
+      "brandLine": "Décisions chantier Québec",
       "logoutShort": "Quitter",
-      "title": "Opportunités",
-      "queueTitle": "File d'opportunités",
+      "title": "Décisions du jour",
+      "queueTitle": "Dossiers à traiter",
       "yourCompany": "Votre entreprise",
       "profileLabel": "Profil : {value}",
-      "generatedAt": "Analyse actualisée à {time}",
+      "generatedAt": "Données actualisées à {time}",
       "loadingData": "Actualisation des données",
       "summaryTitle": "Résumé opérationnel",
       "readiness": {
@@ -487,7 +488,7 @@
           "blocked": "Bloqué"
         }
       },
-      "signalsAnalyzed": "signaux analysés",
+      "signalsAnalyzed": "dossiers classés",
       "needVerification": "dossiers à vérifier",
       "followupsDue": "suivis dus sous 7 jours",
       "searchPlaceholder": "Rechercher une occasion, un lieu ou un dossier",
@@ -501,13 +502,14 @@
         "saved": "Pipeline"
       },
       "resultCount": "{count} dossiers",
+      "proofCount": "{count} preuve(s)",
       "columns": {
         "decision": "Décision",
         "opportunity": "Occasion",
         "location": "Lieu",
         "valueDeadline": "Valeur / échéance",
-        "confidence": "Confiance",
-        "nextAction": "Prochaine action"
+        "confidence": "Preuves",
+        "nextAction": "À faire"
       },
       "permitRecord": "Permis municipal",
       "tenderRecord": "Avis SEAO",
@@ -517,19 +519,20 @@
       "selectOpportunity": "Sélectionnez un dossier pour voir les preuves et la prochaine action.",
       "dossierTitle": "Dossier d'opportunité",
       "closeDossier": "Fermer le dossier",
-      "recommendation": "Recommandation",
+      "recommendation": "Décision",
       "confirmedTitle": "Ce qui est confirmé",
       "noConfirmedEvidence": "Aucune preuve suffisante n'est encore confirmée.",
       "verifyTitle": "À vérifier",
       "officialSource": "Source officielle",
       "observedAt": "Observé le {date}",
       "openOfficialSource": "Ouvrir la source officielle",
-      "nextActionTitle": "Prochaine action",
-      "addToPipeline": "Ajouter au pipeline",
+      "nextActionTitle": "Ce que vous devez faire maintenant",
+      "addToPipeline": "Ajouter au suivi",
       "viewOfficialSource": "Voir la source officielle",
-      "pipelineTitle": "Suivi opérationnel",
-      "addedToPipeline": "Dossier ajouté au pipeline",
-      "removedFromPipeline": "Dossier retiré du pipeline",
+      "pipelineTitle": "Suivi du dossier",
+      "addedToPipeline": "Dossier ajouté au suivi",
+      "removedFromPipeline": "Dossier retiré du suivi",
+      "proofLevel": "{count} preuve(s) disponible(s)",
       "confirmed": {
         "publicPermit": "Un dossier public de permis municipal est indexé.",
         "rbqFit": "Le profil RBQ configuré correspond au type de travaux.",
@@ -541,12 +544,12 @@
       "emptyTitle": "Aucun dossier dans cette vue",
       "emptyDescription": "Modifiez la recherche ou les filtres de décision."
     },
-    "rankingReasonsLabel": "Raisons du classement",
-    "rankCompact": "Classement {value}",
-    "confidenceCompact": "Conf. {value} %",
-    "rankScore": "Classement ajusté",
-    "fitScore": "Adéquation brute",
-    "confidenceLabel": "Confiance des données",
+    "rankingReasonsLabel": "Raisons de la priorité",
+    "rankCompact": "Priorité {value}",
+    "confidenceCompact": "Preuves {value} %",
+    "rankScore": "Priorité ajustée",
+    "fitScore": "Compatibilité brute",
+    "confidenceLabel": "Preuves disponibles",
     "confidenceLevels": {
       "low": "faible",
       "medium": "moyenne",
@@ -562,13 +565,13 @@
     "dossier": {
       "source": "Source",
       "nextAction": "Prochaine action",
-      "trust": "Confiance",
-      "confidence": "Confiance {value} % ({level})",
+      "trust": "Preuves",
+      "confidence": "{value} % de preuves ({level})",
       "notTopLead": "Pas présenté comme top lead tant que les preuves manquantes ne sont pas résolues.",
       "why": "Pourquoi ce classement",
       "limitations": "Limites"
     },
-    "whyRank": "Pourquoi ce classement",
+    "whyRank": "Pourquoi cette priorité",
     "factorRbq": "Adéquation RBQ",
     "factorCost": "Adéquation budget",
     "factorMarket": "Activité du marché",
@@ -676,7 +679,7 @@
     "integrations": "Intégrations"
   },
   "verdict": {
-    "title": "Verdict PERMIS.AI",
+    "title": "Vérification permis",
     "subtitle": "Potentiel de développement selon données publiques québécoises — gratuit et partageable.",
     "addressLabel": "Adresse civique",
     "addressPlaceholder": "1234 rue Example, Montréal",
@@ -684,13 +687,14 @@
     "exampleAddress": "Essayer : 1234 rue Saint-Denis, Montréal",
     "boroughPlaceholder": "Arrondissement",
     "cta": "Analyser l'adresse",
-    "footer": "Analyse PERMIS.AI · Propulsé par ZONNING"
+    "footer": "Vérification permis · Propulsé par ZONNING",
+    "eyebrow": "Vérification permis"
   },
   "legal": {
     "termsTitle": "Conditions d'utilisation",
     "termsUpdated": "Dernière mise à jour : juin 2026",
     "terms1Title": "Service",
-    "terms1Body": "ZONNING et PERMIS.AI agrègent des données publiques québécoises (permis, SEAO, RBQ, registre). Les analyses RBQ-Fit, scores pipeline et verdicts PERMIS.AI sont des outils d'aide à la décision — non des avis juridiques.",
+    "terms1Body": "ZONNING agrège des données publiques québécoises (permis, SEAO, RBQ, registre). Les vérifications RBQ-Fit, priorités de dossier et vérifications de permis sont des outils d'aide à la décision — non des avis juridiques.",
     "terms2Title": "Données publiques",
     "terms2Body": "Les informations proviennent de sources gouvernementales ouvertes (Données Québec, municipalités). ZONNING ne garantit pas l'exhaustivité ni la fraîcheur absolue; consultez toujours la source officielle avant une soumission ou une prospection.",
     "terms3Title": "Conformité CASL",
@@ -700,7 +704,7 @@
     "privacyTitle": "Politique de confidentialité",
     "privacyUpdated": "Dernière mise à jour : juin 2026",
     "privacy1Title": "Données collectées",
-    "privacy1Body": "Nous collectons email, profil entreprise (RBQ, métiers, régions), journaux de sync et usage des modules. Les verdicts PERMIS.AI publics stockent l'adresse et les entrées d'analyse.",
+    "privacy1Body": "Nous collectons email, profil entreprise (RBQ, métiers, régions), journaux de sync et usage des modules. Les vérifications publiques de permis stockent l'adresse et les entrées d'analyse.",
     "privacy2Title": "Utilisation",
     "privacy2Body": "Vos données servent à personnaliser le fil, les alertes et la facturation. Nous ne vendons pas vos listes de contacts. Les clés API Équipe sont hachées (SHA-256).",
     "privacy3Title": "Hébergement",
@@ -728,7 +732,7 @@
     "statPipeline": "valeur indexée (7j)",
     "statCompanies": "entreprises indexées",
     "freshness": "Mis à jour {time} · {datasets} jeux de données · {cities} villes",
-    "intelLayers": "{count} couches d'intelligence actives",
+    "intelLayers": "{count} couches de preuve actives",
     "rbqRegistry": "{count} licences RBQ indexées",
     "missedTitle": "Vous ne voyez qu'une fraction du marché",
     "missedPermits": "{hidden} permis supplémentaires cette semaine ({total} au total)",
@@ -738,7 +742,7 @@
     "missedHint": "Forfait {plan} — les entrepreneurs Pro voient tout le fil actuellement indexé",
     "unlockCta": "Débloquer le fil complet",
     "lockedHeading": "Ce que les abonnés Pro voient en ce moment",
-    "lockedBody": "Adresse · score · RBQ-Fit verrouillés",
+    "lockedBody": "Adresse · priorité · RBQ-Fit verrouillés",
     "previewEyebrow": "Pendant que vous lisez ceci",
     "previewTitle": "Des entrepreneurs qualifient déjà ces mandats",
     "previewSubtitle": "{permits} permis et {highValue} mandats ≥ 500 k$ cette semaine — filtrés par RBQ-Fit",
@@ -790,13 +794,13 @@
     "colWeek": "7 jours",
     "colSync": "Dernière sync",
     "apiLink": "Documentation API",
-    "intelLink": "Explorateur intelligence",
+    "intelLink": "Explorateur de preuves",
     "truthLine": "{indexed} jeux indexés · {sources} sources répertoriées · {searchable} villes avec permis indexés · {monitored} villes surveillées",
     "colStatus": "Statut"
   },
   "developers": {
     "title": "API Québec construction",
-    "subtitle": "Accès programmatique aux permis, SEAO, verdict et intelligence site (Équipe).",
+    "subtitle": "Accès programmatique aux permis, SEAO, vérifications et preuves de dossier (Équipe).",
     "restTitle": "Endpoints REST (clé API)",
     "restDesc": "Authentification Bearer. Scopes: permits, tenders, verdict.",
     "authNote": "Clés API disponibles sur le forfait Équipe.",
@@ -805,7 +809,7 @@
     "coverageLink": "Voir la couverture live"
   },
   "intelExplorer": {
-    "title": "Explorateur intelligence site",
+    "title": "Explorateur de preuves de site",
     "subtitle": "Signaux publics actuellement indexés pour une adresse québécoise, avec leur portée et leurs limites.",
     "address": "Adresse",
     "addressPlaceholder": "123 rue Example",
@@ -818,11 +822,11 @@
     "proposedUnits": "Unités projetées",
     "search": "Analyser",
     "loading": "Analyse…",
-    "noMatch": "Aucune intelligence indexée ne correspond à cette adresse.",
+    "noMatch": "Aucune preuve indexée ne correspond à cette adresse.",
     "lookupFailed": "L'analyse n'a pas pu être effectuée. Réessayez plus tard."
   },
   "intel": {
-    "title": "Intelligence site",
+    "title": "Preuves de site",
     "assessment": "Évaluation",
     "lastSale": "Dernière vente",
     "taxRoll": "Taxes",
@@ -836,7 +840,7 @@
     "vacancy": "Locaux vacants",
     "lockedPreview": "Couches de données détectées",
     "layersDetected": "signaux actifs",
-    "upgradeIntel": "Passez Essentiel pour voir l'intelligence complète",
+    "upgradeIntel": "Passez Essentiel pour voir les preuves complètes",
     "zoningDetermination": {
       "confirmed": "Confirme (polygone)",
       "nearest_fallback": "Point le plus proche",
@@ -848,7 +852,7 @@
   "zoningExpert": {
     "title": "Analyse réglementaire du zonage",
     "subtitle": "Sépare les faits vérifiés, les signaux de planification et les contrôles encore requis avant une décision de conformité.",
-    "confidence": "Confiance {value} %",
+    "confidence": "Preuves {value} %",
     "status": {
       "confirmed": "Règles parcellaires confirmées",
       "indicative": "Contexte indicatif",
@@ -982,7 +986,7 @@
       "heritage": "Le patrimoine est disponible comme points lorsque des coordonnees existent.",
       "roadworks": "Les travaux routiers sont disponibles comme points lorsque des coordonnees existent."
     },
-    "openIntelligence": "Ouvrir l'analyse intelligence",
+    "openIntelligence": "Ouvrir l'analyse de preuves",
     "openMarches": "Ouvrir les appels SEAO"
   }
 }

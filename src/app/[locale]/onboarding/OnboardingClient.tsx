@@ -61,6 +61,14 @@ export default function OnboardingClient() {
 
   const stepTitle =
     step === 1 ? t("stepProfile") : step === 2 ? t("stepTrades") : step === 3 ? t("stepPhone") : t("stepAmp");
+  const stepHelp =
+    step === 1
+      ? "Votre licence RBQ sert à éliminer les dossiers qui ne correspondent pas à vos sous-catégories."
+      : step === 2
+        ? "Vos métiers et régions transforment la liste publique en décisions utiles pour votre entreprise."
+        : step === 3
+          ? "Votre téléphone sert seulement aux alertes opérationnelles si vous les activez plus tard."
+          : "L'autorisation AMP nous aide à séparer les appels publics que vous pouvez poursuivre de ceux à vérifier.";
 
   return (
     <FadeIn className="mx-auto max-w-xl px-4 py-16 text-ink">
@@ -95,9 +103,7 @@ export default function OnboardingClient() {
         </div>
 
         <h1 className="text-2xl font-bold text-ink">{stepTitle}</h1>
-        <p className="mt-2 text-sm text-muted">
-          Configurez votre territoire, vos métiers et vos alertes pour que ZONNING filtre les opportunités utiles dès le premier jour.
-        </p>
+        <p className="mt-2 text-sm text-muted">{stepHelp}</p>
 
         {step === 1 && (
           <div className="mt-8 space-y-4">

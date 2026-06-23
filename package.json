@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit",
     "ci": "npm run lint && npm run typecheck && npm run test && npm run build",
     "test": "vitest run",
+    "copy:audit": "vitest run src/lib/__tests__/customer-copy.test.ts",
     "db:migrate": "prisma migrate dev",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:sync": "npx tsx scripts/sync-all.ts",

@@ -57,9 +57,28 @@ export default function RegisterClient() {
     router.push("/onboarding");
   };
 
+  const setupSteps = [
+    "Profil RBQ",
+    "Métiers et régions",
+    "Décisions du jour",
+  ];
+
   return (
     <FadeIn className="mx-auto max-w-md px-4 py-16 text-ink">
-      <PageHeader title={t("signUp")} subtitle="Créez votre espace d’opportunités Québec en moins de deux minutes." />
+      <PageHeader
+        title={t("signUp")}
+        subtitle="Créez votre liste d'occasions qualifiées: permis, avis SEAO, preuves officielles et prochaines actions."
+      />
+      <ol className="mb-5 grid gap-2 rounded-lg border border-line bg-surface-2 p-3 text-sm text-muted">
+        {setupSteps.map((step, index) => (
+          <li key={step} className="flex items-center gap-2">
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-brand-soft text-xs font-semibold text-brand">
+              {index + 1}
+            </span>
+            <span>{step}</span>
+          </li>
+        ))}
+      </ol>
       <Card>
         <form onSubmit={submit} className="space-y-4">
           {(["email", "password", "name", "company"] as const).map((field) => (

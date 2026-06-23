@@ -11,7 +11,6 @@ import {
   CircleAlert,
   Trash2,
   FileText,
-  Sparkles,
 } from "lucide-react";
 import { Button, Input, FadeIn } from "@/components/ui";
 import type { VaultExtraction } from "@/lib/vault/extract";
@@ -137,7 +136,7 @@ export default function VaultClient() {
                       <span className="truncate">{doc.fileName}</span>
                       {doc.extractedWithAi ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-semibold text-brand">
-                          <Sparkles className="h-3 w-3" /> AI
+                          {t("reviewedBadge")}
                         </span>
                       ) : null}
                     </p>

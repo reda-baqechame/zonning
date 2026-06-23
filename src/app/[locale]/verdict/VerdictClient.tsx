@@ -57,7 +57,7 @@ export default function VerdictClient() {
     <FadeIn className="mx-auto max-w-xl px-4 py-12">
       <PageHeader title={t("title")} subtitle={t("subtitle")} />
       <p className="mb-6 text-center text-xs font-semibold uppercase tracking-widest text-emerald-400">
-        PERMIS.AI
+        {t("eyebrow")}
       </p>
 
       <Card>

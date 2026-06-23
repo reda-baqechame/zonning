@@ -40,13 +40,13 @@ type DeskStats = {
 
 const COPY = {
   fr: {
-    title: "Le bureau de décision des entrepreneurs du Québec.",
+    title: "Trouvez les contrats et permis qui valent votre temps.",
     description:
-      "Le permis est le premier irritant des entrepreneurs (APCHQ 2025). ZONNING surveille chaque permis municipal et avis SEAO, vous alerte selon votre licence RBQ, et ne vous laisse jamais rater une clôture du jeudi.",
-    openCockpit: "Ouvrir mon cockpit",
+      "ZONNING classe les permis municipaux et avis SEAO en actions simples: poursuivre, vérifier, surveiller ou ignorer.",
+    openCockpit: "Créer mon espace",
     signIn: "Connexion",
-    queue: "File du marché public",
-    dossier: "Dossier sélectionné",
+    queue: "Décisions du jour",
+    dossier: "Dossier ouvert",
     search: "Rechercher un dossier ou une région",
     sourceFilter: "Filtrer par source",
     all: "Tout",
@@ -58,39 +58,47 @@ const COPY = {
     decision: "Décision",
     confirmed: "Ce qui est confirmé",
     verify: "À vérifier",
-    nextAction: "Prochaine action",
+    nextAction: "Ce que vous devez faire maintenant",
     officialSource: "Ouvrir la source officielle",
     personalize: "Classer selon mon RBQ et mon territoire",
     noMatch: "Aucun dossier ne correspond à cette recherche.",
     stats: ["permis émis (7 j)", "clôturent jeudi", "avis SEAO ouverts", "jeux de données actifs"],
+    howTitle: "Comment utiliser ZONNING",
+    howSteps: [
+      "Complétez votre profil RBQ",
+      "Consultez les décisions du jour",
+      "Ouvrez un dossier",
+      "Vérifiez les preuves et documents officiels",
+      "Ajoutez au suivi",
+    ],
     painPoints: [
       {
-        title: "Permis : 1er irritant",
-        body: "Alerté dès l'émission d'un permis, filtré par votre licence RBQ et votre territoire.",
+        title: "Moins de temps perdu",
+        body: "Les dossiers faibles sont séparés des occasions à traiter avant votre prochaine estimation.",
       },
       {
-        title: "Clôtures du jeudi",
-        body: "Environ 35 % des avis SEAO clôturent jeudi. Ne ratez plus les premiers jours de la fenêtre.",
+        title: "Échéances visibles",
+        body: "Les avis SEAO urgents et les clôtures du jeudi remontent dans votre file de travail.",
       },
       {
-        title: "Garde RBQ",
-        body: "Une caution expirée annule votre licence et vos permis. ZONNING surveille l'échéance pour vous.",
+        title: "Blocages expliqués",
+        body: "RBQ, AMP, documents et preuves officielles sont affichés avant de poursuivre un dossier.",
       },
     ],
     decisions: {
-      review: "Analyse urgente",
-      qualify: "À qualifier",
-      watch: "À surveiller",
+      review: "Poursuivre",
+      qualify: "Vérifier",
+      watch: "Surveiller",
     },
   },
   en: {
-    title: "The decision desk for Quebec contractors.",
+    title: "Find the contracts and permits worth your time.",
     description:
-      "Permits are contractors' #1 irritant (APCHQ 2025). ZONNING watches every municipal permit and SEAO notice, alerts you by RBQ licence, and never lets you miss a Thursday close.",
-    openCockpit: "Open my cockpit",
+      "ZONNING turns municipal permits and SEAO notices into simple actions: pursue, verify, watch, or ignore.",
+    openCockpit: "Create my workspace",
     signIn: "Sign in",
-    queue: "Public market queue",
-    dossier: "Selected record",
+    queue: "Today's decisions",
+    dossier: "Open dossier",
     search: "Search a record or region",
     sourceFilter: "Filter by source",
     all: "All",
@@ -102,28 +110,36 @@ const COPY = {
     decision: "Decision",
     confirmed: "What is confirmed",
     verify: "Verify",
-    nextAction: "Next action",
+    nextAction: "What to do now",
     officialSource: "Open official source",
     personalize: "Rank for my RBQ profile and territory",
     noMatch: "No record matches this search.",
     stats: ["permits issued (7d)", "close Thursday", "open SEAO notices", "active datasets"],
+    howTitle: "How to use ZONNING",
+    howSteps: [
+      "Complete your RBQ profile",
+      "Review today's decisions",
+      "Open a dossier",
+      "Verify official proof and documents",
+      "Add it to follow-up",
+    ],
     painPoints: [
       {
-        title: "Permits: #1 irritant",
-        body: "Alerted the moment a permit is issued, filtered by your RBQ licence and territory.",
+        title: "Less wasted time",
+        body: "Weak records are separated from opportunities worth reviewing before your next estimate.",
       },
       {
-        title: "Thursday closes",
-        body: "About 35% of SEAO notices close Thursday. Never miss the first days of a bid window again.",
+        title: "Deadlines visible",
+        body: "Urgent SEAO notices and Thursday closes rise to the top of your work queue.",
       },
       {
-        title: "RBQ guard",
-        body: "A lapsed bond cancels your licence and permits. ZONNING watches the expiry for you.",
+        title: "Blockers explained",
+        body: "RBQ, AMP, documents, and official proof are shown before you pursue a file.",
       },
     ],
     decisions: {
-      review: "Review urgently",
-      qualify: "Qualify",
+      review: "Pursue",
+      qualify: "Verify",
       watch: "Watch",
     },
   },
@@ -206,6 +222,30 @@ export default function PublicContractorDesk({
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
+        </div>
+
+        <div className="grid border-x border-line bg-white md:grid-cols-[220px_1fr]">
+          <div className="border-b border-line px-5 py-4 md:border-b-0 md:border-r">
+            <p className="text-sm font-semibold text-ink">{copy.howTitle}</p>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              {locale === "fr"
+                ? "Suivez ces étapes dans l'ordre; chaque dossier garde le lien vers la source officielle."
+                : "Follow these steps in order; every dossier keeps the official source link."}
+            </p>
+          </div>
+          <ol className="grid gap-0 sm:grid-cols-2 xl:grid-cols-5">
+            {copy.howSteps.map((step, index) => (
+              <li
+                key={step}
+                className="flex gap-3 border-b border-line px-4 py-4 last:border-b-0 sm:[&:nth-child(odd)]:border-r xl:border-b-0 xl:border-r xl:last:border-r-0"
+              >
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-soft text-xs font-semibold text-brand">
+                  {index + 1}
+                </span>
+                <span className="text-sm font-medium leading-5 text-ink">{step}</span>
+              </li>
+            ))}
+          </ol>
         </div>
 
         <div className="grid grid-cols-2 border-x border-line bg-white lg:grid-cols-4 lg:border-b">

@@ -206,7 +206,7 @@ export default function InvestigationCanvasClient() {
         source: "Source",
         recordId: "Identifiant",
         fetched: "Indexé",
-        confidence: "Confiance",
+        confidence: "Preuves",
         expand: "Étendre",
         expanding: "Extension…",
         properties: "Propriétés",
@@ -230,7 +230,7 @@ export default function InvestigationCanvasClient() {
         source: "Source",
         recordId: "Record id",
         fetched: "Indexed",
-        confidence: "Confidence",
+        confidence: "Proof",
         expand: "Expand",
         expanding: "Expanding…",
         properties: "Properties",
@@ -785,7 +785,7 @@ function RiskSection({ node, t }: { node: SimNode; t: Record<string, string> }) 
               </div>
               <div>
                 <p className="text-sm font-semibold text-ink">{toneLabel(risk.tone, fr)}</p>
-                <p className="text-[11px] text-subtle">{fr ? "score composite 0–100" : "composite 0–100"}</p>
+                <p className="text-[11px] text-subtle">{fr ? "niveau 0-100" : "level 0-100"}</p>
               </div>
             </div>
           </div>

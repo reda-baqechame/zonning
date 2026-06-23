@@ -74,7 +74,6 @@ export function NavBar() {
 
   const links: NavItem[] = [
     { href: "/", label: t("search") },
-    { href: "/investigate", label: t("investigate") },
     { href: "/verdict", label: t("dossier") },
     { href: user ? "/feed" : "/feed-preview", label: t("opportunities") },
     ...(user
