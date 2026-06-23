@@ -8,6 +8,7 @@ export type DatasetId =
   | "permit-stats"
   | "permit-delays"
   | "tenders"
+  | "canadabuys"
   | "suppliers"
   | "transactions"
   | "transactions-2023"
@@ -218,6 +219,22 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     refreshIntervalMinutes: 15,
     tier: "fast",
     syncSource: "ckan-tenders-ocds",
+  },
+  canadabuys: {
+    id: "canadabuys",
+    label: "CanadaBuys — avis de marchés fédéraux (Open Government)",
+    ckanId: "6abd20d4-7a1c-4b38-baa2-9525d0bb2fd2",
+    sourceUrl:
+      "https://open.canada.ca/data/en/dataset/6abd20d4-7a1c-4b38-baa2-9525d0bb2fd2",
+    preferredFormat: "JSON",
+    defaultLimit: 200,
+    productionLimit: 800,
+    refreshIntervalMinutes: 60,
+    tier: "daily",
+    syncSource: "canadabuys-ogp",
+    coverageStatus: "partial",
+    coverageNote:
+      "Avis fédéraux ouverts (Open Government Licence). Consulté via l'API datastore du Portail du gouvernement ouvert. / Open federal notices (Open Government Licence). Polled via the Open Government Portal datastore API.",
   },
   suppliers: {
     id: "suppliers",
