@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { permitStatus, zoningStatus } from "@/lib/runtime-truth";
+import { permitStatus, zoningStatus, type CoverageStatus } from "@/lib/runtime-truth";
 
 describe("permitStatus classification (truth vocabulary)", () => {
   it("labels a city with no permit dataset as DOCUMENT_ONLY (never live)", () => {
@@ -35,5 +35,17 @@ describe("zoningStatus classification", () => {
 
   it("never claims LIVE_INDEXED for point-only zoning (no polygon truth yet)", () => {
     expect(zoningStatus(9999)).not.toBe("LIVE_INDEXED");
+  });
+
+  it("keeps the full audit status vocabulary available", () => {
+    const statuses: CoverageStatus[] = [
+      "LIVE_INDEXED",
+      "PARTIAL_INDEXED",
+      "DOCUMENT_ONLY",
+      "REGISTERED_NOT_SYNCED",
+      "COMING_SOON",
+      "BROKEN",
+    ];
+    expect(statuses).toContain("COMING_SOON");
   });
 });

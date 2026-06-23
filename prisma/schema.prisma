@@ -485,6 +485,58 @@ model ZoningPolygon {
   @@index([minLat, maxLat])
 }
 
+model ParcelPoint {
+  id              String   @id @default(cuid())
+  externalId      String   @unique
+  city            String
+  borough         String?
+  address         String?
+  matricule       String?
+  latitude        Float
+  longitude       Float
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([city])
+  @@index([borough])
+  @@index([matricule])
+  @@index([latitude, longitude])
+}
+
+model AddressGeocode {
+  id                String   @id @default(cuid())
+  queryHash         String   @unique
+  query             String
+  normalizedAddress String?
+  city              String?
+  borough           String?
+  latitude          Float
+  longitude         Float
+  confidence        Float?
+  source            String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([city])
+  @@index([borough])
+  @@index([latitude, longitude])
+}
+
+model ZoningRegulationLink {
+  id              String   @id @default(cuid())
+  city            String
+  borough         String?
+  zoneCode        String?
+  title           String?
+  regulationUrl   String
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([city])
+  @@index([borough])
+  @@index([zoneCode])
+}
+
 model BoroughPermitDelay {
   id              String   @id @default(cuid())
   externalId      String   @unique

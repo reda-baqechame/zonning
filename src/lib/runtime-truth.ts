@@ -24,6 +24,7 @@ export type CoverageStatus =
   | "PARTIAL_INDEXED" // wired + some rows, but thin or weak mappability
   | "DOCUMENT_ONLY" // source exists but no structured/searchable records
   | "REGISTERED_NOT_SYNCED" // dataset configured, zero rows ingested
+  | "COMING_SOON" // planned/source identified, not yet expected to serve users
   | "BROKEN"; // wired but last sync failed with no data
 
 const LIVE_PERMIT_THRESHOLD = 200;

@@ -105,15 +105,15 @@ RBQ (~25k licenses) resumes across multiple cron ticks automatically.
 
 | Trigger | Schedule | What it does |
 |---------|----------|--------------|
-| Vercel cron | Every **6 h** | `?mode=bootstrap&rounds=4` — never-synced datasets on cold deploys |
-| Vercel cron | Every **5 min** | `?mode=live` — CKAN change detection on permits + SEAO + roadworks |
-| Vercel cron | Every **15 min** | `?mode=scheduler` — 8 most-stale/changed datasets |
-| Vercel cron | Every **4 h** | `?tier=daily` — RBQ, Registre, heritage, contracts, etc. |
-| Vercel cron | Weekly (Sun 8:00 UTC) | `?tier=weekly` — property/tax/zoning CSVs |
+| Vercel cron | Daily 10:00 UTC | `?mode=bootstrap&rounds=4` — never-synced datasets on cold deploys |
+| Vercel cron | Daily 06:00 UTC | `?mode=live` — CKAN change detection on permits + SEAO + roadworks |
+| Vercel cron | Daily 07:00 UTC | `?mode=scheduler` — most-stale/changed datasets |
+| Vercel cron | Daily 08:00 UTC | `?tier=daily` — RBQ, Registre, heritage, contracts, etc. |
+| Vercel cron | Weekly (Sun 09:00 UTC) | `?tier=weekly` — property/tax/zoning CSVs |
 | GitHub Actions | Every **15 min** | live + scheduler safety net |
 | GitHub Actions | Every **4 h** | daily tier |
 | GitHub Actions | Nightly 3:00 UTC | `?tier=all` — full reconciliation |
-| API requests | On demand | Routes trigger background refresh if stale (5 min fast tier) |
+| API requests | Read-only | User-facing routes read cached DB state and surface freshness/health; ingestion stays in cron/admin sync paths |
 | Cold start | Once | `instrumentation.ts` bootstraps never-synced datasets |
 
 **Expected freshness:**

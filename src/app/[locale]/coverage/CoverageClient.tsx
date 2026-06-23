@@ -51,6 +51,7 @@ type CoverageStatus =
   | "PARTIAL_INDEXED"
   | "DOCUMENT_ONLY"
   | "REGISTERED_NOT_SYNCED"
+  | "COMING_SOON"
   | "BROKEN";
 
 type InitialTruth = {
@@ -66,6 +67,7 @@ const STATUS_STYLES: Record<CoverageStatus, string> = {
   PARTIAL_INDEXED: "bg-sky-500/20 text-sky-300",
   DOCUMENT_ONLY: "bg-amber-500/20 text-amber-300",
   REGISTERED_NOT_SYNCED: "bg-slate-500/20 text-slate-300",
+  COMING_SOON: "bg-violet-500/20 text-violet-300",
   BROKEN: "bg-red-500/20 text-red-300",
 };
 
