@@ -180,6 +180,7 @@ model UsageCounter {
 model RbqLicense {
   id            String    @id @default(cuid())
   licenseNumber String    @unique
+  neq           String?
   holderName    String?
   subclass      String?
   status        String    @default("active")
@@ -189,6 +190,7 @@ model RbqLicense {
 
   @@index([subclass])
   @@index([status])
+  @@index([neq])
 }
 
 model Permit {
@@ -881,5 +883,103 @@ model VaultDocument {
   updatedAt   DateTime @updatedAt
 
   @@index([userId])
+}
+
+model RenaRecord {
+  id              String    @id @default(cuid())
+  neq             String?
+  name            String?
+  status          String?
+  offence         String?
+  startDate       DateTime?
+  endDate         DateTime?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([neq])
+}
+
+model EnterpriseRecord {
+  id              String    @id @default(cuid())
+  neq             String?   @unique
+  name            String?
+  legalStatus     String?
+  constitutionDate DateTime?
+  address         String?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+}
+
+model SanctionRecord {
+  id              String    @id @default(cuid())
+  neq             String?
+  name            String?
+  law             String?
+  amount          Float?
+  date            DateTime?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([neq])
+  @@index([name])
+}
+
+model ConvictionRecord {
+  id              String    @id @default(cuid())
+  neq             String?
+  name            String?
+  offence         String?
+  date            DateTime?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([neq])
+  @@index([name])
+}
+
+model InjuryClaim {
+  id              String    @id @default(cuid())
+  employerName    String?
+  neq             String?
+  claimCount      Int       @default(0)
+  year            Int?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([neq])
+  @@index([employerName])
+}
+
+model CadastreLot {
+  id              String    @id @default(cuid())
+  lotNumber       String?   @unique
+  city            String?
+  geom            Json?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+}
+
+model ZoningStandard {
+  id              String    @id @default(cuid())
+  city            String?
+  zoneCode        String?
+  allowedUses     Json?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([city, zoneCode])
+}
+
+model MarketIndex {
+  id              String    @id @default(cuid())
+  region          String?
+  priceRange      String?
+  salesCount      Int       @default(0)
+  difficultyIndex Float?
+  period          String?
+  sourceUrl       String
+  sourceFetchedAt DateTime @default(now())
+
+  @@index([region, period])
 }
 
