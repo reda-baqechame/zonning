@@ -14,10 +14,11 @@
 import { loadProdEnv } from "./load-prod-env";
 
 loadProdEnv();
-const url =
+const url: string =
   process.env.POSTGRES_PRISMA_URL ||
   process.env.POSTGRES_URL ||
-  process.env.DATABASE_URL;
+  process.env.DATABASE_URL ||
+  "";
 
 if (!url || url.startsWith("file:")) {
   console.error("No production Postgres URL found (POSTGRES_PRISMA_URL). Aborting.");
