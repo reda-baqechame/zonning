@@ -36,6 +36,15 @@ import {
 import { fetchZoningTroisRivieres } from "@/lib/datasets/fetchers/zoning-regional";
 import { fetchRoadworksSaguenay } from "@/lib/datasets/fetchers/roadworks-saguenay";
 import { fetchRoadWorks } from "@/lib/datasets/fetchers/roadworks";
+import { fetchRena } from "@/lib/datasets/fetchers/rena";
+import { fetchRegistreEntreprises } from "@/lib/datasets/fetchers/registre-entreprises";
+import { fetchSanctions } from "@/lib/datasets/fetchers/sanctions";
+import { fetchConvictions } from "@/lib/datasets/fetchers/convictions";
+import { fetchInjuries } from "@/lib/datasets/fetchers/injuries";
+import { fetchCadastre } from "@/lib/datasets/fetchers/cadastre";
+import { fetchZoningStandard } from "@/lib/datasets/fetchers/zoning-standard";
+import { fetchMarketIndex } from "@/lib/datasets/fetchers/market-index";
+import { rbqToNeq } from "@/lib/compliance/neq-resolver";
 import {
   fetchMunicipalContracts,
   fetchMunicipalContractsForDataset,
@@ -523,6 +532,7 @@ export async function syncRbq(): Promise<SyncResult> {
           where: { licenseNumber },
           create: {
             licenseNumber,
+            neq: rbqToNeq(licenseNumber),
             holderName: r.holderName,
             subclass: r.subclass,
             status: r.status,
@@ -530,6 +540,7 @@ export async function syncRbq(): Promise<SyncResult> {
             sourceUrl: r.sourceUrl,
           },
           update: {
+            neq: rbqToNeq(licenseNumber),
             holderName: r.holderName,
             subclass: r.subclass,
             status: r.status,
@@ -1972,6 +1983,301 @@ export async function syncTorontoPermitsScaffold(): Promise<SyncResult> {
   });
 }
 
+export async function syncRena(): Promise<SyncResult> {
+  const cfg = DATASETS.rena;
+  return runSync("rena", async () => {
+    const rows = await fetchRena();
+    let processed = 0;
+    for (const r of rows) {
+      await prisma.renaRecord
+        .upsert({
+          where: { id: r.externalId },
+          update: {
+            neq: r.neq,
+            name: r.name,
+            status: r.status,
+            offence: r.offence,
+            startDate: r.startDate,
+            endDate: r.endDate,
+            sourceFetchedAt: new Date(),
+          },
+          create: {
+            id: r.externalId,
+            neq: r.neq,
+            name: r.name,
+            status: r.status,
+            offence: r.offence,
+            startDate: r.startDate,
+            endDate: r.endDate,
+            sourceUrl: r.sourceUrl,
+          },
+        })
+        .catch(() => {});
+      processed++;
+    }
+    await persistSourceMetadata("rena");
+    const status = processed > 0 ? "success" : "empty";
+    await logSync(cfg.syncSource, status, processed);
+    return { dataset: "rena", ok: true, processed, source: processed > 0 ? "live" : "empty" };
+  });
+}
+
+export async function syncRegistreEntreprises(): Promise<SyncResult> {
+  const cfg = DATASETS["registre-entreprises"];
+  return runSync("registre-entreprises", async () => {
+    const rows = await fetchRegistreEntreprises();
+    let processed = 0;
+    for (const r of rows) {
+      if (!r.neq) continue;
+      await prisma.enterpriseRecord
+        .upsert({
+          where: { neq: r.neq },
+          update: {
+            name: r.name,
+            legalStatus: r.legalStatus,
+            constitutionDate: r.constitutionDate,
+            address: r.address,
+            sourceFetchedAt: new Date(),
+          },
+          create: {
+            neq: r.neq,
+            name: r.name,
+            legalStatus: r.legalStatus,
+            constitutionDate: r.constitutionDate,
+            address: r.address,
+            sourceUrl: r.sourceUrl,
+          },
+        })
+        .catch(() => {});
+      processed++;
+    }
+    await persistSourceMetadata("registre-entreprises");
+    const status = processed > 0 ? "success" : "empty";
+    await logSync(cfg.syncSource, status, processed);
+    return {
+      dataset: "registre-entreprises",
+      ok: true,
+      processed,
+      source: processed > 0 ? "live" : "empty",
+    };
+  });
+}
+
+export async function syncSanctions(): Promise<SyncResult> {
+  const cfg = DATASETS.sanctions;
+  return runSync("sanctions", async () => {
+    const rows = await fetchSanctions();
+    let processed = 0;
+    for (const r of rows) {
+      await prisma.sanctionRecord
+        .upsert({
+          where: { id: r.externalId },
+          update: {
+            neq: r.neq,
+            name: r.name,
+            law: r.law,
+            amount: r.amount,
+            date: r.date,
+            sourceFetchedAt: new Date(),
+          },
+          create: {
+            id: r.externalId,
+            neq: r.neq,
+            name: r.name,
+            law: r.law,
+            amount: r.amount,
+            date: r.date,
+            sourceUrl: r.sourceUrl,
+          },
+        })
+        .catch(() => {});
+      processed++;
+    }
+    await persistSourceMetadata("sanctions");
+    const status = processed > 0 ? "success" : "empty";
+    await logSync(cfg.syncSource, status, processed);
+    return { dataset: "sanctions", ok: true, processed, source: processed > 0 ? "live" : "empty" };
+  });
+}
+
+export async function syncConvictions(): Promise<SyncResult> {
+  const cfg = DATASETS.convictions;
+  return runSync("convictions", async () => {
+    const rows = await fetchConvictions();
+    let processed = 0;
+    for (const r of rows) {
+      await prisma.convictionRecord
+        .upsert({
+          where: { id: r.externalId },
+          update: {
+            neq: r.neq,
+            name: r.name,
+            offence: r.offence,
+            date: r.date,
+            sourceFetchedAt: new Date(),
+          },
+          create: {
+            id: r.externalId,
+            neq: r.neq,
+            name: r.name,
+            offence: r.offence,
+            date: r.date,
+            sourceUrl: r.sourceUrl,
+          },
+        })
+        .catch(() => {});
+      processed++;
+    }
+    await persistSourceMetadata("convictions");
+    const status = processed > 0 ? "success" : "empty";
+    await logSync(cfg.syncSource, status, processed);
+    return { dataset: "convictions", ok: true, processed, source: processed > 0 ? "live" : "empty" };
+  });
+}
+
+export async function syncInjuries(): Promise<SyncResult> {
+  const cfg = DATASETS.injuries;
+  return runSync("injuries", async () => {
+    const rows = await fetchInjuries();
+    let processed = 0;
+    for (const r of rows) {
+      await prisma.injuryClaim
+        .upsert({
+          where: { id: r.externalId },
+          update: {
+            employerName: r.employerName,
+            neq: r.neq,
+            claimCount: r.claimCount,
+            year: r.year,
+            sourceFetchedAt: new Date(),
+          },
+          create: {
+            id: r.externalId,
+            employerName: r.employerName,
+            neq: r.neq,
+            claimCount: r.claimCount,
+            year: r.year,
+            sourceUrl: r.sourceUrl,
+          },
+        })
+        .catch(() => {});
+      processed++;
+    }
+    await persistSourceMetadata("injuries");
+    const status = processed > 0 ? "success" : "empty";
+    await logSync(cfg.syncSource, status, processed);
+    return { dataset: "injuries", ok: true, processed, source: processed > 0 ? "live" : "empty" };
+  });
+}
+
+export async function syncCadastre(): Promise<SyncResult> {
+  const cfg = DATASETS.cadastre;
+  return runSync("cadastre", async () => {
+    const rows = await fetchCadastre();
+    let processed = 0;
+    for (const r of rows) {
+      if (!r.lotNumber) continue;
+      await prisma.cadastreLot
+        .upsert({
+          where: { lotNumber: r.lotNumber },
+          update: { city: r.city, geom: r.geom as object, sourceFetchedAt: new Date() },
+          create: {
+            lotNumber: r.lotNumber,
+            city: r.city,
+            geom: r.geom as object,
+            sourceUrl: r.sourceUrl,
+          },
+        })
+        .catch(() => {});
+      processed++;
+    }
+    await persistSourceMetadata("cadastre");
+    const status = processed > 0 ? "success" : "empty";
+    await logSync(cfg.syncSource, status, processed);
+    return { dataset: "cadastre", ok: true, processed, source: processed > 0 ? "live" : "empty" };
+  });
+}
+
+export async function syncZoningStandard(): Promise<SyncResult> {
+  const cfg = DATASETS["zoning-standard"];
+  return runSync("zoning-standard", async () => {
+    const rows = await fetchZoningStandard();
+    let processed = 0;
+    for (const r of rows) {
+      await prisma.zoningStandard
+        .upsert({
+          where: { id: r.externalId },
+          update: {
+            city: r.city,
+            zoneCode: r.zoneCode,
+            allowedUses: r.allowedUses as object,
+            sourceFetchedAt: new Date(),
+          },
+          create: {
+            id: r.externalId,
+            city: r.city,
+            zoneCode: r.zoneCode,
+            allowedUses: r.allowedUses as object,
+            sourceUrl: r.sourceUrl,
+          },
+        })
+        .catch(() => {});
+      processed++;
+    }
+    await persistSourceMetadata("zoning-standard");
+    const status = processed > 0 ? "success" : "empty";
+    await logSync(cfg.syncSource, status, processed);
+    return {
+      dataset: "zoning-standard",
+      ok: true,
+      processed,
+      source: processed > 0 ? "live" : "empty",
+    };
+  });
+}
+
+export async function syncMarketIndex(): Promise<SyncResult> {
+  const cfg = DATASETS["market-index"];
+  return runSync("market-index", async () => {
+    const rows = await fetchMarketIndex();
+    let processed = 0;
+    for (const r of rows) {
+      await prisma.marketIndex
+        .upsert({
+          where: { id: r.externalId },
+          update: {
+            region: r.region,
+            priceRange: r.priceRange,
+            salesCount: r.salesCount,
+            difficultyIndex: r.difficultyIndex,
+            period: r.period,
+            sourceFetchedAt: new Date(),
+          },
+          create: {
+            id: r.externalId,
+            region: r.region,
+            priceRange: r.priceRange,
+            salesCount: r.salesCount,
+            difficultyIndex: r.difficultyIndex,
+            period: r.period,
+            sourceUrl: r.sourceUrl,
+          },
+        })
+        .catch(() => {});
+      processed++;
+    }
+    await persistSourceMetadata("market-index");
+    const status = processed > 0 ? "success" : "empty";
+    await logSync(cfg.syncSource, status, processed);
+    return {
+      dataset: "market-index",
+      ok: true,
+      processed,
+      source: processed > 0 ? "live" : "empty",
+    };
+  });
+}
+
 const SYNC_FNS: Partial<Record<DatasetId, (limit?: number) => Promise<SyncResult>>> = {
   permits: syncPermits,
   "permits-laval": () => syncPermitsLaval(),
@@ -2028,6 +2334,14 @@ const SYNC_FNS: Partial<Record<DatasetId, (limit?: number) => Promise<SyncResult
   "seao-standing-offers": () => syncSeaoStandingOffers(),
   "inspection-violations-mtl": () => syncInspectionViolationsMtl(),
   "toronto-permits": () => syncTorontoPermitsScaffold(),
+  rena: () => syncRena(),
+  "registre-entreprises": () => syncRegistreEntreprises(),
+  sanctions: () => syncSanctions(),
+  convictions: () => syncConvictions(),
+  injuries: () => syncInjuries(),
+  cadastre: () => syncCadastre(),
+  "zoning-standard": () => syncZoningStandard(),
+  "market-index": () => syncMarketIndex(),
 };
 
 export async function syncDataset(datasetId: DatasetId): Promise<SyncResult> {
@@ -2090,6 +2404,14 @@ export async function getSyncStatus() {
     await prisma.municipalContract.count(),
     await prisma.roadWork.count(),
     await prisma.boroughPermitStat.count(),
+    await prisma.renaRecord.count(),
+    await prisma.enterpriseRecord.count(),
+    await prisma.sanctionRecord.count(),
+    await prisma.convictionRecord.count(),
+    await prisma.injuryClaim.count(),
+    await prisma.cadastreLot.count(),
+    await prisma.zoningStandard.count(),
+    await prisma.marketIndex.count(),
   ];
 
   const [
@@ -2108,6 +2430,14 @@ export async function getSyncStatus() {
     contracts,
     roadworks,
     permitStats,
+    renaRecords,
+    enterprises,
+    sanctions,
+    convictions,
+    injuryClaims,
+    cadastreLots,
+    zoningStandards,
+    marketIndices,
   ] = counts;
 
   return {
@@ -2129,6 +2459,14 @@ export async function getSyncStatus() {
       contracts,
       roadworks,
       permitStats,
+      renaRecords,
+      enterprises,
+      sanctions,
+      convictions,
+      injuryClaims,
+      cadastreLots,
+      zoningStandards,
+      marketIndices,
     },
   };
 }

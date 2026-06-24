@@ -29,6 +29,11 @@ import {
   type LicenseeRow,
 } from "@/lib/opportunities/contact-resolver";
 import { assessParcel, productionParcelDeps } from "@/lib/compliance/parcel-verdict";
+import {
+  assembleCompliance,
+  productionComplianceDeps,
+} from "@/lib/compliance/contractor-compliance";
+import { nameToNeq, productionLookups } from "@/lib/compliance/neq-resolver";
 import { buildGovernmentReadinessPassport, profileFromUser } from "@/lib/readiness-passport";
 
 function isDatabaseConnectionError(error: unknown): boolean {
@@ -368,6 +373,19 @@ export async function GET(req: NextRequest) {
         },
         contactDeps,
       ).catch(() => undefined);
+      let tenderCompliance;
+      const winner = tenderContactLeads?.tender?.awardedContractor?.name;
+      if (winner) {
+        const lookups = productionLookups();
+        const candidates = await nameToNeq(winner, lookups.byName).catch(() => []);
+        const best = candidates.find((c) => c.confidence !== "low");
+        if (best?.neq) {
+          tenderCompliance = await assembleCompliance(
+            { neq: best.neq },
+            productionComplianceDeps(),
+          ).catch(() => undefined);
+        }
+      }
       const opportunityDossier = buildTenderOpportunityDossier({
         tender: { ...t, amendmentCount },
         score,
@@ -377,6 +395,7 @@ export async function GET(req: NextRequest) {
         locale,
         valueEstimate: tenderValue,
         contactLeads: tenderContactLeads,
+        compliance: tenderCompliance,
       });
       return {
         kind: "tender" as const,

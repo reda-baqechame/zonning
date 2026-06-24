@@ -5,6 +5,7 @@ import type { PermitDataQuality } from "@/lib/permits/quality";
 import type { ValueEstimate } from "@/lib/permits/value-estimate";
 import type { ContactLeads } from "@/lib/opportunities/contact-resolver";
 import type { ParcelVerdict } from "@/lib/compliance/parcel-verdict";
+import type { ContractorCompliance } from "@/lib/compliance/contractor-compliance";
 import type { PipelineScoreResult, RankingReason } from "@/lib/pipeline-score";
 import type { PropertyIntelligence } from "@/lib/intelligence";
 import type { TenderScoreResult } from "@/lib/tender-score";
@@ -67,6 +68,7 @@ type TenderDossierInput = {
   locale?: "fr" | "en";
   valueEstimate?: ValueEstimate;
   contactLeads?: ContactLeads;
+  compliance?: ContractorCompliance;
 };
 
 type DossierLocale = "fr" | "en";
@@ -801,5 +803,6 @@ export function buildTenderOpportunityDossier(input: TenderDossierInput): Opport
     },
     valueEstimate: input.valueEstimate,
     contactLeads: input.contactLeads,
+    compliance: input.compliance,
   };
 }

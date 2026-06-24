@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { scoreOpportunityForUser } from "@/lib/opportunities/contractor-fit-profile";
+import type { ContractorCompliance } from "@/lib/compliance/contractor-compliance";
 
 const profile = {
   rbqLicenseClass: "1.1.1",
@@ -93,5 +94,47 @@ describe("scoreOpportunityForUser", () => {
       profile,
     );
     expect(s.breakdown.some((b) => b.id === "value_outside_budget")).toBe(true);
+  });
+
+  it("forces weak when contractor is RENA non-admissible", () => {
+    const renaCompliance: ContractorCompliance = {
+      neq: "1234",
+      legalName: "X",
+      legalStatus: "active",
+      rbqLicense: null,
+      renaNonAdmissible: { active: true },
+      sanctions: { count: 0, recent: [] },
+      convictions: { count: 0, recent: [] },
+      injuryClaims: null,
+      awardsWon: { count: 0, totalValue: 0, recent: [] },
+      publicBidEligible: false,
+      overallRisk: "high",
+    };
+    const s = scoreOpportunityForUser(
+      {
+        kind: "tender",
+        requiredRbqClasses: ["1.1.1"],
+        city: "Montréal",
+        title: "Construction",
+        valueEstimate: {
+          kind: "estimated",
+          low: 100_000,
+          high: 500_000,
+          currency: "CAD",
+          confidence: "high",
+          basis: [],
+        },
+      },
+      {
+        rbqLicenseClass: "1.1.1",
+        regions: ["Montréal"],
+        trades: [],
+        minProjectCost: 0,
+        maxProjectCost: 1e9,
+      },
+      renaCompliance,
+    );
+    expect(s.level).toBe("weak");
+    expect(s.breakdown.some((b) => b.id === "rena_non_admissible")).toBe(true);
   });
 });

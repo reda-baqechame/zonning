@@ -1,4 +1,5 @@
 import type { ValueEstimate } from "@/lib/permits/value-estimate";
+import type { ContractorCompliance } from "@/lib/compliance/contractor-compliance";
 import { rbqClassMatches } from "@/lib/opportunities/contact-resolver";
 
 /**
@@ -41,7 +42,22 @@ function clamp(n: number): number {
 export function scoreOpportunityForUser(
   item: OpportunityInput,
   profile: ContractorProfile | null,
+  compliance?: ContractorCompliance | null,
 ): FitScore {
+  if (compliance?.renaNonAdmissible?.active) {
+    return {
+      score: 0,
+      level: "weak",
+      breakdown: [
+        {
+          id: "rena_non_admissible",
+          label: "Non-admissible aux contrats publics (RENA)",
+          points: -100,
+        },
+      ],
+    };
+  }
+
   // Public (anonymous) surface: a coarse magnet score, no personalization.
   if (!profile) {
     const typeBonus =

@@ -86,7 +86,7 @@ export function productionLookups() {
     },
     byName: async (name: string): Promise<EnterpriseLike[]> => {
       const rows = await prisma.enterpriseRecord.findMany({
-        where: { name: { contains: name, mode: "insensitive" } },
+        where: { name: { contains: name } },
         take: 20,
       });
       return rows.map((r) => ({ id: r.id, neq: r.neq, name: r.name, legalStatus: r.legalStatus }));

@@ -61,7 +61,12 @@ export type EstimateOptions = {
   rbqClasses?: string[];
   comparableMedian?: number;
   comparableCount?: number;
+  marketIndex?: { salesCount: number; difficultyIndex?: number } | null;
 };
+
+function bumpConfidence(c: "low" | "medium" | "high"): "low" | "medium" | "high" {
+  return c === "low" ? "medium" : "high";
+}
 
 export function estimatePermitValue(
   permit: PermitInput,
@@ -91,9 +96,16 @@ export function estimatePermitValue(
   const high = Math.round((band.high * multiplier) / 1000) * 1000;
 
   const count = options?.comparableCount ?? 0;
-  // Confidence ladder: widen scope degrades confidence rather than fabricating precision.
-  const confidence: "low" | "medium" | "high" =
+  let confidence: "low" | "medium" | "high" =
     count >= MIN_COMPARABLES_FOR_HIGH ? "high" : count > 0 ? "medium" : "low";
+  if (options?.marketIndex) {
+    const mi = options.marketIndex;
+    if (mi.salesCount >= 50 && (mi.difficultyIndex ?? 1) <= 0.5) {
+      confidence = bumpConfidence(confidence);
+    } else if (mi.salesCount < 10 || (mi.difficultyIndex ?? 0) >= 1.5) {
+      confidence = "low";
+    }
+  }
 
   const basis: string[] = [
     `Bande estimée pour travaux de type « ${band.label} ».`,
@@ -103,6 +115,9 @@ export function estimatePermitValue(
     count > 0
       ? `${count} transactions comparables à proximité.`
       : "Aucune transaction comparable indexée ; bande prudente.",
+    options?.marketIndex
+      ? `Marché régional : ${options.marketIndex.salesCount} ventes.`
+      : "Aucun indice de marché indexé.",
     "Estimation dérivée, non publiquée par la source — confirmer avant décision.",
   ];
 

@@ -1276,6 +1276,12 @@ export const TIER_DATASETS: Record<SyncTier | "all", DatasetId[]> = {
     "rbq-infractions",
     "seao-standing-offers",
     "inspection-violations-mtl",
+    "rena",
+    "registre-entreprises",
+    "sanctions",
+    "convictions",
+    "injuries",
+    "market-index",
   ],
   weekly: [
     "assessment",
@@ -1296,6 +1302,8 @@ export const TIER_DATASETS: Record<SyncTier | "all", DatasetId[]> = {
     "zoning-longueuil",
     "roadworks-saguenay",
     "toronto-permits",
+    "cadastre",
+    "zoning-standard",
   ],
   all: ALL_DATASET_IDS,
 };

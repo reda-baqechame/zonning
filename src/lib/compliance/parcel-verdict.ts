@@ -17,6 +17,8 @@ export type ParcelVerdict = {
   status: "clear" | "constraint_present" | "unknown_layer";
   constraints: ParcelConstraint[];
   note: string;
+  zoningUses?: string[];
+  lotNumber?: string;
 };
 
 export type AssessDeps = {
@@ -30,6 +32,11 @@ export type AssessDeps = {
     lon: number,
     radiusMeters: number,
   ) => Promise<{ id: string; name?: string | null; sourceUrl?: string | null }[]>;
+  findZoning?: (
+    lat: number,
+    lon: number,
+  ) => Promise<{ zoneCode?: string | null; allowedUses?: string[] } | null>;
+  findCadastre?: (lat: number, lon: number) => Promise<{ lotNumber?: string | null } | null>;
   radiusMeters: number;
 };
 
@@ -76,11 +83,32 @@ export async function assessParcel(
     unknown = true;
   }
 
+  let zoningUses: string[] | undefined;
+  let lotNumber: string | undefined;
+  if (deps.findZoning) {
+    try {
+      const z = await deps.findZoning(lat, lon);
+      if (z?.allowedUses?.length) zoningUses = z.allowedUses;
+    } catch {
+      unknown = true;
+    }
+  }
+  if (deps.findCadastre) {
+    try {
+      const c = await deps.findCadastre(lat, lon);
+      if (c?.lotNumber) lotNumber = c.lotNumber;
+    } catch {
+      unknown = true;
+    }
+  }
+
   if (unknown) {
     return {
       status: "unknown_layer",
       constraints,
       note: "Une couche réglementaire n'a pu être vérifiée ; confirmer zonage/contraintes à la source.",
+      zoningUses,
+      lotNumber,
     };
   }
   if (constraints.length > 0) {
@@ -88,9 +116,17 @@ export async function assessParcel(
       status: "constraint_present",
       constraints,
       note: `${constraints.length} contrainte(s) indexée(s) à proximité — vérifier l'incidence avant projet.`,
+      zoningUses,
+      lotNumber,
     };
   }
-  return { status: "clear", constraints, note: `${CLEAR_FR} / ${CLEAR_EN}` };
+  return {
+    status: "clear",
+    constraints,
+    note: `${CLEAR_FR} / ${CLEAR_EN}`,
+    zoningUses,
+    lotNumber,
+  };
 }
 
 /** Production dependency wiring. Uses a coarse bounding-box prefilter (fast). */
@@ -137,5 +173,7 @@ export function productionParcelDeps(radiusMeters = 500): AssessDeps {
         sourceUrl: r.sourceUrl ?? null,
       }));
     },
+    findZoning: async () => null,
+    findCadastre: async () => null,
   };
 }
