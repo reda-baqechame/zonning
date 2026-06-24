@@ -66,7 +66,7 @@ describe("computePipelineScore", () => {
     expect(result.reasons.map((reason) => reason.id)).not.toContain("site_upside");
   });
 
-  it("does not invent neutral scores when evidence is missing", async () => {
+  it("does not turn generic unprofiled permits into strong opportunities", async () => {
     const result = await computePipelineScore(
       { permitType: "Construction" },
       {},
@@ -74,16 +74,32 @@ describe("computePipelineScore", () => {
       { competitionCount: 0, now },
     );
 
-    expect(result.breakdown.rbqFit).toBeNull();
+    expect(result.breakdown.rbqFit).toBeLessThan(50);
     expect(result.breakdown.costFit).toBeNull();
     expect(result.breakdown.freshness).toBeNull();
     expect(result.breakdown.intelligence).toBeNull();
     expect(result.breakdown.zoning).toBeNull();
     expect(result.confidenceLevel).toBe("low");
-    expect(result.score).toBeLessThanOrEqual(20);
+    expect(result.score).toBeLessThanOrEqual(38);
     expect(result.reasons.map((reason) => reason.id)).toContain(
       "limited_evidence",
     );
+  });
+
+  it("caps low-signal municipal permits even when they are fresh", async () => {
+    const result = await computePipelineScore(
+      {
+        permitType: "Certificat d'autorisation",
+        estimatedCost: 250_000,
+        issueDate: new Date("2026-06-19T12:00:00Z"),
+      },
+      {},
+      undefined,
+      { competitionCount: 15, now, dataQualityScore: 80 },
+    );
+
+    expect(result.score).toBeLessThanOrEqual(38);
+    expect(result.breakdown.rbqFit).toBeLessThan(30);
   });
 
   it("ranks a fresh permit above the same stale permit", async () => {

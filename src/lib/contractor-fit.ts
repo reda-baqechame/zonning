@@ -13,6 +13,11 @@ type TenderLike = {
   organization?: string | null;
 };
 
+type PermitLike = {
+  permitType?: string | null;
+  workType?: string | null;
+};
+
 function normalize(value: string): string {
   return value
     .normalize("NFD")
@@ -117,6 +122,48 @@ const SUPPLY_TERMS = [
   "équipement",
 ];
 
+const HIGH_SIGNAL_PERMIT_TERMS = [
+  "construction",
+  "renovation",
+  "rénovation",
+  "refection",
+  "réfection",
+  "transformation",
+  "agrandissement",
+  "demolition",
+  "démolition",
+  "excavation",
+  "fondation",
+  "structure",
+  "toiture",
+  "electricite",
+  "électricité",
+  "plomberie",
+  "mecanique",
+  "mécanique",
+  "ventilation",
+  "commercial",
+  "industriel",
+  "multifamilial",
+];
+
+const LOW_SIGNAL_PERMIT_TERMS = [
+  "abattage",
+  "arbre",
+  "cloture",
+  "clôture",
+  "piscine",
+  "cabanon",
+  "remise",
+  "enseigne",
+  "certificat",
+  "autorisation",
+  "occupation",
+  "terrasse",
+  "solarium",
+  "spa",
+];
+
 export function classifyContractorTender(tender: TenderLike): ContractorTenderFit {
   const title = normalize(tender.title ?? "");
   const category = normalize(tender.category ?? "");
@@ -185,5 +232,47 @@ export function classifyContractorTender(tender: TenderLike): ContractorTenderFi
     contractorWork: false,
     reasonsFr: ["Le lien avec des travaux de construction doit être confirmé dans les documents officiels."],
     reasonsEn: ["The link to construction work must be confirmed in the official documents."],
+  };
+}
+
+export function classifyContractorPermit(permit: PermitLike): ContractorTenderFit {
+  const permitType = normalize(permit.permitType ?? "");
+  const workType = normalize(permit.workType ?? "");
+  const text = [permitType, workType].filter(Boolean).join(" ");
+
+  const hasHighSignal = includesAny(text, HIGH_SIGNAL_PERMIT_TERMS);
+  const hasLowSignal = includesAny(text, LOW_SIGNAL_PERMIT_TERMS);
+  const genericConstructionOnly = [
+    "construction",
+    "permis construction",
+    "permis de construction",
+  ].includes(text);
+
+  if (hasHighSignal && !genericConstructionOnly) {
+    return {
+      score: 100,
+      level: "strong",
+      contractorWork: true,
+      reasonsFr: ["Le permis indique des travaux de construction, transformation ou métier à qualifier."],
+      reasonsEn: ["The permit indicates construction, renovation, or trade work to qualify."],
+    };
+  }
+
+  if (hasLowSignal) {
+    return {
+      score: 18,
+      level: "weak",
+      contractorWork: false,
+      reasonsFr: ["Le permis ressemble à un petit dossier administratif ou extérieur plutôt qu'à une occasion de chantier."],
+      reasonsEn: ["The permit looks like a small administrative or exterior file rather than a jobsite opportunity."],
+    };
+  }
+
+  return {
+    score: 42,
+    level: "related",
+    contractorWork: false,
+    reasonsFr: ["La portée des travaux doit être confirmée avant de traiter ce permis comme une occasion."],
+    reasonsEn: ["The work scope must be confirmed before treating this permit as an opportunity."],
   };
 }

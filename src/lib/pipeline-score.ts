@@ -3,6 +3,7 @@ import type { PropertyIntelligence } from "@/lib/intelligence";
 import { hasIntelligenceData } from "@/lib/intelligence";
 import { prisma } from "@/lib/prisma";
 import { computeVerifiedRbqFit } from "@/lib/rbq-verify";
+import { classifyContractorPermit } from "@/lib/contractor-fit";
 
 export type RankingConfidence = "low" | "medium" | "high";
 
@@ -309,12 +310,13 @@ export async function computePipelineScore(
     permit.permitType,
     permit.workType,
   );
+  const permitFit = classifyContractorPermit(permit);
   const hasRbqProfile = Boolean(user.rbqLicenseClass || user.rbqLicenseNumber);
   const rbqFit = hasRbqProfile
     ? user.rbqVerified
       ? rbq.score
       : Math.min(rbq.score, 20)
-    : null;
+    : permitFit.score;
   const marketActivityCount =
     options?.competitionCount ??
     (await getCompetitionDensity(permit.permitType, permit.borough));
@@ -365,7 +367,12 @@ export async function computePipelineScore(
     ...combined,
     confidence: adjustedConfidence,
     confidenceLevel: confidenceLevel(adjustedConfidence),
-    score: clampScore(combined.fitScore * (0.55 + adjustedConfidence * 0.0045)),
+    score: permitFit.contractorWork
+      ? clampScore(combined.fitScore * (0.55 + adjustedConfidence * 0.0045))
+      : Math.min(
+          clampScore(combined.fitScore * (0.55 + adjustedConfidence * 0.0045)),
+          38,
+        ),
   };
   const densityGapInfo = computeDensityGap(intel);
 
