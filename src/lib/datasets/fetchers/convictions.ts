@@ -22,17 +22,22 @@ export async function fetchConvictions(opts: { limit?: number } = {}): Promise<C
     const { rows } = parseCsvText(text, limit);
     return rows
       .map((row, i) => {
-        const neq = pick(row, "neq", "NEQ");
+        const name =
+          pick(row, "contrevenant", "nom", "name", "entreprise", "personne_morale") ||
+          undefined;
+        const externalId =
+          pick(row, "no_sanction", "no_seq", "id") || `con-${name?.slice(0, 20) ?? i}`;
         return {
-          externalId: neq || `con-${i}`,
-          neq: neq || undefined,
-          name: pick(row, "nom", "name") || undefined,
-          offence: pick(row, "infraction", "offence") || undefined,
-          date: parseDate(pick(row, "date")),
+          externalId,
+          neq: pick(row, "neq", "NEQ") || undefined,
+          name,
+          offence:
+            pick(row, "nature_manquement", "infraction", "offence", "description") || undefined,
+          date: parseDate(pick(row, "date_imposition", "date_condamnation", "date")),
           sourceUrl: cfg.sourceUrl,
         };
       })
-      .filter((r) => r.neq || r.name);
+      .filter((r) => r.name || r.offence);
   } catch {
     return [];
   }

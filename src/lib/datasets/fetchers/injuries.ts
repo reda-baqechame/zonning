@@ -17,23 +17,24 @@ export async function fetchInjuries(opts: { limit?: number } = {}): Promise<Inju
   try {
     const url = await fetchCkanResourceUrl(cfg.ckanId, cfg.preferredFormat);
     if (!url) return [];
-    const text = await fetchText(url);
+    const text = await fetchText(url, 20_000_000);
     if (!text) return [];
+    const yearMatch = /lesions-(\d{4})/i.exec(url);
+    const year = yearMatch ? Number(yearMatch[1]) : undefined;
     const { rows } = parseCsvText(text, limit);
     return rows
-      .map((row, i) => {
-        const neq = pick(row, "neq", "NEQ");
-        const cnt = Number(pick(row, "nombre", "count", "claims") || "0");
+      .map((row) => {
+        const id = pick(row, "id");
+        const sector = pick(row, "secteur_scian", "employeur", "nom", "employer");
         return {
-          externalId: `${neq || "inj"}-${pick(row, "annee", "year") || i}`,
-          employerName: pick(row, "employeur", "nom", "employer") || undefined,
-          neq: neq || undefined,
-          claimCount: Number.isFinite(cnt) ? cnt : 0,
-          year: Number(pick(row, "annee", "year") || "0") || undefined,
+          externalId: id || `inj-${sector}-${pick(row, "nature_lesion")}`,
+          employerName: sector || undefined,
+          claimCount: 1,
+          year,
           sourceUrl: cfg.sourceUrl,
         };
       })
-      .filter((r) => r.employerName || r.neq);
+      .filter((r) => r.employerName);
   } catch {
     return [];
   }

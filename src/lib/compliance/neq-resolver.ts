@@ -81,15 +81,52 @@ export async function nameToNeq(
 export function productionLookups() {
   return {
     byNeq: async (neq: string): Promise<EnterpriseLike | null> => {
-      const r = await prisma.enterpriseRecord.findUnique({ where: { neq } });
-      return r ? { id: r.id, neq: r.neq, name: r.name, legalStatus: r.legalStatus } : null;
+      const enterprise = await prisma.enterpriseRecord.findUnique({ where: { neq } });
+      if (enterprise) {
+        return {
+          id: enterprise.id,
+          neq: enterprise.neq,
+          name: enterprise.name,
+          legalStatus: enterprise.legalStatus,
+        };
+      }
+      const company = await prisma.company.findUnique({ where: { neq } });
+      return company
+        ? { id: company.id, neq: company.neq, name: company.name, legalStatus: "Immatriculée" }
+        : null;
     },
     byName: async (name: string): Promise<EnterpriseLike[]> => {
-      const rows = await prisma.enterpriseRecord.findMany({
-        where: { name: { contains: name } },
-        take: 20,
+      const [enterprises, companies] = await Promise.all([
+        prisma.enterpriseRecord.findMany({
+          where: { name: { contains: name } },
+          take: 10,
+        }),
+        prisma.company.findMany({
+          where: { name: { contains: name } },
+          take: 10,
+        }),
+      ]);
+      const merged = [
+        ...enterprises.map((r) => ({
+          id: r.id,
+          neq: r.neq,
+          name: r.name,
+          legalStatus: r.legalStatus,
+        })),
+        ...companies.map((r) => ({
+          id: r.id,
+          neq: r.neq,
+          name: r.name,
+          legalStatus: "Immatriculée",
+        })),
+      ];
+      const seen = new Set<string>();
+      return merged.filter((r) => {
+        const key = r.neq ?? r.name ?? r.id;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
       });
-      return rows.map((r) => ({ id: r.id, neq: r.neq, name: r.name, legalStatus: r.legalStatus }));
     },
   };
 }

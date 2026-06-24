@@ -22,19 +22,20 @@ export async function fetchSanctions(opts: { limit?: number } = {}): Promise<San
     if (!text) return [];
     const { rows } = parseCsvText(text, limit);
     return rows
-      .map((row, i) => {
-        const neq = pick(row, "neq", "NEQ");
+      .map((row) => {
+        const externalId = pick(row, "no_sanction", "no_seq", "no_sanction_gie");
+        const name =
+          pick(row, "entreprise", "contrevenant", "nom", "name") || undefined;
         return {
-          externalId: neq || `san-${i}`,
-          neq: neq || undefined,
-          name: pick(row, "nom", "name") || undefined,
-          law: pick(row, "loi", "law") || undefined,
-          amount: parseMoney(pick(row, "montant", "amount")),
-          date: parseDate(pick(row, "date")),
+          externalId: externalId || `san-${name?.slice(0, 20) ?? "row"}`,
+          name,
+          law: pick(row, "loi_reglement", "loi", "law") || undefined,
+          amount: parseMoney(pick(row, "amende", "montant", "amount")),
+          date: parseDate(pick(row, "date_imposition", "date")),
           sourceUrl: cfg.sourceUrl,
         };
       })
-      .filter((r) => r.neq || r.name);
+      .filter((r) => r.name);
   } catch {
     return [];
   }

@@ -23,15 +23,13 @@ export async function fetchMarketIndex(opts: { limit?: number } = {}): Promise<M
     const { rows } = parseCsvText(text, limit);
     return rows
       .map((row, i) => {
-        const cnt = Number(pick(row, "nombre", "ventes", "sales") || "0");
-        const di = Number(pick(row, "indice", "difficulty", "indice_difficulte") || "NaN");
+        const cnt = Number(pick(row, "nb_reqst", "nombre", "ventes", "sales") || "0");
         return {
-          externalId: `${pick(row, "region") || "reg"}-${pick(row, "periode", "period") || i}`,
-          region: pick(row, "region") || undefined,
-          priceRange: pick(row, "tranche_prix", "price_range") || undefined,
+          externalId: `${pick(row, "id_regn_admin", "region") || "reg"}-${pick(row, "dt_debut_mois", "periode", "period") || i}-${pick(row, "cd_plage_prix", "tranche_prix") || "p"}`,
+          region: pick(row, "id_regn_admin", "region") || undefined,
+          priceRange: pick(row, "cd_plage_prix", "tranche_prix", "price_range") || undefined,
           salesCount: Number.isFinite(cnt) ? cnt : 0,
-          difficultyIndex: Number.isFinite(di) ? di : undefined,
-          period: pick(row, "periode", "period") || undefined,
+          period: pick(row, "dt_debut_mois", "periode", "period") || undefined,
           sourceUrl: cfg.sourceUrl,
         };
       })

@@ -1,5 +1,4 @@
 import { fetchCkanResourceUrl, fetchText } from "../client";
-import { parseCsvText, pick } from "../parser";
 import { DATASETS, getSyncLimit } from "../registry";
 
 export type RenaRecord = {
@@ -13,28 +12,49 @@ export type RenaRecord = {
   sourceUrl: string;
 };
 
+function parseRenaXml(text: string, limit: number): RenaRecord[] {
+  const cfg = DATASETS.rena;
+  const results: RenaRecord[] = [];
+  const blocks = text.match(/<inscription>[\s\S]*?<\/inscription>/gi) ?? [];
+
+  for (const block of blocks) {
+    if (results.length >= limit) break;
+    const tag = (name: string) => {
+      const m = new RegExp(`<${name}>([\\s\\S]*?)<\\/${name}>`, "i").exec(block);
+      return m?.[1]?.trim() || undefined;
+    };
+    const neq = tag("NEQ");
+    const name = tag("Nom_entreprise");
+    if (!neq && !name) continue;
+    const startRaw = tag("Inscription_registre");
+    const endRaw = tag("Fin_inadmissibilite");
+    results.push({
+      externalId: neq || `rena-${results.length}`,
+      neq,
+      name,
+      status: "non_admissible",
+      offence: tag("Infraction"),
+      startDate: startRaw ? new Date(startRaw) : undefined,
+      endDate: endRaw ? new Date(endRaw) : undefined,
+      sourceUrl: cfg.sourceUrl,
+    });
+  }
+
+  return results;
+}
+
 export async function fetchRena(opts: { limit?: number } = {}): Promise<RenaRecord[]> {
   const cfg = DATASETS.rena;
   const limit = opts.limit ?? getSyncLimit("rena");
   try {
-    const url = await fetchCkanResourceUrl(cfg.ckanId, cfg.preferredFormat);
+    const url = await fetchCkanResourceUrl(cfg.ckanId, ["XML", "CSV"]);
     if (!url) return [];
-    const text = await fetchText(url);
+    const text = await fetchText(url, 20_000_000);
     if (!text) return [];
-    const { rows } = parseCsvText(text, limit);
-    return rows
-      .map((row, i) => {
-        const neq = pick(row, "neq", "NEQ", "numero_entreprise");
-        return {
-          externalId: neq || `rena-${i}`,
-          neq: neq || undefined,
-          name: pick(row, "nom", "name", "raison_sociale") || undefined,
-          status: pick(row, "statut", "status") || undefined,
-          offence: pick(row, "infraction", "offence") || undefined,
-          sourceUrl: cfg.sourceUrl,
-        };
-      })
-      .filter((r) => r.neq || r.name);
+    if (text.trimStart().startsWith("<?xml") || text.includes("<inscription>")) {
+      return parseRenaXml(text, limit);
+    }
+    return [];
   } catch {
     return [];
   }

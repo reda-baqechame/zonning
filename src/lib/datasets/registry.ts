@@ -1132,7 +1132,7 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     label: "RENA — entreprises non admissibles aux contrats publics",
     ckanId: "registre-des-entreprises-non-admissibles-aux-contrats-publics-rena",
     sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/registre-des-entreprises-non-admissibles-aux-contrats-publics-rena",
-    preferredFormat: "CSV",
+    preferredFormat: ["XML", "CSV"],
     defaultLimit: 5000,
     productionLimit: 20000,
     refreshIntervalMinutes: 1440,
@@ -1147,11 +1147,12 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/registre-des-entreprises",
     preferredFormat: "CSV",
     defaultLimit: 5000,
-    productionLimit: 50000,
+    productionLimit: 10000,
     refreshIntervalMinutes: 1440,
     tier: "daily",
     syncSource: "ckan",
     syncEnabled: true,
+    bootstrapAllowlist: true,
   },
   sanctions: {
     id: "sanctions",
@@ -1169,8 +1170,8 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
   convictions: {
     id: "convictions",
     label: "Registre des déclarations de culpabilité",
-    ckanId: "registre-des-declarations-de-culpabilite",
-    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/?tags=Registre",
+    ckanId: "extrait-du-registre-des-declarations-de-culpabilite-2023-2024-2025",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/extrait-du-registre-des-declarations-de-culpabilite-2023-2024-2025",
     preferredFormat: "CSV",
     defaultLimit: 5000,
     productionLimit: 20000,
@@ -1191,6 +1192,7 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     tier: "daily",
     syncSource: "ckan",
     syncEnabled: true,
+    bootstrapAllowlist: true,
   },
   cadastre: {
     id: "cadastre",
@@ -1205,6 +1207,7 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     tier: "weekly",
     syncSource: "arcgis",
     syncEnabled: true,
+    bootstrapAllowlist: true,
   },
   "zoning-standard": {
     id: "zoning-standard",
@@ -1218,6 +1221,7 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     tier: "weekly",
     syncSource: "ckan",
     syncEnabled: true,
+    bootstrapAllowlist: true,
   },
   "market-index": {
     id: "market-index",

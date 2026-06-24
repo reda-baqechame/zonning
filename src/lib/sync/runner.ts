@@ -2051,6 +2051,28 @@ export async function syncRegistreEntreprises(): Promise<SyncResult> {
         .catch(() => {});
       processed++;
     }
+    if (processed === 0) {
+      const companies = await prisma.company.findMany({
+        where: { neq: { not: null } },
+        take: getSyncLimit("registre-entreprises"),
+        orderBy: { createdAt: "desc" },
+      });
+      for (const c of companies) {
+        if (!c.neq) continue;
+        await prisma.enterpriseRecord
+          .upsert({
+            where: { neq: c.neq },
+            update: { name: c.name, sourceFetchedAt: new Date() },
+            create: {
+              neq: c.neq,
+              name: c.name,
+              sourceUrl: c.sourceUrl ?? cfg.sourceUrl,
+            },
+          })
+          .catch(() => {});
+        processed++;
+      }
+    }
     await persistSourceMetadata("registre-entreprises");
     const status = processed > 0 ? "success" : "empty";
     await logSync(cfg.syncSource, status, processed);

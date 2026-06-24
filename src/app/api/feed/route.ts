@@ -379,11 +379,25 @@ export async function GET(req: NextRequest) {
         const lookups = productionLookups();
         const candidates = await nameToNeq(winner, lookups.byName).catch(() => []);
         const best = candidates.find((c) => c.confidence !== "low");
-        if (best?.neq) {
+        const neq = best?.neq;
+        if (neq) {
           tenderCompliance = await assembleCompliance(
-            { neq: best.neq },
+            { neq },
             productionComplianceDeps(),
           ).catch(() => undefined);
+        } else {
+          const renaHit = await prisma.renaRecord
+            .findFirst({
+              where: { name: { contains: winner.slice(0, 24) } },
+              orderBy: { startDate: "desc" },
+            })
+            .catch(() => null);
+          if (renaHit?.neq) {
+            tenderCompliance = await assembleCompliance(
+              { neq: renaHit.neq },
+              productionComplianceDeps(),
+            ).catch(() => undefined);
+          }
         }
       }
       const opportunityDossier = buildTenderOpportunityDossier({
