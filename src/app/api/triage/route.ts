@@ -8,6 +8,14 @@ import {
   computeWinProbability,
   computeBidRecommendation,
 } from "@/lib/tenders/win-probability";
+import { profileFromUser } from "@/lib/readiness-passport";
+import {
+  assembleCompliance,
+  productionComplianceDeps,
+} from "@/lib/compliance/contractor-compliance";
+import { getIncumbentIntelligence } from "@/lib/tenders/incumbent";
+import { buildOpportunityDecision } from "@/lib/opportunities/opportunity-decision";
+import type { OpportunityDecision } from "@/lib/opportunities/opportunity-decision";
 type Locale = "fr" | "en";
 
 type RiskLevel = "low" | "medium" | "high";
@@ -137,7 +145,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Resolved: compute the full decision triage.
-  const triage = buildTriage(match, user, locale);
+  const triage = await buildTriage(match, user, locale);
   return NextResponse.json({
     source: parsed.source,
     sourceLabel: parsed.sourceLabel,
@@ -165,6 +173,7 @@ type ResolvedTender = {
   organization: string | null;
   region: string | null;
   category: string | null;
+  unspsc: string | null;
   estimatedValue: number | null;
   closesAt: Date | null;
   sourceUrl: string;
@@ -194,6 +203,7 @@ async function resolveIndexedTender(
         organization: true,
         region: true,
         category: true,
+        unspsc: true,
         estimatedValue: true,
         closesAt: true,
         sourceUrl: true,
@@ -206,7 +216,7 @@ async function resolveIndexedTender(
   return null;
 }
 
-function buildTriage(
+async function buildTriage(
   t: ResolvedTender,
   user: Awaited<ReturnType<typeof getSessionUser>>,
   locale: Locale,
@@ -293,23 +303,84 @@ function buildTriage(
     copy(locale, "Déclaration de lobbyisme / non-collusion.", "Lobbying / non-collusion declaration."),
   );
 
-  const nextAction = blocked
-    ? copy(
-        locale,
-        "Ne pas acheter les documents — un bloqueur (AMP ou échéance) doit être levé d'abord.",
-        "Don't buy the documents — a blocker (AMP or deadline) must be cleared first.",
-      )
-    : worthBuyingDocuments
-      ? copy(
-          locale,
-          "Ce marché vaut l'achat des documents. Commandez-les sur le site officiel, puis importez-les dans le coffre-fort.",
-          "This tender is worth buying the documents for. Order them on the official site, then import them into the vault.",
-        )
-      : copy(
-          locale,
-          "Surveillez ce marché mais n'achetez pas encore les documents.",
-          "Watch this tender but don't buy the documents yet.",
-        );
+  const missionDeadlineRisk =
+    daysLeft == null
+      ? ("unknown" as const)
+      : daysLeft < 0
+        ? ("missed" as const)
+        : daysLeft <= 3
+          ? ("urgent" as const)
+          : daysLeft <= 14
+            ? ("soon" as const)
+            : ("none" as const);
+
+  const missionVerdict = blocked
+    ? ("skip" as const)
+    : recommendation.decision === "bid"
+      ? ("pursue" as const)
+      : recommendation.decision === "no-bid"
+        ? ("skip" as const)
+        : ("verify_before_spend" as const);
+
+  const profile = profileFromUser(user ?? {});
+  const [userCompliance, incumbent] = await Promise.all([
+    user?.neq || user?.rbqLicenseNumber
+      ? assembleCompliance(
+          { neq: user.neq, licenseNumber: user.rbqLicenseNumber },
+          productionComplianceDeps(),
+        ).catch(() => null)
+      : Promise.resolve(null),
+    getIncumbentIntelligence(t.unspsc, t.category, t.region).catch(() => ({
+      totalAwards: 0,
+      distinctWinners: 0,
+      dominance: 0,
+      topIncumbents: [],
+    })),
+  ]);
+
+  const decision: OpportunityDecision = buildOpportunityDecision({
+    mission: {
+      verdict: missionVerdict,
+      worthBuyingDocuments,
+      deadlineRisk: missionDeadlineRisk,
+      deadlineLabel,
+      officialSiteAction: copy(locale, "Ouvrir la source officielle", "Open official source"),
+      requiredDocuments: requiredCertificates,
+      missingReadiness: [],
+      rejectionRisks: [],
+      taskBoard: [
+        {
+          id: "open-official",
+          title: copy(locale, "Ouvrir l'avis officiel", "Open official notice"),
+          detail: copy(locale, "Confirmer l'acheteur, les dates et la méthode de dépôt.", "Confirm buyer, dates, and submission method."),
+          status: "todo",
+          buttonLabel: copy(locale, "Ouvrir la source", "Open source"),
+          href: t.sourceUrl,
+        },
+      ],
+      nextButtons: [
+        {
+          kind: "official_source",
+          label: copy(locale, "Ouvrir la source", "Open source"),
+          href: t.sourceUrl,
+        },
+      ],
+    },
+    profile,
+    compliance: userCompliance,
+    tender: {
+      requiresAmp: t.requiresAmp,
+      sourceUrl: t.sourceUrl,
+      estimatedValue: t.estimatedValue,
+    },
+    ranking: { score: fitScore },
+    awardStats: {
+      distinctWinners: incumbent.distinctWinners,
+      incumbentDominance: incumbent.dominance,
+      topIncumbentName: incumbent.topIncumbents[0]?.name ?? null,
+    },
+    locale,
+  });
 
   return {
     verdict: blocked
@@ -323,15 +394,17 @@ function buildTriage(
     decisionLabel: locale === "fr" ? recommendation.labelFr : recommendation.labelEn,
     decisionRationale: locale === "fr" ? recommendation.rationaleFr : recommendation.rationaleEn,
     fitScore,
-    winProbability: win.winProbability,
-    expectedValue: win.expectedValue,
-    confidence: win.confidence,
+    winProbability: decision.winProbability,
+    expectedValue: decision.expectedValue,
+    confidence: decision.winConfidence,
     paperworkRisk,
     deadlineRisk,
     deadlineLabel,
     competition: copy(locale, "Concurrence modérée estimée (basée sur l'historique de la catégorie).", "Estimated moderate competition (based on category history)."),
     requiredCertificates,
-    worthBuyingDocuments,
-    nextAction,
+    worthBuyingDocuments: decision.buyDocuments,
+    nextAction: decision.buyDocumentsReason,
+    personalBlockers: decision.personalBlockers,
+    opportunityDecision: decision,
   };
 }

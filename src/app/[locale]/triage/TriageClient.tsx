@@ -53,6 +53,7 @@ type TriageResponse = {
     nextAction?: string;
     checklist?: string[];
     officialUrl?: string;
+    personalBlockers?: { id: string; label: string; severity: string; href?: string }[];
   } | null;
   error?: string;
 };
@@ -247,6 +248,25 @@ export default function TriageClient() {
                 {tri.worthBuyingDocuments ? t("worthBuyingYes") : t("worthBuyingNo")}
               </p>
               <p className="mt-1 text-xs text-muted">{tri.nextAction}</p>
+            </div>
+          ) : null}
+
+          {tri.personalBlockers && tri.personalBlockers.length > 0 ? (
+            <div className="rounded-lg border border-line bg-white p-4">
+              <p className="text-xs font-semibold uppercase text-subtle">{t("personalBlockers")}</p>
+              <ul className="mt-2 space-y-1 text-sm">
+                {tri.personalBlockers.map((blocker) => (
+                  <li
+                    key={blocker.id}
+                    className={`flex gap-2 ${
+                      blocker.severity === "blocker" ? "text-danger" : "text-warning"
+                    }`}
+                  >
+                    <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>{blocker.label}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           ) : null}
 

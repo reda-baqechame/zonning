@@ -6,6 +6,7 @@ import {
   ChartNoAxesCombined,
   Download,
   FolderOpen,
+  FileText,
   MapPin,
   Menu,
   Settings,
@@ -53,6 +54,7 @@ export function CockpitSidebar({
     { href: "/opportunity-brief", label: locale === "fr" ? "Dossiers" : "Dossiers", icon: FolderOpen },
     { href: "/passport", label: nav("passport"), icon: ShieldCheck },
     { href: "/vault", label: nav("vaultNav"), icon: FolderOpen },
+    { href: "/proposals", label: nav("proposalsNav"), icon: FileText },
     { href: "/guides", label: nav("guidesNav"), icon: BriefcaseBusiness },
   ];
   const utilityLinks = [

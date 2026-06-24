@@ -2,7 +2,7 @@ import type { GovernmentReadinessPassport } from "@/lib/domain/quebec";
 
 type Locale = "fr" | "en";
 
-type ReadinessProfile = {
+export type ReadinessProfile = {
   companyName?: string | null;
   email?: string | null;
   rbqLicenseClass?: string | null;

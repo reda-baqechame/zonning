@@ -35,6 +35,7 @@ import {
 } from "@/lib/compliance/contractor-compliance";
 import { nameToNeq, productionLookups } from "@/lib/compliance/neq-resolver";
 import { buildGovernmentReadinessPassport, profileFromUser } from "@/lib/readiness-passport";
+import { getIncumbentIntelligence } from "@/lib/tenders/incumbent";
 
 function isDatabaseConnectionError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
@@ -111,6 +112,14 @@ export async function GET(req: NextRequest) {
     profileFromUser(user ?? {}),
     locale,
   );
+  const readinessProfile = profileFromUser(user ?? {});
+  const userCompliance =
+    user?.neq || user?.rbqLicenseNumber
+      ? await assembleCompliance(
+          { neq: user.neq, licenseNumber: user.rbqLicenseNumber },
+          productionComplianceDeps(),
+        ).catch(() => undefined)
+      : undefined;
   const userCtx = {
     minProjectCost: user?.minProjectCost,
     maxProjectCost: user?.maxProjectCost,
@@ -400,6 +409,19 @@ export async function GET(req: NextRequest) {
           }
         }
       }
+      const incumbent = await getIncumbentIntelligence(t.unspsc, t.category, t.region).catch(
+        () => ({
+          totalAwards: 0,
+          distinctWinners: 0,
+          dominance: 0,
+          topIncumbents: [],
+        }),
+      );
+      const awardStats = {
+        distinctWinners: incumbent.distinctWinners,
+        incumbentDominance: incumbent.dominance,
+        topIncumbentName: incumbent.topIncumbents[0]?.name ?? null,
+      };
       const opportunityDossier = buildTenderOpportunityDossier({
         tender: { ...t, amendmentCount },
         score,
@@ -410,6 +432,9 @@ export async function GET(req: NextRequest) {
         valueEstimate: tenderValue,
         contactLeads: tenderContactLeads,
         compliance: tenderCompliance,
+        readinessProfile,
+        userCompliance,
+        awardStats,
       });
       return {
         kind: "tender" as const,

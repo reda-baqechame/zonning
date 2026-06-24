@@ -4,6 +4,7 @@ import type { ValueEstimate } from "@/lib/permits/value-estimate";
 import type { ContactLeads } from "@/lib/opportunities/contact-resolver";
 import type { ParcelVerdict } from "@/lib/compliance/parcel-verdict";
 import type { ContractorCompliance } from "@/lib/compliance/contractor-compliance";
+import type { OpportunityDecision } from "@/lib/opportunities/opportunity-decision";
 
 export type CoverageStatus =
   | "authoritative"
@@ -208,6 +209,7 @@ export type OpportunityDossier = {
   contactLeads?: ContactLeads;
   parcelVerdict?: ParcelVerdict;
   compliance?: ContractorCompliance;
+  decision?: OpportunityDecision;
 };
 
 export type GovernmentReadinessPassport = {

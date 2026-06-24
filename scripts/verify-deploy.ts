@@ -174,18 +174,24 @@ async function main() {
         const withCompliance = tenders.filter(
           (t: { opportunityDossier?: { compliance?: unknown } }) => t.opportunityDossier?.compliance,
         );
+        const withDecision = tenders.filter(
+          (t: { opportunityDossier?: { decision?: { worthPursuing?: string; winProbability?: number } } }) =>
+            t.opportunityDossier?.decision?.worthPursuing != null &&
+            typeof t.opportunityDossier?.decision?.winProbability === "number",
+        );
         const awarded = tenders.filter(
           (t: { opportunityDossier?: { contactLeads?: { tender?: { awardedContractor?: unknown } } } }) =>
             t.opportunityDossier?.contactLeads?.tender?.awardedContractor,
         );
         console.log(
-          `permits=${permits.length} value=${withValue.length} contact=${withContact.length} parcel=${withParcel.length} tenders=${tenders.length} withCompliance=${withCompliance.length} awarded=${awarded.length}`,
+          `permits=${permits.length} value=${withValue.length} contact=${withContact.length} parcel=${withParcel.length} tenders=${tenders.length} withCompliance=${withCompliance.length} withDecision=${withDecision.length} awarded=${awarded.length}`,
         );
         return (
           permits.length > 0 &&
           withValue.length > 0 &&
           withContact.length > 0 &&
           withParcel.length > 0 &&
+          (tenders.length === 0 || withDecision.length > 0) &&
           (awarded.length === 0 || withCompliance.length > 0)
         );
       },

@@ -32,6 +32,7 @@
     "triage": "Triage",
     "guidesNav": "Guides",
     "vaultNav": "Coffre",
+    "proposalsNav": "Soumissions",
     "paiementPublic": "Paiement public",
     "validation": "Validation",
     "dashboard": "Tableau de bord",
@@ -91,6 +92,7 @@
     "checklist": "À vérifier",
     "worthBuyingYes": "Vaut l'achat des documents.",
     "worthBuyingNo": "N'achetez pas encore les documents.",
+    "personalBlockers": "Bloqueurs pour vous",
     "verdict": {
       "pursue": "Poursuivre",
       "verify": "Vérifier d'abord",
@@ -104,6 +106,18 @@
       "medium": "Moyen",
       "high": "Élevé"
     }
+  },
+  "proposals": {
+    "title": "Préparation de soumission",
+    "subtitle": "Générez un énoncé de capacités, un plan de soumission et une ébauche de bordereau de prix à partir de votre profil et de l'appel d'offres.",
+    "tenderIdLabel": "Identifiant de l'appel d'offres",
+    "tenderIdPlaceholder": "ID ZONNING (depuis le fil ou l'URL du dossier)",
+    "generate": "Générer",
+    "hint": "Ouvrez un appel dans le fil, copiez son ID, ou utilisez le bouton « Préparer la soumission » dans le panneau de détail.",
+    "error": "Impossible de générer la soumission.",
+    "copyAll": "Copier tout",
+    "copied": "Copié",
+    "mandatory": "obligatoire"
   },
   "vault": {
     "title": "Coffre-fort d'analyse de documents",
@@ -441,6 +455,15 @@
         "blocked": "Bloqué",
         "verify": "Vérifier"
       }
+    },
+    "decision": {
+      "title": "Décision pour vous",
+      "winProbability": "Probabilité de gain",
+      "expectedValue": "Valeur attendue",
+      "estimated": "estimé",
+      "buyDocumentsYes": "Acheter les documents SEAO",
+      "buyDocumentsNo": "Ne pas acheter les documents tout de suite",
+      "buildProposal": "Préparer la soumission"
     },
     "briefing": {
       "title": "File de décisions du jour",

@@ -82,6 +82,7 @@ export function NavBar() {
           { href: "/triage", label: t("triage") },
           { href: "/passport", label: t("passport") },
           { href: "/vault", label: t("vaultNav") },
+          { href: "/proposals", label: t("proposalsNav") },
         ]
       : []),
     { href: "/chantier-radar", label: t("chantierRadar") },

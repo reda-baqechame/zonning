@@ -6,6 +6,11 @@ import type { ValueEstimate } from "@/lib/permits/value-estimate";
 import type { ContactLeads } from "@/lib/opportunities/contact-resolver";
 import type { ParcelVerdict } from "@/lib/compliance/parcel-verdict";
 import type { ContractorCompliance } from "@/lib/compliance/contractor-compliance";
+import type { ReadinessProfile } from "@/lib/readiness-passport";
+import {
+  buildOpportunityDecision,
+  type TenderAwardStats,
+} from "@/lib/opportunities/opportunity-decision";
 import type { PipelineScoreResult, RankingReason } from "@/lib/pipeline-score";
 import type { PropertyIntelligence } from "@/lib/intelligence";
 import type { TenderScoreResult } from "@/lib/tender-score";
@@ -69,6 +74,9 @@ type TenderDossierInput = {
   valueEstimate?: ValueEstimate;
   contactLeads?: ContactLeads;
   compliance?: ContractorCompliance;
+  readinessProfile?: ReadinessProfile;
+  userCompliance?: ContractorCompliance;
+  awardStats?: TenderAwardStats;
 };
 
 type DossierLocale = "fr" | "en";
@@ -750,6 +758,30 @@ export function buildTenderOpportunityDossier(input: TenderDossierInput): Opport
     ? new Date()
     : suggestedActionBy;
 
+  const governmentMission = buildTenderGovernmentMission({
+    tender,
+    recommendation,
+    thresholds,
+    ranking,
+    sourceProfile,
+    locale,
+  });
+  const decision = input.readinessProfile
+    ? buildOpportunityDecision({
+        mission: governmentMission,
+        profile: input.readinessProfile,
+        compliance: input.userCompliance,
+        tender: {
+          requiresAmp: tender.requiresAmp,
+          sourceUrl: tender.sourceUrl,
+          estimatedValue: tender.estimatedValue,
+        },
+        ranking,
+        awardStats: input.awardStats,
+        locale,
+      })
+    : undefined;
+
   return {
     id: `tender:${tender.id}`,
     kind: "tender",
@@ -783,14 +815,8 @@ export function buildTenderOpportunityDossier(input: TenderDossierInput): Opport
       blockers,
       recommendedStage: recommendation === "act_now" ? "pursuing" : recommendation === "verify_first" ? "researching" : "new",
     },
-    governmentMission: buildTenderGovernmentMission({
-      tender,
-      recommendation,
-      thresholds,
-      ranking,
-      sourceProfile,
-      locale,
-    }),
+    governmentMission,
+    decision,
     pipelineBreakdown: ranking.breakdown,
     complianceAction: {
       enabled: false,

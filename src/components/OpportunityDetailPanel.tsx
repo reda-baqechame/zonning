@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button, FieldLabel, Select } from "@/components/ui";
+import { Link } from "@/i18n/navigation";
 import {
   getFeedDossier,
   getFeedLocation,
@@ -69,6 +70,7 @@ export function OpportunityDetailPanel({
 
   const dossier = getFeedDossier(item);
   const mission = dossier?.governmentMission;
+  const decision = dossier?.decision;
   const recommendation = dossier?.triage.recommendation ?? "deprioritize";
   const confirmed = unique([
     ...(dossier?.siteIntelligence?.confirmedFacts ?? []),
@@ -134,6 +136,95 @@ export function OpportunityDetailPanel({
             <span>{feed(`effort.${dossier?.triage.effort ?? "heavy"}`)}</span>
           </div>
         </section>
+
+        {decision ? (
+          <section className="border border-line bg-surface-2 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase text-subtle">
+                  {feed("decision.title")}
+                </p>
+                <p className="mt-1 text-lg font-bold text-ink">
+                  {feed(`mission.verdict.${decision.worthPursuing}`)}
+                </p>
+                <p className="mt-1 text-sm text-muted">{decision.headline}</p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="tabular-nums text-2xl font-bold text-brand">
+                  {decision.winProbability}%
+                </p>
+                <p className="text-[11px] text-subtle">{feed("decision.winProbability")}</p>
+              </div>
+            </div>
+
+            {decision.expectedValue != null ? (
+              <p className="mt-3 text-sm text-muted">
+                {feed("decision.expectedValue")}:{" "}
+                <span className="font-semibold text-ink">
+                  {new Intl.NumberFormat(locale === "fr" ? "fr-CA" : "en-CA", {
+                    style: "currency",
+                    currency: "CAD",
+                    maximumFractionDigits: 0,
+                  }).format(decision.expectedValue)}
+                </span>
+                <span className="ml-1 text-xs text-subtle">({feed("decision.estimated")})</span>
+              </p>
+            ) : null}
+
+            {decision.personalBlockers.length > 0 ? (
+              <ul className="mt-3 space-y-1.5">
+                {decision.personalBlockers.map((blocker) => (
+                  <li
+                    key={blocker.id}
+                    className={`flex gap-2 text-xs ${
+                      blocker.severity === "blocker" ? "text-danger" : "text-warning"
+                    }`}
+                  >
+                    <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>{blocker.label}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
+            <div
+              className={`mt-3 rounded border px-3 py-2 text-sm ${
+                decision.buyDocuments
+                  ? "border-success/30 bg-success/5 text-ink"
+                  : "border-warning/30 bg-warning/5 text-ink"
+              }`}
+            >
+              <p className="font-semibold">
+                {decision.buyDocuments
+                  ? feed("decision.buyDocumentsYes")
+                  : feed("decision.buyDocumentsNo")}
+              </p>
+              <p className="mt-1 text-xs text-muted">{decision.buyDocumentsReason}</p>
+            </div>
+
+            <p className="mt-2 text-xs text-muted">{decision.deadlineLabel}</p>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a
+                href={decision.primaryButton.href}
+                target={decision.primaryButton.href.startsWith("http") ? "_blank" : undefined}
+                rel={decision.primaryButton.href.startsWith("http") ? "noreferrer" : undefined}
+                className="inline-flex items-center gap-1 rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-brand-ink hover:bg-brand-hover"
+              >
+                {decision.primaryButton.label}
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+              {item.kind === "tender" ? (
+                <Link
+                  href={`/proposals?tenderId=${item.id}`}
+                  className="inline-flex items-center gap-1 rounded-md border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-surface-2"
+                >
+                  {feed("decision.buildProposal")}
+                </Link>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
 
         {mission ? (
           <section>

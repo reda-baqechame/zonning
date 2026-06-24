@@ -32,6 +32,7 @@
     "triage": "Triage",
     "guidesNav": "Guides",
     "vaultNav": "Vault",
+    "proposalsNav": "Proposals",
     "paiementPublic": "Public payments",
     "validation": "Validation",
     "dashboard": "Dashboard",
@@ -91,6 +92,7 @@
     "checklist": "What to check",
     "worthBuyingYes": "Worth buying the documents.",
     "worthBuyingNo": "Don't buy the documents yet.",
+    "personalBlockers": "Blockers for you",
     "verdict": {
       "pursue": "Pursue",
       "verify": "Verify first",
@@ -104,6 +106,18 @@
       "medium": "Medium",
       "high": "High"
     }
+  },
+  "proposals": {
+    "title": "Bid preparation",
+    "subtitle": "Generate a capability statement, proposal outline, and draft pricing sheet from your profile and the tender.",
+    "tenderIdLabel": "Tender ID",
+    "tenderIdPlaceholder": "ZONNING ID (from feed or dossier URL)",
+    "generate": "Generate",
+    "hint": "Open a tender in the feed, copy its ID, or use Prepare bid package in the detail panel.",
+    "error": "Could not generate the bid package.",
+    "copyAll": "Copy all",
+    "copied": "Copied",
+    "mandatory": "mandatory"
   },
   "vault": {
     "title": "Document review vault",
@@ -441,6 +455,15 @@
         "blocked": "Blocked",
         "verify": "Verify"
       }
+    },
+    "decision": {
+      "title": "Decision for you",
+      "winProbability": "Win probability",
+      "expectedValue": "Expected value",
+      "estimated": "estimated",
+      "buyDocumentsYes": "Buy SEAO documents",
+      "buyDocumentsNo": "Don't buy documents yet",
+      "buildProposal": "Prepare bid package"
     },
     "briefing": {
       "title": "Today's decision queue",
