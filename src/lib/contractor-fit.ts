@@ -139,7 +139,7 @@ export function classifyContractorTender(tender: TenderLike): ContractorTenderFi
     };
   }
 
-  if (hasNonContractor && !hasExecution) {
+  if (hasNonContractor) {
     return {
       score: 10,
       level: "weak",

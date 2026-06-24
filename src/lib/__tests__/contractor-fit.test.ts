@@ -26,4 +26,12 @@ describe("classifyContractorTender", () => {
     expect(fit.contractorWork).toBe(false);
     expect(fit.score).toBeLessThan(30);
   });
+
+  it("rejects IT work even when the title says travaux", () => {
+    const fit = classifyContractorTender({
+      title: "Travaux liés au développement et à l'entretien des systèmes informatiques",
+    });
+    expect(fit.contractorWork).toBe(false);
+    expect(fit.score).toBeLessThan(30);
+  });
 });
