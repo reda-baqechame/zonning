@@ -1,0 +1,465 @@
+{
+  "generatedAt": "2026-06-24T19:34:16.542Z",
+  "hits": [
+    {
+      "city": "Saint-Jean-sur-Richelieu",
+      "datasetType": "permits",
+      "query": "saint-jean-sur-richelieu permis",
+      "ckanId": "vmtl-permis-construction",
+      "title": "Permis de construction, transformation et démolition",
+      "resourceUrl": "https://app.powerbi.com/view?r=eyJrIjoiYjAxYzI1M2UtMjA0MC00ODM5LWI2ODMtMzVjNjNiNjU2NmZhIiwidCI6IjlmMTVkMmRjLTg3NTMtNGY4My1hYWMyLWE1ODI4OGQzYTRiYyJ9",
+      "format": "WEB",
+      "lastModified": null
+    },
+    {
+      "city": "Saint-Jean-sur-Richelieu",
+      "datasetType": "permits",
+      "query": "saint-jean-sur-richelieu permis",
+      "ckanId": "etude-d-enjeux-de-mobilite-des-berges-dans-le-troncon-fluvial-du-saint-laurent",
+      "title": "Étude d’enjeux de mobilité des berges dans le tronçon fluvial du Saint-Laurent",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/a849ef4f-da7c-4ea6-9a72-a5c3a22179e7/resource/8b07111a-b70c-4d05-bc56-784368267a63/download/rapportfinal_suivimobiliteslf_ulaval_mars2024.pdf",
+      "format": "PDF",
+      "lastModified": "2025-01-15T15:01:56.853433"
+    },
+    {
+      "city": "Saint-Jean-sur-Richelieu",
+      "datasetType": "permits",
+      "query": "saint-jean-sur-richelieu permis",
+      "ckanId": "milieux-humides-du-quebec",
+      "title": "Milieux humides cartographie détaillée",
+      "resourceUrl": "https://experience.arcgis.com/experience/81e748d099c242b8a09328f76938b39a",
+      "format": "HTML",
+      "lastModified": null
+    },
+    {
+      "city": "Saint-Jean-sur-Richelieu",
+      "datasetType": "permits",
+      "query": "saint-jean-sur-richelieu permis",
+      "ckanId": "points-de-rencontre-d-ambulance",
+      "title": "Point de rencontre d'ambulance",
+      "resourceUrl": "https://diffusion.mffp.gouv.qc.ca/Diffusion/DonneeGratuite/Foret/LIM_TERRITOIRE_FOREST_PUBLIC/Premiers_secours_foret/Point_rencontre_ambulance/R01_R11/gdb/pts_rencontre_ambulance_BSL-GAS.gdb.zip",
+      "format": "FGDB",
+      "lastModified": "2026-06-02T12:00:00"
+    },
+    {
+      "city": "Saint-Jean-sur-Richelieu",
+      "datasetType": "permits",
+      "query": "saint-jean-sur-richelieu permis",
+      "ckanId": "vmtl-vignettes-stationnement",
+      "title": "Vignettes de stationnement",
+      "resourceUrl": "https://app.powerbi.com/view?r=eyJrIjoiN2RhMDk4MjgtMGIwYi00NWNmLTg0NzMtMDBkN2IyYTg3NmViIiwidCI6IjlmMTVkMmRjLTg3NTMtNGY4My1hYWMyLWE1ODI4OGQzYTRiYyJ9",
+      "format": "WEB",
+      "lastModified": null
+    },
+    {
+      "city": "Drummondville",
+      "datasetType": "permits",
+      "query": "drummondville permis",
+      "ckanId": "comptage",
+      "title": "Données journalières par compteur",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/0e07f935-fe9f-4764-b44c-2e3ea6648d0f/resource/50e28d2e-eb92-4760-a6f9-d6764abbfbb3/download/dummondville-2015-2016.csv",
+      "format": "CSV",
+      "lastModified": "2017-02-14T17:20:55.045220"
+    },
+    {
+      "city": "Saint-Jérôme",
+      "datasetType": "permits",
+      "query": "saint-jerome permis",
+      "ckanId": "vmtl-permis-construction",
+      "title": "Permis de construction, transformation et démolition",
+      "resourceUrl": "https://app.powerbi.com/view?r=eyJrIjoiYjAxYzI1M2UtMjA0MC00ODM5LWI2ODMtMzVjNjNiNjU2NmZhIiwidCI6IjlmMTVkMmRjLTg3NTMtNGY4My1hYWMyLWE1ODI4OGQzYTRiYyJ9",
+      "format": "WEB",
+      "lastModified": null
+    },
+    {
+      "city": "Saint-Jérôme",
+      "datasetType": "permits",
+      "query": "saint-jerome permis",
+      "ckanId": "etude-d-enjeux-de-mobilite-des-berges-dans-le-troncon-fluvial-du-saint-laurent",
+      "title": "Étude d’enjeux de mobilité des berges dans le tronçon fluvial du Saint-Laurent",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/a849ef4f-da7c-4ea6-9a72-a5c3a22179e7/resource/8b07111a-b70c-4d05-bc56-784368267a63/download/rapportfinal_suivimobiliteslf_ulaval_mars2024.pdf",
+      "format": "PDF",
+      "lastModified": "2025-01-15T15:01:56.853433"
+    },
+    {
+      "city": "Saint-Jérôme",
+      "datasetType": "permits",
+      "query": "saint-jerome permis",
+      "ckanId": "points-de-rencontre-d-ambulance",
+      "title": "Point de rencontre d'ambulance",
+      "resourceUrl": "https://diffusion.mffp.gouv.qc.ca/Diffusion/DonneeGratuite/Foret/LIM_TERRITOIRE_FOREST_PUBLIC/Premiers_secours_foret/Point_rencontre_ambulance/R01_R11/gdb/pts_rencontre_ambulance_BSL-GAS.gdb.zip",
+      "format": "FGDB",
+      "lastModified": "2026-06-02T12:00:00"
+    },
+    {
+      "city": "Saint-Jérôme",
+      "datasetType": "permits",
+      "query": "saint-jerome permis",
+      "ckanId": "vmtl-vignettes-stationnement",
+      "title": "Vignettes de stationnement",
+      "resourceUrl": "https://app.powerbi.com/view?r=eyJrIjoiN2RhMDk4MjgtMGIwYi00NWNmLTg0NzMtMDBkN2IyYTg3NmViIiwidCI6IjlmMTVkMmRjLTg3NTMtNGY4My1hYWMyLWE1ODI4OGQzYTRiYyJ9",
+      "format": "WEB",
+      "lastModified": null
+    },
+    {
+      "city": "Saint-Jérôme",
+      "datasetType": "permits",
+      "query": "saint-jerome permis",
+      "ckanId": "milieux-humides-du-quebec",
+      "title": "Milieux humides cartographie détaillée",
+      "resourceUrl": "https://experience.arcgis.com/experience/81e748d099c242b8a09328f76938b39a",
+      "format": "HTML",
+      "lastModified": null
+    },
+    {
+      "city": "Saint-Hyacinthe",
+      "datasetType": "permits",
+      "query": "saint-hyacinthe permis",
+      "ckanId": "vmtl-permis-construction",
+      "title": "Permis de construction, transformation et démolition",
+      "resourceUrl": "https://app.powerbi.com/view?r=eyJrIjoiYjAxYzI1M2UtMjA0MC00ODM5LWI2ODMtMzVjNjNiNjU2NmZhIiwidCI6IjlmMTVkMmRjLTg3NTMtNGY4My1hYWMyLWE1ODI4OGQzYTRiYyJ9",
+      "format": "WEB",
+      "lastModified": null
+    },
+    {
+      "city": "Saint-Hyacinthe",
+      "datasetType": "permits",
+      "query": "saint-hyacinthe permis",
+      "ckanId": "etude-d-enjeux-de-mobilite-des-berges-dans-le-troncon-fluvial-du-saint-laurent",
+      "title": "Étude d’enjeux de mobilité des berges dans le tronçon fluvial du Saint-Laurent",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/a849ef4f-da7c-4ea6-9a72-a5c3a22179e7/resource/8b07111a-b70c-4d05-bc56-784368267a63/download/rapportfinal_suivimobiliteslf_ulaval_mars2024.pdf",
+      "format": "PDF",
+      "lastModified": "2025-01-15T15:01:56.853433"
+    },
+    {
+      "city": "Saint-Hyacinthe",
+      "datasetType": "permits",
+      "query": "saint-hyacinthe permis",
+      "ckanId": "points-de-rencontre-d-ambulance",
+      "title": "Point de rencontre d'ambulance",
+      "resourceUrl": "https://diffusion.mffp.gouv.qc.ca/Diffusion/DonneeGratuite/Foret/LIM_TERRITOIRE_FOREST_PUBLIC/Premiers_secours_foret/Point_rencontre_ambulance/R01_R11/gdb/pts_rencontre_ambulance_BSL-GAS.gdb.zip",
+      "format": "FGDB",
+      "lastModified": "2026-06-02T12:00:00"
+    },
+    {
+      "city": "Saint-Hyacinthe",
+      "datasetType": "permits",
+      "query": "saint-hyacinthe permis",
+      "ckanId": "vmtl-vignettes-stationnement",
+      "title": "Vignettes de stationnement",
+      "resourceUrl": "https://app.powerbi.com/view?r=eyJrIjoiN2RhMDk4MjgtMGIwYi00NWNmLTg0NzMtMDBkN2IyYTg3NmViIiwidCI6IjlmMTVkMmRjLTg3NTMtNGY4My1hYWMyLWE1ODI4OGQzYTRiYyJ9",
+      "format": "WEB",
+      "lastModified": null
+    },
+    {
+      "city": "Saint-Hyacinthe",
+      "datasetType": "permits",
+      "query": "saint-hyacinthe permis",
+      "ckanId": "milieux-humides-du-quebec",
+      "title": "Milieux humides cartographie détaillée",
+      "resourceUrl": "https://experience.arcgis.com/experience/81e748d099c242b8a09328f76938b39a",
+      "format": "HTML",
+      "lastModified": null
+    },
+    {
+      "city": "Lévis",
+      "datasetType": "permits",
+      "query": "levis permis",
+      "ckanId": "vmtl-niveaux-intensification-urbaine-densite-affectation-sol-pum-2050",
+      "title": "Niveaux d'intensification urbaine, seuils minimaux moyens de densité nette et affectation du sol (Plan d'urbanisme et de mobilité 2050)",
+      "resourceUrl": "https://donnees.montreal.ca/fr/dataset/f420857a-709d-450a-a422-61c3f5079a5e/resource/aa336ce2-2380-4006-bc8b-ef8eea39c8ff/download/intens_affect.geojson",
+      "format": "GeoJSON",
+      "lastModified": "2025-12-18T15:10:18.431903"
+    },
+    {
+      "city": "Lévis",
+      "datasetType": "permits",
+      "query": "levis permis",
+      "ckanId": "a8adbccce2c6486597393e962452e0af_0",
+      "title": "Réseau routier",
+      "resourceUrl": "https://donnees-ouvertes-vrn.opendata.arcgis.com/datasets/a8adbccce2c6486597393e962452e0af_0",
+      "format": "HTML",
+      "lastModified": null
+    },
+    {
+      "city": "Lévis",
+      "datasetType": "permits",
+      "query": "levis permis",
+      "ckanId": "vmtl-resultats-plan-intervention-actifs-eau-voirie-2023",
+      "title": "Résultats du Plan d'intervention des actifs des réseaux d'eau potable, d'égouts et de voirie (2023-2027)",
+      "resourceUrl": "https://donnees.montreal.ca/fr/dataset/5036e051-bd73-44ef-817e-b3893454d472/resource/2f8f17b0-1b49-4e85-b847-99d4be0b6996/download/tableaux_pi_2023_montreal_pim009_v04_20240201_vf__pourdo_v01.xlsx",
+      "format": "XLSX",
+      "lastModified": "2024-08-05T18:30:04.418618"
+    },
+    {
+      "city": "Lévis",
+      "datasetType": "permits",
+      "query": "levis permis",
+      "ckanId": "vmtl-resultats-plan-intervention-actifs-eau-voirie",
+      "title": "Résultats du Plan d'intervention des actifs des réseaux d'eau potable, d'égouts et de voirie (2016-2021) (archives)",
+      "resourceUrl": "https://donnees.montreal.ca/fr/dataset/0d5fab8e-f673-48fd-96dd-745f50ca1ec0/resource/c567a675-ee66-4537-b62e-e9771040a15f/download/pim_troncon_unifie_l_j.geojson",
+      "format": "GeoJSON",
+      "lastModified": "2018-04-10T21:14:36.190616"
+    },
+    {
+      "city": "Lévis",
+      "datasetType": "permits",
+      "query": "levis permis",
+      "ckanId": "vmtl-ilots-de-chaleur",
+      "title": "Îlots de chaleur",
+      "resourceUrl": "https://experience.arcgis.com/experience/944e0b7104bd491591ccca829da24670/page/Page",
+      "format": "WEB",
+      "lastModified": null
+    },
+    {
+      "city": "Sherbrooke",
+      "datasetType": "permits",
+      "query": "sherbrooke permis",
+      "ckanId": "comptage",
+      "title": "Données journalières par compteur",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/0e07f935-fe9f-4764-b44c-2e3ea6648d0f/resource/50e28d2e-eb92-4760-a6f9-d6764abbfbb3/download/dummondville-2015-2016.csv",
+      "format": "CSV",
+      "lastModified": "2017-02-14T17:20:55.045220"
+    },
+    {
+      "city": "Sherbrooke",
+      "datasetType": "zoning",
+      "query": "sherbrooke zonage",
+      "ckanId": "ae984df25d12471f9f3de4b84b3e2a53_0",
+      "title": "Zonage",
+      "resourceUrl": "https://donneesouvertes-sherbrooke.opendata.arcgis.com/maps/ae984df25d12471f9f3de4b84b3e2a53_0",
+      "format": "HTML",
+      "lastModified": null
+    },
+    {
+      "city": "Gatineau",
+      "datasetType": "permits",
+      "query": "gatineau permis",
+      "ckanId": "comptage",
+      "title": "Données journalières par compteur",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/0e07f935-fe9f-4764-b44c-2e3ea6648d0f/resource/50e28d2e-eb92-4760-a6f9-d6764abbfbb3/download/dummondville-2015-2016.csv",
+      "format": "CSV",
+      "lastModified": "2017-02-14T17:20:55.045220"
+    },
+    {
+      "city": "Québec",
+      "datasetType": "zoning",
+      "query": "quebec zonage",
+      "ckanId": "zonage",
+      "title": "Zonage",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/aedd53ac-131d-4141-93c4-8d4211eb2d95/resource/fafe8962-b38d-4a98-ad93-25ac8950b8c8/download/zonage.json",
+      "format": "GeoJSON",
+      "lastModified": "2024-03-01T15:44:16.259620"
+    },
+    {
+      "city": "Québec",
+      "datasetType": "zoning",
+      "query": "quebec zonage",
+      "ckanId": "vgat-zonage",
+      "title": "Zonage",
+      "resourceUrl": "https://www.gatineau.ca/upload/donneesouvertes/ZONAGE.XML",
+      "format": "XML",
+      "lastModified": "2025-04-24T12:00:00"
+    },
+    {
+      "city": "Québec",
+      "datasetType": "zoning",
+      "query": "quebec zonage",
+      "ckanId": "sag_zonage",
+      "title": "Zonage",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/a086941f-22e3-4fe7-a8dc-fe791229d942/resource/f36f4bff-5a49-4aa8-9436-9f5c16ef6fb7/download/sag_zonage.csv",
+      "format": "CSV",
+      "lastModified": "2026-06-21T19:02:15.316531"
+    },
+    {
+      "city": "Québec",
+      "datasetType": "zoning",
+      "query": "quebec zonage",
+      "ckanId": "ae984df25d12471f9f3de4b84b3e2a53_0",
+      "title": "Zonage",
+      "resourceUrl": "https://donneesouvertes-sherbrooke.opendata.arcgis.com/maps/ae984df25d12471f9f3de4b84b3e2a53_0",
+      "format": "HTML",
+      "lastModified": null
+    },
+    {
+      "city": "Québec",
+      "datasetType": "zoning",
+      "query": "quebec zonage",
+      "ckanId": "zonage-v3r",
+      "title": "Zonage",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/85fa8f51-28f6-4163-9d96-eab0b185ec10/resource/ac36a60b-55eb-42db-9c49-168051210f98/download/zonage-v3r.zip",
+      "format": "SHP",
+      "lastModified": "2026-06-18T13:01:02.220110"
+    },
+    {
+      "city": "Québec",
+      "datasetType": "permits",
+      "query": "ville de quebec permis",
+      "ckanId": "permis-delivres-ville-de-quebec",
+      "title": "Permis délivrés à la Ville de Québec",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/879abf6e-c6b2-430a-b44a-16335467c6f6/resource/9555031e-cfc5-4b78-bec9-4ab84b549f67/download/vdq-permis.csv",
+      "format": "CSV",
+      "lastModified": "2026-06-21T09:03:36.735518"
+    },
+    {
+      "city": "Québec",
+      "datasetType": "permits",
+      "query": "ville de quebec permis",
+      "ckanId": "permis-de-construction",
+      "title": "Permis de construction",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/c7808c42-e401-49f0-8049-df3c809d5982/resource/d4731ee2-b1e5-4a31-bc56-4e13115e74ef/download/permis-de-construction.csv",
+      "format": "CSV",
+      "lastModified": "2026-03-31T21:06:11.361329"
+    },
+    {
+      "city": "Québec",
+      "datasetType": "permits",
+      "query": "ville de quebec permis",
+      "ckanId": "permis-pour-animaux",
+      "title": "Permis pour animaux",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/e302c3f1-f562-449f-975f-40eb7c9d3b01/resource/53c2d9b3-1f87-41f1-b2c6-656b12e6f631/download/permis-animaux.csv",
+      "format": "CSV",
+      "lastModified": "2026-03-25T17:58:13.388565"
+    },
+    {
+      "city": "Québec",
+      "datasetType": "permits",
+      "query": "ville de quebec permis",
+      "ckanId": "racj-alcool-detaillant",
+      "title": "Registre des titulaires de permis de détaillant d’alcool en vigueur",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/d817c9f7-76c7-44af-882d-0d673056ef86/resource/6b69360c-af8d-4c57-b5bf-1c38d5461de3/download/racj-alcool-detaillant.csv",
+      "format": "CSV",
+      "lastModified": "2026-06-24T00:00:07.895891"
+    },
+    {
+      "city": "Québec",
+      "datasetType": "permits",
+      "query": "ville de quebec permis",
+      "ckanId": "racj-alcool-fabricant",
+      "title": "Registre des titulaires de permis de fabricant d’alcool en vigueur",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/891479b9-e728-4940-8512-09794653c471/resource/56be4c85-b3ef-46b8-8912-2fcf0eebbfc5/download/racj-alcool-fabricant.csv",
+      "format": "CSV",
+      "lastModified": "2026-06-17T00:00:51.239099"
+    },
+    {
+      "city": "Laval",
+      "datasetType": "zoning",
+      "query": "laval zonage",
+      "ckanId": "cdu-zonage-de-production-agricole",
+      "title": "Zonage de production agricole du CDU",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/0d299651-2d95-4de3-b513-cf6009f51ca7/resource/11856667-9a4b-49c8-bb25-a28183c3a6ee/download/cdu-zonage-production-agricole.csv",
+      "format": "CSV",
+      "lastModified": "2024-06-06T16:22:37.752857"
+    },
+    {
+      "city": "Laval",
+      "datasetType": "zoning",
+      "query": "laval zonage",
+      "ckanId": "cdu-zone-amenagement-ecologique-particuliere",
+      "title": "Zone d'aménagement écologique particulière du CDU",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/dc2de4b0-1985-4982-beca-c432941464db/resource/1c9b27f7-f21e-4aa4-b5b8-6e3fe14d27b6/download/cdu-zone-amenagement-ecologique-particuliere.csv",
+      "format": "CSV",
+      "lastModified": "2026-04-10T03:28:17.578188"
+    },
+    {
+      "city": "Laval",
+      "datasetType": "zoning",
+      "query": "laval zonage",
+      "ckanId": "cdu-piia-zone-amenagement-ecologique-particuliere",
+      "title": "PIIA zone d’aménagement écologique particulière du CDU",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/5d615028-abf3-413d-9e6c-488ee3b3fa5a/resource/e92e5236-8333-4392-a261-1373fd8d2d36/download/cdu-piia-zone-amenagement-ecologique-particuliere.csv",
+      "format": "CSV",
+      "lastModified": "2026-04-10T03:16:13.677172"
+    },
+    {
+      "city": "Laval",
+      "datasetType": "zoning",
+      "query": "laval zonage",
+      "ckanId": "cdu-type-milieux",
+      "title": "Type de milieux du CDU",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/4abee7cc-b3d9-436e-ab13-e3ea31b45b08/resource/b264d5cd-f4a6-418e-a21e-030624d442ea/download/cdu-type-milieux.csv",
+      "format": "CSV",
+      "lastModified": "2026-06-18T15:33:09.286971"
+    },
+    {
+      "city": "Laval",
+      "datasetType": "zoning",
+      "query": "laval zonage",
+      "ckanId": "milieu-humide-d-interet-presume",
+      "title": "Milieu humide d’intérêt présumé du CDU",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/02e54ee7-aef3-42dd-81b6-68c93ffbc465/resource/867cd8e4-b4b4-465a-98ac-b617195d0ece/download/cdu-milieu-humide-interet-presume.csv",
+      "format": "CSV",
+      "lastModified": "2026-03-25T19:47:51.769621"
+    },
+    {
+      "city": "Laval",
+      "datasetType": "permits",
+      "query": "laval permis",
+      "ckanId": "referentiel-de-batiment",
+      "title": "Référentiel de bâtiment – Ville de Laval",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/2750835b-95d4-406a-89e5-f2f03504511e/resource/1e295f49-f5bf-4b1d-8908-139f3578f4e1/download/referentiel-batiment.csv",
+      "format": "CSV",
+      "lastModified": "2025-01-21T22:26:57.137441"
+    },
+    {
+      "city": "Laval",
+      "datasetType": "permits",
+      "query": "laval permis",
+      "ckanId": "permis-pour-animaux",
+      "title": "Permis pour animaux",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/e302c3f1-f562-449f-975f-40eb7c9d3b01/resource/53c2d9b3-1f87-41f1-b2c6-656b12e6f631/download/permis-animaux.csv",
+      "format": "CSV",
+      "lastModified": "2026-03-25T17:58:13.388565"
+    },
+    {
+      "city": "Laval",
+      "datasetType": "permits",
+      "query": "laval permis",
+      "ckanId": "permis-de-construction",
+      "title": "Permis de construction",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/c7808c42-e401-49f0-8049-df3c809d5982/resource/d4731ee2-b1e5-4a31-bc56-4e13115e74ef/download/permis-de-construction.csv",
+      "format": "CSV",
+      "lastModified": "2026-03-31T21:06:11.361329"
+    },
+    {
+      "city": "Laval",
+      "datasetType": "permits",
+      "query": "laval permis",
+      "ckanId": "chantiers-routiers",
+      "title": "Chantiers routiers",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/d41f625c-1bd3-4202-a8c1-50b573b3ade4/resource/ee760964-82b4-426a-93fc-35fdbc5ab002/download/permis-obstruction.csv",
+      "format": "CSV",
+      "lastModified": "2026-05-06T17:47:40.289052"
+    },
+    {
+      "city": "Laval",
+      "datasetType": "permits",
+      "query": "laval permis",
+      "ckanId": "cartographie-des-lits-d-ecoulement-en-periode-d-etiage-ou-dans-un-bassin-de-retention",
+      "title": "Cartographie des lits d’écoulement en période d’étiage ou dans un bassin de rétention.",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/e674ec68-74cc-47a5-85ef-9cef15168863/resource/b93b431c-c40c-43af-ae14-ca78b1e840d9/download/cours-eau-autre.csv",
+      "format": "CSV",
+      "lastModified": "2023-06-20T20:24:16.525230"
+    },
+    {
+      "city": "Longueuil",
+      "datasetType": "zoning",
+      "query": "longueuil zonage",
+      "ckanId": "zonage",
+      "title": "Zonage",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/aedd53ac-131d-4141-93c4-8d4211eb2d95/resource/fafe8962-b38d-4a98-ad93-25ac8950b8c8/download/zonage.json",
+      "format": "GeoJSON",
+      "lastModified": "2024-03-01T15:44:16.259620"
+    },
+    {
+      "city": "Longueuil",
+      "datasetType": "permits",
+      "query": "longueuil permis",
+      "ckanId": "comptage",
+      "title": "Données journalières par compteur",
+      "resourceUrl": "https://www.donneesquebec.ca/recherche/dataset/0e07f935-fe9f-4764-b44c-2e3ea6648d0f/resource/50e28d2e-eb92-4760-a6f9-d6764abbfbb3/download/dummondville-2015-2016.csv",
+      "format": "CSV",
+      "lastModified": "2017-02-14T17:20:55.045220"
+    }
+  ]
+}

@@ -43,6 +43,7 @@ import { fetchConvictions } from "@/lib/datasets/fetchers/convictions";
 import { fetchInjuries } from "@/lib/datasets/fetchers/injuries";
 import { fetchCadastre } from "@/lib/datasets/fetchers/cadastre";
 import { fetchZoningStandard } from "@/lib/datasets/fetchers/zoning-standard";
+import { fetchZoningStandardPolygons } from "@/lib/datasets/fetchers/zoning-polygons";
 import { fetchMarketIndex } from "@/lib/datasets/fetchers/market-index";
 import { rbqToNeq } from "@/lib/compliance/neq-resolver";
 import {
@@ -2223,7 +2224,11 @@ export async function syncCadastre(): Promise<SyncResult> {
 export async function syncZoningStandard(): Promise<SyncResult> {
   const cfg = DATASETS["zoning-standard"];
   return runSync("zoning-standard", async () => {
-    const rows = await fetchZoningStandard();
+    const [rows, polygons] = await Promise.all([
+      fetchZoningStandard(),
+      fetchZoningStandardPolygons(),
+    ]);
+
     let processed = 0;
     for (const r of rows) {
       await prisma.zoningStandard
@@ -2246,6 +2251,45 @@ export async function syncZoningStandard(): Promise<SyncResult> {
         .catch(() => {});
       processed++;
     }
+
+    if (polygons.length > 0) {
+      await prisma.zoningPolygon.deleteMany({
+        where: { externalId: { startsWith: "zoning-standard:" } },
+      });
+      const { processed: polyCount } = await transactionChunkUpsert(polygons, 25, (p) =>
+        prisma.zoningPolygon.upsert({
+          where: { externalId: p.externalId },
+          create: {
+            externalId: p.externalId,
+            city: p.city,
+            zoneCode: p.zoneCode,
+            landUse: p.landUse,
+            regulationUrl: p.regulationUrl,
+            geometryJson: p.geometryJson,
+            minLat: p.minLat,
+            maxLat: p.maxLat,
+            minLng: p.minLng,
+            maxLng: p.maxLng,
+            sourceUrl: p.sourceUrl,
+            sourceFetchedAt: new Date(),
+          },
+          update: {
+            city: p.city,
+            zoneCode: p.zoneCode,
+            landUse: p.landUse,
+            regulationUrl: p.regulationUrl,
+            geometryJson: p.geometryJson,
+            minLat: p.minLat,
+            maxLat: p.maxLat,
+            minLng: p.minLng,
+            maxLng: p.maxLng,
+            sourceFetchedAt: new Date(),
+          },
+        }),
+      );
+      processed += polyCount;
+    }
+
     await persistSourceMetadata("zoning-standard");
     const status = processed > 0 ? "success" : "empty";
     await logSync(cfg.syncSource, status, processed);

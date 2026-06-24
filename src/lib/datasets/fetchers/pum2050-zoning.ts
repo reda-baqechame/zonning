@@ -28,19 +28,30 @@ export async function fetchPum2050Zoning(limit?: number): Promise<Pum2050ZoningR
       const landUse = pickProp(
         props,
         "affectation",
+        "AFFECTATION",
         "affectatio",
         "affectation_sol",
         "landuse",
+        "AFFECT_SOL",
       );
       const intensification = pickProp(
         props,
         "niv_txt",
+        "NIV_TXT",
         "niveau_intensification",
         "niveauint",
         "intensification",
         "niv_intensification",
+        "NIV_INT",
       );
-      const densityStr = pickProp(props, "densite", "seuil_densite", "densite_nette");
+      const densityStr = pickProp(
+        props,
+        "densite",
+        "DENSITE",
+        "seuil_densite",
+        "densite_nette",
+        "DENS_NETTE",
+      );
       const densityThreshold = densityStr
         ? Number(densityStr.replace(/\s/g, "").replace(",", "."))
         : undefined;

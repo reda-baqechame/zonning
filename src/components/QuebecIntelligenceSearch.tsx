@@ -64,7 +64,7 @@ const COPY = {
       "Essayez une municipalité, une adresse civique, une entreprise, un permis, un appel d'offres, une source de zonage ou une contrainte.",
     noMatch:
       "Aucun résultat indexé. Essayez une municipalité plus large ou le nom d'une source officielle.",
-    confidence: "Preuves",
+    confidence: "Confiance",
     freshness: "Fraîcheur",
     source: "Source",
     signals: "Signaux",
@@ -100,7 +100,7 @@ const COPY = {
     searchFailed: "Search failed. Please try again.",
     features: [
       "Plain-language explanation beside every recommendation",
-      "Source, proof, freshness, and limitations shown",
+      "Source, confidence, freshness, and limitations shown",
       "Missing evidence returns an unavailable state",
       "Direct links to Quebec public sources",
     ],
@@ -110,7 +110,7 @@ const COPY = {
       "Try a municipality, civic address, company, permit, tender, zoning source, or constraint.",
     noMatch:
       "No indexed result matched. Try a broader municipality or an official source name.",
-    confidence: "Proof",
+    confidence: "Confidence",
     freshness: "Freshness",
     source: "Source",
     signals: "Signals",
@@ -332,7 +332,7 @@ function EmailSnapshotForm({ query, locale }: { query: string; locale: "fr" | "e
       <p className="mt-1 text-xs text-muted">
         {locale === "fr"
           ? "Sources, confiance, limites et lien vers le dossier — sans inscription préalable."
-          : "Sources, proof, limitations, and dossier link - no signup required first."}
+          : "Sources, confidence, limitations, and dossier link — no signup required first."}
       </p>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <Input

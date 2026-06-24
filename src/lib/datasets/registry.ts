@@ -395,6 +395,8 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "niveaux-intensification-urbaine-densite-affectation-sol-pum-2050",
     sourceUrl:
       "https://donnees.montreal.ca/dataset/niveaux-intensification-urbaine-densite-affectation-sol-pum-2050",
+    directResourceUrl:
+      "https://donnees.montreal.ca/fr/dataset/f420857a-709d-450a-a422-61c3f5079a5e/resource/aa336ce2-2380-4006-bc8b-ef8eea39c8ff/download/intens_affect.geojson",
     preferredFormat: ["GeoJSON", "JSON"],
     defaultLimit: 2000,
     productionLimit: 8000,

@@ -240,10 +240,27 @@ export async function getIntelligenceForPermit(permit: {
     }).length;
 
     const zoningCity = permit.city ?? "Montréal";
+    const lot = await lookupZoning(permit.latitude, permit.longitude, zoningCity);
+
+    if (lot.determination === "confirmed") {
+      intel.layers!.regionalZoning = true;
+      intel.zoning = {
+        zoneCode: lot.zoneCode,
+        landUse: lot.landUse,
+        densityZone: lot.landUse,
+        regulationUrl: lot.regulationUrl,
+        sourceUrl: lot.sourceUrl,
+        source: "regional",
+        matchMethod: "parcel_intersection",
+        evidenceScope: "parcel",
+        determination: "confirmed",
+      };
+    }
+
     const zoningPoint = await nearestZoningPoint(
       permit.latitude,
       permit.longitude,
-      zoningCity
+      zoningCity,
     );
     const hasMeaningfulZoningEvidence = Boolean(
       zoningPoint?.landUse ||
@@ -251,7 +268,7 @@ export async function getIntelligenceForPermit(permit: {
         zoningPoint?.densityThreshold != null ||
         zoningPoint?.zoneCode,
     );
-    if (zoningPoint && hasMeaningfulZoningEvidence) {
+    if (zoningPoint && hasMeaningfulZoningEvidence && !intel.zoning) {
       intel.layers!.pum2050 = zoningCity === "Montréal";
       intel.layers!.regionalZoning = zoningCity !== "Montréal";
       intel.zoning = {
@@ -267,20 +284,19 @@ export async function getIntelligenceForPermit(permit: {
         matchDistanceMeters: zoningPoint.distanceMeters,
         evidenceScope: "planning_area_nearby",
         source: zoningCity === "Montréal" ? "pum2050" : "regional",
-        // Default to nearest_fallback; upgraded to confirmed below if a real
-        // polygon actually encloses the parcel.
         determination: "nearest_fallback",
       };
+    }
 
-      const lot = await lookupZoning(permit.latitude, permit.longitude, zoningCity);
-      if (lot.determination === "confirmed") {
-        intel.zoning.determination = "confirmed";
-        intel.zoning.zoneCode = lot.zoneCode;
-        intel.zoning.regulationUrl = lot.regulationUrl;
-        if (lot.landUse) {
-          intel.zoning.landUse = lot.landUse;
-          intel.zoning.densityZone = lot.landUse;
-        }
+    if (intel.zoning && lot.determination === "confirmed") {
+      intel.zoning.determination = "confirmed";
+      intel.zoning.zoneCode = lot.zoneCode ?? intel.zoning.zoneCode;
+      intel.zoning.regulationUrl = lot.regulationUrl;
+      intel.zoning.matchMethod = "parcel_intersection";
+      intel.zoning.evidenceScope = "parcel";
+      if (lot.landUse) {
+        intel.zoning.landUse = lot.landUse;
+        intel.zoning.densityZone = lot.landUse;
       }
     }
 

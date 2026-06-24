@@ -160,8 +160,31 @@ async function main() {
         const { res, json } = await fetchJson(
           "/api/intelligence?address=1000%20Rue%20Saint-Denis&city=Montr%C3%A9al",
         );
-        const pass = res.ok && json != null;
-        log(pass ? "✓" : "✗", `intelligence ${res.status}`);
+        const body = json as { hasData?: boolean; zoning?: { zoneCode?: string } } | null;
+        const pass = res.ok && body != null;
+        log(
+          pass ? "✓" : "✗",
+          `intelligence ${res.status} hasData=${body?.hasData} zoning=${body?.zoning?.zoneCode ?? "—"}`,
+        );
+        return pass;
+      },
+    },
+    {
+      name: "map layer API returns points",
+      run: async () => {
+        const { res, json } = await fetchJson("/api/map/layer?layer=contamination&limit=10");
+        const body = json as { count?: number; points?: unknown[] } | null;
+        const pass = res.ok && Array.isArray(body?.points);
+        log(pass ? "✓" : "✗", `map/layer contamination points=${body?.points?.length ?? 0}`);
+        return pass;
+      },
+    },
+    {
+      name: "carte page returns 200",
+      run: async () => {
+        const res = await fetch(`${base}/fr/carte`, { redirect: "manual" });
+        const pass = res.status === 200;
+        log(pass ? "✓" : "✗", `${res.status} GET /fr/carte`);
         return pass;
       },
     },

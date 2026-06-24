@@ -4,7 +4,6 @@ import { buildSiteDossier } from "@/lib/api/v2";
 import { sendEmail } from "@/lib/email/resend";
 import { intelligenceSnapshotEmail } from "@/lib/email/templates";
 import { clientIp, rateLimitAsync, rateLimitResponse } from "@/lib/rate-limit";
-import { appUrl as resolveAppUrl } from "@/lib/app-url";
 
 const schema = z.object({
   email: z.string().email(),
@@ -22,7 +21,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = schema.parse(await req.json());
     const locale = body.locale ?? "fr";
-    const appUrl = resolveAppUrl();
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
     const emailLimited = await rateLimitAsync(
       `api:v2:reports:email:addr:${body.email.toLowerCase()}`,

@@ -1,4 +1,4 @@
-import { fetchCkanResourceUrl, fetchText } from "../client";
+import { fetchCkanResourceUrl, fetchJson, fetchText } from "../client";
 import { DATASETS, getSyncLimit } from "../registry";
 
 export type ZoningStandardRow = {
@@ -15,11 +15,16 @@ export async function fetchZoningStandard(
   const cfg = DATASETS["zoning-standard"];
   const limit = opts.limit ?? getSyncLimit("zoning-standard");
   try {
-    const url = await fetchCkanResourceUrl(cfg.ckanId, ["GeoJSON", "JSON", "CSV"]);
+    const url =
+      cfg.directResourceUrl ??
+      (await fetchCkanResourceUrl(cfg.ckanId, ["GeoJSON", "JSON", "CSV"]));
     if (!url) return [];
-    const text = await fetchText(url);
-    if (!text) return [];
-    const geo = JSON.parse(text) as { features?: { properties?: Record<string, unknown> }[] };
+    const geo = cfg.directResourceUrl
+      ? await fetchJson<{ features?: { properties?: Record<string, unknown> }[] }>(url)
+      : (JSON.parse((await fetchText(url)) ?? "{}") as {
+          features?: { properties?: Record<string, unknown> }[];
+        });
+    if (!geo) return [];
     return (geo.features ?? [])
       .slice(0, limit)
       .map((f, i) => {

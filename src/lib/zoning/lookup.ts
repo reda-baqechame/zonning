@@ -36,14 +36,12 @@ export async function lookupZoning(
   // 1) Polygon containment — the only source of a *confirmed* determination.
   const polygons = await prisma.zoningPolygon.findMany({
     where: {
-      ...(city ? { city } : {}),
-      // Bounding-box pre-filter keeps the exact test cheap without PostGIS.
       minLat: { lte: lat },
       maxLat: { gte: lat },
       minLng: { lte: lng },
       maxLng: { gte: lng },
     },
-    take: 50,
+    take: 80,
   });
 
   for (const poly of polygons) {

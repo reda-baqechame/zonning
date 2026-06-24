@@ -34,7 +34,8 @@ export type OverlayPoint = {
   id: string;
   lat: number;
   lng: number;
-  kind: "gtc" | "heritage" | "zoning";
+  kind: "gtc" | "heritage" | "zoning" | "roadwork";
+  label?: string | null;
 };
 
 function scoreColor(score?: number, eligible?: boolean): string {
@@ -87,14 +88,17 @@ export default function PermitMap({
   const selected = withCoords.find((p) => p.id === selectedId);
 
   const bounds = useMemo(() => {
-    if (withCoords.length === 0 && devProjects.length === 0) return null;
+    if (withCoords.length === 0 && devProjects.length === 0 && overlayPoints.length === 0) {
+      return null;
+    }
     const all = [
       ...withCoords.map((p) => [p.latitude, p.longitude] as [number, number]),
       ...devProjects.map((d) => [d.latitude, d.longitude] as [number, number]),
+      ...overlayPoints.map((o) => [o.lat, o.lng] as [number, number]),
     ];
     if (all.length === 0) return null;
     return L.latLngBounds(all);
-  }, [withCoords, devProjects]);
+  }, [withCoords, devProjects, overlayPoints]);
 
   const cityCenter = city ? CITY_MAP_CENTERS[city] : null;
   const defaultCenter: [number, number] = cityCenter
@@ -170,21 +174,38 @@ export default function PermitMap({
             </Popup>
           </Marker>
         ))}
-        {overlayPoints.map((o) => (
+        {overlayPoints.map((o) => {
+          const color =
+            o.kind === "gtc"
+              ? "#ef4444"
+              : o.kind === "heritage"
+                ? "#f59e0b"
+                : o.kind === "roadwork"
+                  ? "#06b6d4"
+                  : "#8b5cf6";
+          const title =
+            o.kind === "gtc"
+              ? "GTC"
+              : o.kind === "heritage"
+                ? "Patrimoine"
+                : o.kind === "roadwork"
+                  ? "Travaux"
+                  : "Zonage";
+          return (
           <Marker
             key={`overlay-${o.id}`}
             position={[o.lat, o.lng]}
-            icon={pinIcon(o.kind === "gtc" ? "#ef4444" : o.kind === "heritage" ? "#f59e0b" : "#8b5cf6", false)}
+            icon={pinIcon(color, false)}
           >
             <Popup>
               <div className="text-sm text-slate-100">
-                <p className="font-semibold">
-                  {o.kind === "gtc" ? "GTC" : o.kind === "heritage" ? "Patrimoine" : "Zonage"}
-                </p>
+                <p className="font-semibold">{title}</p>
+                {o.label && <p>{o.label}</p>}
               </div>
             </Popup>
           </Marker>
-        ))}
+          );
+        })}
       </MapContainer>
     </div>
   );

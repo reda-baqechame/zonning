@@ -26,6 +26,24 @@ const STATUS_STYLES: Record<LayerStatus, string> = {
   NONE: "bg-slate-500/20 text-slate-300",
 };
 
+const MAP_LAYERS = new Set<LayerInfo["key"]>([
+  "permits",
+  "contamination",
+  "heritage",
+  "zoning",
+  "roadworks",
+]);
+
+const OVERLAY_KIND: Record<
+  Exclude<LayerInfo["key"], "permits" | "tenders">,
+  OverlayPoint["kind"]
+> = {
+  contamination: "gtc",
+  heritage: "heritage",
+  zoning: "zoning",
+  roadworks: "roadwork",
+};
+
 type PermitPoint = {
   id: string;
   address: string;
@@ -36,6 +54,8 @@ type PermitPoint = {
   longitude: number;
   pipelineScore?: number;
 };
+
+type LayerPoint = { id: string; lat: number; lng: number; label?: string | null };
 
 export default function CarteClient({ layers }: { layers: LayerInfo[] }) {
   const t = useTranslations("carte");
@@ -48,28 +68,51 @@ export default function CarteClient({ layers }: { layers: LayerInfo[] }) {
   const activeLayer = layers.find((l) => l.key === active)!;
 
   useEffect(() => {
-    // Only the permit layer has a queryable point endpoint to render as a map.
-    if (active !== "permits") return;
+    if (!MAP_LAYERS.has(active)) return;
     let cancelled = false;
-    async function loadPermits() {
+
+    async function loadLayer() {
       setLoading(true);
       try {
-        const res = await fetch("/api/permits?days=180");
+        if (active === "permits") {
+          const res = await fetch("/api/permits?days=180");
+          const d = await res.json();
+          if (cancelled) return;
+          setPermits((d.permits ?? []).filter((p: PermitPoint) => p.latitude && p.longitude));
+          setOverlays([]);
+          return;
+        }
+
+        const res = await fetch(`/api/map/layer?layer=${active}&limit=500`);
         const d = await res.json();
         if (cancelled) return;
-        setPermits((d.permits ?? []).filter((p: PermitPoint) => p.latitude && p.longitude));
-        setOverlays([]);
+        const kind = OVERLAY_KIND[active as keyof typeof OVERLAY_KIND];
+        const points = (d.points ?? []) as LayerPoint[];
+        setPermits([]);
+        setOverlays(
+          points.map((p) => ({
+            id: p.id,
+            lat: p.lat,
+            lng: p.lng,
+            kind,
+            label: p.label,
+          })),
+        );
       } catch {
-        /* ignore — map simply shows no points */
+        /* map shows empty */
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
-    void loadPermits();
+
+    void loadLayer();
     return () => {
       cancelled = true;
     };
   }, [active]);
+
+  const showMap = MAP_LAYERS.has(active);
+  const mappableCount = active === "permits" ? permits.length : overlays.length;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
@@ -104,27 +147,37 @@ export default function CarteClient({ layers }: { layers: LayerInfo[] }) {
       </div>
 
       <div className="mt-4">
-        {active === "permits" ? (
-          <PermitMapClient
-            permits={permits}
-            devProjects={[]}
-            overlayPoints={overlays}
-            selectedId={selectedId}
-            onSelect={(id) => setSelectedId(id || null)}
-            loading={loading}
-            mappableCount={permits.length}
-            totalCount={permits.length}
-          />
+        {showMap ? (
+          mappableCount === 0 && !loading ? (
+            <EmptyState
+              title={t(`notMapped.${activeLayer.status === "NONE" ? "none" : "title"}`)}
+              description={t(`notMapped.${activeLayer.key}`)}
+              action={
+                activeLayer.key === "zoning" ? (
+                  <Link href="/intelligence" className="text-sm text-sky-400 hover:text-sky-300">
+                    {t("openIntelligence")}
+                  </Link>
+                ) : undefined
+              }
+            />
+          ) : (
+            <PermitMapClient
+              permits={permits}
+              devProjects={[]}
+              overlayPoints={overlays}
+              selectedId={selectedId}
+              onSelect={(id) => setSelectedId(id || null)}
+              loading={loading}
+              mappableCount={mappableCount}
+              totalCount={mappableCount}
+            />
+          )
         ) : (
           <EmptyState
             title={t(`notMapped.${activeLayer.status === "NONE" ? "none" : "title"}`)}
             description={t(`notMapped.${activeLayer.key}`)}
             action={
-              activeLayer.key === "zoning" ? (
-                <Link href="/intelligence" className="text-sm text-sky-400 hover:text-sky-300">
-                  {t("openIntelligence")}
-                </Link>
-              ) : activeLayer.key === "tenders" ? (
+              activeLayer.key === "tenders" ? (
                 <Link href="/marches-qc" className="text-sm text-sky-400 hover:text-sky-300">
                   {t("openMarches")}
                 </Link>
