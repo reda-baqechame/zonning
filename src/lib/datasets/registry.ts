@@ -64,7 +64,15 @@ export type DatasetId =
   | "wetlands-provincial"
   | "flood-hazards"
   | "protected-areas"
-  | "road-network";
+  | "road-network"
+  | "rena"
+  | "registre-entreprises"
+  | "sanctions"
+  | "convictions"
+  | "injuries"
+  | "cadastre"
+  | "zoning-standard"
+  | "market-index";
 
 export type SyncTier = "fast" | "daily" | "weekly";
 
@@ -1118,6 +1126,111 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     syncSource: "toronto-permits-scaffold",
     city: "Toronto",
     bootstrapAllowlist: true,
+  },
+  rena: {
+    id: "rena",
+    label: "RENA — entreprises non admissibles aux contrats publics",
+    ckanId: "registre-des-entreprises-non-admissibles-aux-contrats-publics-rena",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/registre-des-entreprises-non-admissibles-aux-contrats-publics-rena",
+    preferredFormat: "CSV",
+    defaultLimit: 5000,
+    productionLimit: 20000,
+    refreshIntervalMinutes: 1440,
+    tier: "daily",
+    syncSource: "ckan",
+    syncEnabled: true,
+  },
+  "registre-entreprises": {
+    id: "registre-entreprises",
+    label: "Registre des entreprises du Québec (NEQ)",
+    ckanId: "registre-des-entreprises",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/registre-des-entreprises",
+    preferredFormat: "CSV",
+    defaultLimit: 5000,
+    productionLimit: 50000,
+    refreshIntervalMinutes: 1440,
+    tier: "daily",
+    syncSource: "ckan",
+    syncEnabled: true,
+  },
+  sanctions: {
+    id: "sanctions",
+    label: "Registre des sanctions administratives pécuniaires",
+    ckanId: "registre-des-sanctions-administratives-pecuniaires",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/registre-des-sanctions-administratives-pecuniaires",
+    preferredFormat: "CSV",
+    defaultLimit: 5000,
+    productionLimit: 20000,
+    refreshIntervalMinutes: 1440,
+    tier: "daily",
+    syncSource: "ckan",
+    syncEnabled: true,
+  },
+  convictions: {
+    id: "convictions",
+    label: "Registre des déclarations de culpabilité",
+    ckanId: "registre-des-declarations-de-culpabilite",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/?tags=Registre",
+    preferredFormat: "CSV",
+    defaultLimit: 5000,
+    productionLimit: 20000,
+    refreshIntervalMinutes: 1440,
+    tier: "daily",
+    syncSource: "ckan",
+    syncEnabled: true,
+  },
+  injuries: {
+    id: "injuries",
+    label: "Lésions professionnelles (CNESST)",
+    ckanId: "lesions-professionnelles",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/lesions-professionnelles",
+    preferredFormat: "CSV",
+    defaultLimit: 5000,
+    productionLimit: 20000,
+    refreshIntervalMinutes: 1440,
+    tier: "daily",
+    syncSource: "ckan",
+    syncEnabled: true,
+  },
+  cadastre: {
+    id: "cadastre",
+    label: "Cadastre allégé du Québec",
+    ckanId: "",
+    arcGisLayerUrl: "https://services3.arcgis.com/0lL78GhXbg1Po7WO/arcgis/rest/services/cadastre_bd_allegee/FeatureServer/0",
+    sourceUrl: "https://services3.arcgis.com/0lL78GhXbg1Po7WO/arcgis/rest/services/cadastre_bd_allegee/FeatureServer",
+    preferredFormat: "GeoJSON",
+    defaultLimit: 1000,
+    productionLimit: 5000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "arcgis",
+    syncEnabled: true,
+  },
+  "zoning-standard": {
+    id: "zoning-standard",
+    label: "Plan de zonage normalisé v1",
+    ckanId: "plan-de-zonage",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/plan-de-zonage",
+    preferredFormat: "GeoJSON",
+    defaultLimit: 2000,
+    productionLimit: 10000,
+    refreshIntervalMinutes: 10080,
+    tier: "weekly",
+    syncSource: "ckan",
+    syncEnabled: true,
+  },
+  "market-index": {
+    id: "market-index",
+    label: "Statistiques du Registre foncier (marché immobilier)",
+    ckanId: "statistiques-du-registre-foncier-du-quebec-sur-le-marche-immobilier",
+    sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/statistiques-du-registre-foncier-du-quebec-sur-le-marche-immobilier",
+    preferredFormat: "CSV",
+    defaultLimit: 2000,
+    productionLimit: 10000,
+    refreshIntervalMinutes: 1440,
+    tier: "daily",
+    syncSource: "ckan",
+    syncEnabled: true,
   },
 };
 
