@@ -2,6 +2,9 @@ import { addDays, differenceInCalendarDays, subDays } from "date-fns";
 import type { OpportunityDossier } from "@/lib/domain/quebec";
 import type { LeadSignal } from "@/lib/lead-signals";
 import type { PermitDataQuality } from "@/lib/permits/quality";
+import type { ValueEstimate } from "@/lib/permits/value-estimate";
+import type { ContactLeads } from "@/lib/opportunities/contact-resolver";
+import type { ParcelVerdict } from "@/lib/compliance/parcel-verdict";
 import type { PipelineScoreResult, RankingReason } from "@/lib/pipeline-score";
 import type { PropertyIntelligence } from "@/lib/intelligence";
 import type { TenderScoreResult } from "@/lib/tender-score";
@@ -50,6 +53,9 @@ type PermitDossierInput = {
   dataQuality?: PermitDataQuality;
   intelligence?: PropertyIntelligence | null;
   locale?: "fr" | "en";
+  valueEstimate?: ValueEstimate;
+  contactLeads?: ContactLeads;
+  parcelVerdict?: ParcelVerdict;
 };
 
 type TenderDossierInput = {
@@ -59,6 +65,8 @@ type TenderDossierInput = {
   ranking: TenderScoreResult;
   hasSimilarAwards?: boolean;
   locale?: "fr" | "en";
+  valueEstimate?: ValueEstimate;
+  contactLeads?: ContactLeads;
 };
 
 type DossierLocale = "fr" | "en";
@@ -690,6 +698,9 @@ export function buildPermitOpportunityDossier(input: PermitDossierInput): Opport
       enabled: Boolean(dataQuality?.usable),
       fields: ["permitType", "address", "municipality", "score", "confidence", "sourceUrl", "nextAction"],
     },
+    valueEstimate: input.valueEstimate,
+    contactLeads: input.contactLeads,
+    parcelVerdict: input.parcelVerdict,
   };
 }
 
@@ -788,5 +799,7 @@ export function buildTenderOpportunityDossier(input: TenderDossierInput): Opport
       enabled: true,
       fields: ["title", "organization", "region", "score", "confidence", "sourceUrl", "nextAction"],
     },
+    valueEstimate: input.valueEstimate,
+    contactLeads: input.contactLeads,
   };
 }

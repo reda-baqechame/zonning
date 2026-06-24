@@ -33,7 +33,7 @@ export type ContactLeads = {
   };
 };
 
-type LicenseeRow = {
+export type LicenseeRow = {
   id: string;
   holderName: string | null;
   licenseNumber: string;

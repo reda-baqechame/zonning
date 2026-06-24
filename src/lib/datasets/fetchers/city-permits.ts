@@ -6,7 +6,6 @@ import {
   pick,
   parseMoney,
   parseDate,
-  parseFloatSafe,
 } from "../parser";
 import type { PermitRecord } from "./permits";
 import { assessPermitQuality, buildPermitExternalId } from "@/lib/permits/quality";

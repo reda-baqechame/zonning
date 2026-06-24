@@ -21,6 +21,14 @@ import {
   buildPermitOpportunityDossier,
   buildTenderOpportunityDossier,
 } from "@/lib/opportunities/dossier";
+import { estimatePermitValue, type ValueEstimate } from "@/lib/permits/value-estimate";
+import {
+  resolveContactLeads,
+  productionDeps as contactDepsFactory,
+  type ResolveDeps,
+  type LicenseeRow,
+} from "@/lib/opportunities/contact-resolver";
+import { assessParcel, productionParcelDeps } from "@/lib/compliance/parcel-verdict";
 import { buildGovernmentReadinessPassport, profileFromUser } from "@/lib/readiness-passport";
 
 function isDatabaseConnectionError(error: unknown): boolean {
@@ -30,6 +38,25 @@ function isDatabaseConnectionError(error: unknown): boolean {
     message.includes("Connection terminated due to connection timeout") ||
     message.includes("Connection terminated unexpectedly")
   );
+}
+
+/**
+ * Per-request contact resolver with a memoized licensee list. The production
+ * deps pull up to 5000 active RBQ licensees; without memoization, every permit
+ * in the feed would re-run that query (N x 5000). The cache is built once and
+ * reused across all permits in the same request.
+ */
+function buildMemoizedContactDeps(limit = 8): ResolveDeps {
+  let licenseesCache: LicenseeRow[] | null = null;
+  const base = contactDepsFactory(limit);
+  return {
+    limit,
+    findLicensees: async () => {
+      if (!licenseesCache) licenseesCache = await base.findLicensees();
+      return licenseesCache;
+    },
+    findAward: base.findAward,
+  };
 }
 
 function unavailableFeed(locale: "fr" | "en") {
@@ -143,6 +170,7 @@ export async function GET(req: NextRequest) {
     ]),
   );
   const competitionMap = await batchCompetitionCounts(permitsRaw);
+  const contactDeps = buildMemoizedContactDeps(8);
   const getIntel = limits.intelligenceFull ? createIntelligenceCache() : null;
   const scoringProfile = {
     rbqLicenseClass: user?.rbqLicenseClass,
@@ -219,6 +247,30 @@ export async function GET(req: NextRequest) {
         },
         userCtx,
       );
+      const permitRequiredClasses = (() => {
+        try {
+          return parseJsonArray((p as { requiredRbqClasses?: string | null }).requiredRbqClasses);
+        } catch {
+          return [] as string[];
+        }
+      })();
+      const valueEstimate = estimatePermitValue({
+        permitType: p.permitType,
+        workType: p.workType,
+        city: p.city,
+        borough: p.borough,
+        estimatedCost: p.estimatedCost,
+      }, { rbqClasses: permitRequiredClasses });
+      const contactLeads = await resolveContactLeads(
+        { kind: "permit", permitId: p.id, requiredRbqClasses: permitRequiredClasses },
+        contactDeps,
+      ).catch(() => undefined);
+      const parcelVerdict =
+        p.latitude != null && p.longitude != null
+          ? await assessParcel(p.latitude, p.longitude, productionParcelDeps(500)).catch(
+              () => undefined,
+            )
+          : undefined;
       const opportunityDossier = buildPermitOpportunityDossier({
         permit: p,
         score: pipeline.score,
@@ -227,6 +279,9 @@ export async function GET(req: NextRequest) {
         dataQuality,
         intelligence,
         locale,
+        valueEstimate,
+        contactLeads,
+        parcelVerdict,
       });
       return {
         kind: "permit" as const,
@@ -299,6 +354,20 @@ export async function GET(req: NextRequest) {
         },
         userCtx,
       );
+      const tenderValue: ValueEstimate | undefined = t.estimatedValue
+        ? { kind: "published", value: t.estimatedValue, currency: "CAD" }
+        : undefined;
+      const tenderContactLeads = await resolveContactLeads(
+        {
+          kind: "tender",
+          tenderId: t.id,
+          organization: t.organization,
+          sourceUrl: t.sourceUrl,
+          unspsc: t.unspsc,
+          category: t.category,
+        },
+        contactDeps,
+      ).catch(() => undefined);
       const opportunityDossier = buildTenderOpportunityDossier({
         tender: { ...t, amendmentCount },
         score,
@@ -306,6 +375,8 @@ export async function GET(req: NextRequest) {
         ranking,
         hasSimilarAwards,
         locale,
+        valueEstimate: tenderValue,
+        contactLeads: tenderContactLeads,
       });
       return {
         kind: "tender" as const,

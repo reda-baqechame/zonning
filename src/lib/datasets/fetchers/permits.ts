@@ -1,6 +1,6 @@
 import { assessPermitQuality, buildPermitExternalId } from "@/lib/permits/quality";
 import { fetchCkanDatastoreSearch, fetchCkanPackage, fetchCkanResourceUrl, fetchText } from "../client";
-import { parseCsvLine, parseDate, parseFloatSafe, parseMoney, pick } from "../parser";
+import { parseCsvLine, parseDate, parseMoney, pick } from "../parser";
 import { parseCoordinate } from "@/lib/permits/coordinate";
 import { DATASETS, getSyncLimit } from "../registry";
 
