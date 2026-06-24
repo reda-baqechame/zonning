@@ -463,7 +463,11 @@
       "estimated": "estimated",
       "buyDocumentsYes": "Buy SEAO documents",
       "buyDocumentsNo": "Don't buy documents yet",
-      "buildProposal": "Prepare bid package"
+      "buildProposal": "Prepare bid package",
+      "rowMeta": "{win}% · {blockers} blocker(s)",
+      "trackContract": "Track this contract",
+      "tracking": "Tracking in pipeline",
+      "addendaWarning": "{count} indexed addenda — review before submitting."
     },
     "briefing": {
       "title": "Today's decision queue",

@@ -204,6 +204,12 @@ export function OpportunityDetailPanel({
 
             <p className="mt-2 text-xs text-muted">{decision.deadlineLabel}</p>
 
+            {item.kind === "tender" && (item.tender.amendmentCount ?? 0) > 0 ? (
+              <p className="mt-2 rounded border border-warning/30 bg-warning/5 px-2 py-1.5 text-xs text-warning-ink">
+                {feed("decision.addendaWarning", { count: item.tender.amendmentCount ?? 0 })}
+              </p>
+            ) : null}
+
             <div className="mt-3 flex flex-wrap gap-2">
               <a
                 href={decision.primaryButton.href}
@@ -221,6 +227,21 @@ export function OpportunityDetailPanel({
                 >
                   {feed("decision.buildProposal")}
                 </Link>
+              ) : null}
+              {decision.trackRecommended ? (
+                item.saved ? (
+                  <span className="inline-flex items-center gap-1 rounded-md border border-success/30 bg-success/5 px-3 py-1.5 text-xs font-semibold text-success-ink">
+                    {feed("decision.tracking")}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onToggleSave(item)}
+                    className="inline-flex items-center gap-1 rounded-md border border-brand/30 bg-brand-soft px-3 py-1.5 text-xs font-semibold text-brand hover:bg-brand-soft/80"
+                  >
+                    {feed("decision.trackContract")}
+                  </button>
+                )
               ) : null}
             </div>
           </section>

@@ -39,6 +39,38 @@ function decisionTone(recommendation: DecisionFilter) {
   return "text-subtle";
 }
 
+type WorthPursuing = NonNullable<OpportunityDossier["decision"]>["worthPursuing"];
+
+function verdictTone(verdict: WorthPursuing) {
+  if (verdict === "pursue") return "text-success-ink";
+  if (verdict === "verify_before_spend") return "text-warning-ink";
+  if (verdict === "watch") return "text-brand";
+  return "text-danger";
+}
+
+function rowDecision(item: FeedItem, dossier?: OpportunityDossier) {
+  if (item.kind === "tender" && dossier?.decision) {
+    return {
+      labelKey: `mission.verdict.${dossier.decision.worthPursuing}` as const,
+      tone: verdictTone(dossier.decision.worthPursuing),
+      winProbability: dossier.decision.winProbability,
+      blockerCount: dossier.decision.blockerCount,
+      nextLine: dossier.decision.headline,
+      useVerdict: true as const,
+    };
+  }
+  const recommendation = dossier?.triage.recommendation ?? "deprioritize";
+  return {
+    labelKey: `triage.${recommendation}` as const,
+    tone: decisionTone(recommendation),
+    winProbability: null,
+    blockerCount: null,
+    nextLine: dossier?.nextAction ?? null,
+    useVerdict: false as const,
+    recommendation,
+  };
+}
+
 function deadline(item: FeedItem, locale: string) {
   if (item.kind === "permit") return null;
   if (!item.tender.closesAt) return null;
@@ -166,8 +198,14 @@ export function OpportunityTable({
         {items.map((item) => {
           const key = feedItemKey(item);
           const dossier = getFeedDossier(item);
-          const recommendation = dossier?.triage.recommendation ?? "deprioritize";
-          const Icon = decisionIcon(recommendation);
+          const row = rowDecision(item, dossier);
+          const Icon = row.useVerdict
+            ? row.labelKey.includes("pursue")
+              ? ArrowUp
+              : row.labelKey.includes("skip")
+                ? Minus
+                : CircleAlert
+            : decisionIcon(row.recommendation ?? "deprioritize");
           const selected = key === selectedKey;
           return (
             <button
@@ -205,9 +243,19 @@ export function OpportunityTable({
                 </span>
               </div>
               <div className="mt-3 flex items-center justify-between gap-3">
-                <span className={cn("inline-flex items-center gap-2 text-xs font-semibold", decisionTone(recommendation))}>
-                  <Icon className="h-4 w-4" strokeWidth={1.7} />
-                  {feed(`triage.${recommendation}`)}
+                <span className={cn("inline-flex flex-col gap-0.5 text-xs font-semibold", row.tone)}>
+                  <span className="inline-flex items-center gap-2">
+                    <Icon className="h-4 w-4" strokeWidth={1.7} />
+                    {feed(row.labelKey)}
+                  </span>
+                  {row.winProbability != null ? (
+                    <span className="pl-6 text-[10px] font-medium text-muted">
+                      {feed("decision.rowMeta", {
+                        win: row.winProbability,
+                        blockers: row.blockerCount ?? 0,
+                      })}
+                    </span>
+                  ) : null}
                 </span>
                 <span className="text-xs font-medium text-ink">{value(item, locale) ?? t("valueUnavailable")}</span>
               </div>
@@ -233,8 +281,14 @@ export function OpportunityTable({
             {items.map((item) => {
               const key = feedItemKey(item);
               const dossier = getFeedDossier(item);
-              const recommendation = dossier?.triage.recommendation ?? "deprioritize";
-              const Icon = decisionIcon(recommendation);
+              const row = rowDecision(item, dossier);
+              const Icon = row.useVerdict
+                ? row.labelKey.includes("pursue")
+                  ? ArrowUp
+                  : row.labelKey.includes("skip")
+                    ? Minus
+                    : CircleAlert
+                : decisionIcon(row.recommendation ?? "deprioritize");
               const itemValue = value(item, locale);
               const itemDeadline = deadline(item, locale);
               const selected = key === selectedKey;
@@ -253,9 +307,19 @@ export function OpportunityTable({
                       : "border-l-2 border-transparent bg-white pl-[10px] hover:bg-surface-hover",
                   )}
                 >
-                  <span role="cell" className={cn("flex items-center gap-2 text-xs font-semibold", decisionTone(recommendation))}>
-                    <Icon className="h-4 w-4" strokeWidth={1.7} />
-                    {feed(`triage.${recommendation}`)}
+                  <span role="cell" className={cn("flex flex-col gap-0.5 text-xs font-semibold", row.tone)}>
+                    <span className="inline-flex items-center gap-2">
+                      <Icon className="h-4 w-4" strokeWidth={1.7} />
+                      {feed(row.labelKey)}
+                    </span>
+                    {row.winProbability != null ? (
+                      <span className="text-[10px] font-medium text-muted">
+                        {feed("decision.rowMeta", {
+                          win: row.winProbability,
+                          blockers: row.blockerCount ?? 0,
+                        })}
+                      </span>
+                    ) : null}
                   </span>
                   <span role="cell" className="min-w-0 pr-4">
                     <span className="block truncate text-sm font-semibold text-ink">{getFeedTitle(item)}</span>
@@ -298,11 +362,8 @@ export function OpportunityTable({
                     </span>
                   </span>
                   <span role="cell" className="min-w-0 pl-3">
-                    <span className="block truncate text-sm font-semibold text-ink">
-                      {feed(`triage.${recommendation}`)}
-                    </span>
-                    <span className="mt-1 block truncate text-xs text-muted">
-                      {dossier?.nextAction ?? t("openDossier")}
+                    <span className="block truncate text-xs text-muted">
+                      {row.nextLine ?? t("openDossier")}
                     </span>
                   </span>
                 </button>

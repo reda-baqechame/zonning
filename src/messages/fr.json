@@ -463,7 +463,11 @@
       "estimated": "estimé",
       "buyDocumentsYes": "Acheter les documents SEAO",
       "buyDocumentsNo": "Ne pas acheter les documents tout de suite",
-      "buildProposal": "Préparer la soumission"
+      "buildProposal": "Préparer la soumission",
+      "rowMeta": "{win} % · {blockers} bloqueur(s)",
+      "trackContract": "Suivre ce contrat",
+      "tracking": "Suivi actif dans le pipeline",
+      "addendaWarning": "{count} addenda indexé(s) — relire avant toute soumission."
     },
     "briefing": {
       "title": "File de décisions du jour",
