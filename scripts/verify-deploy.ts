@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { loadProdEnv } from "./load-prod-env";
 import { getBootstrapAllowlist, getActiveDatasetIds, COVERAGE_CITIES, getDatasetCount, getRegisteredSourceCount } from "../src/lib/datasets/registry";
+import { honestCoverageCount } from "../src/lib/quebec-coverage";
 import { collectEnvIssues } from "../src/lib/env";
 
 loadProdEnv();
@@ -79,7 +80,7 @@ async function main() {
     { name: "sync health (auth)", run: async () => (await check("/api/sync/health")).ok },
     { name: "sync status (auth)", run: async () => (await check("/api/sync/status")).ok },
     {
-      name: `public stats (${getDatasetCount()} sync-enabled, ${COVERAGE_CITIES.length} cities)`,
+      name: `public stats (${getDatasetCount()} sync-enabled, ${honestCoverageCount()} covered cities)`,
       run: async () => {
         const { ok, json } = await check("/api/stats/public");
         if (!ok || !json) return false;
@@ -89,15 +90,58 @@ async function main() {
           json.datasetCount === expected ||
           json.datasetCount === registered ||
           (typeof json.datasetCount === "number" && json.datasetCount >= expected);
+        // coverageCities is now the HONEST count (sync-enabled permit feeds
+        // only), not COVERAGE_CITIES.length which counts placeholders too.
+        const honest = honestCoverageCount();
         const citiesOk =
-          json.coverageCities === COVERAGE_CITIES.length && Array.isArray(json.cities);
+          json.coverageCities === honest && Array.isArray(json.cities);
         console.log(
-          `datasetCount=${json.datasetCount} (expect ${expected} or ${registered}), cities=${json.coverageCities}`
+          `datasetCount=${json.datasetCount} (expect ${expected} or ${registered}), honestCities=${json.coverageCities}/${honest}`
         );
         return countOk && citiesOk;
       },
     },
     { name: "coverage public API", run: async () => (await check("/api/coverage/public")).ok },
+    {
+      name: "feed permit carries derived value + contact + parcel",
+      run: async () => {
+        const res = await fetch(`${base}/api/feed?limit=20&locale=fr`);
+        const json = (await res.json()) as {
+          items?: {
+            kind: string;
+            opportunityDossier?: {
+              valueEstimate?: { kind: string; basis?: string[] };
+              contactLeads?: { permit?: { note?: string } };
+              parcelVerdict?: { status: string };
+            };
+          }[];
+        };
+        const permits = (json.items ?? []).filter((i) => i.kind === "permit");
+        const withValue = permits.filter((p) => p.opportunityDossier?.valueEstimate);
+        const withContact = permits.filter((p) => p.opportunityDossier?.contactLeads);
+        const withParcel = permits.filter((p) => p.opportunityDossier?.parcelVerdict);
+        console.log(
+          `permits=${permits.length} value=${withValue.length} contact=${withContact.length} parcel=${withParcel.length}`,
+        );
+        if (withValue[0]) {
+          const v = withValue[0].opportunityDossier!.valueEstimate!;
+          console.log(`  valueEstimate.kind=${v.kind} basis0="${v.basis?.[0] ?? ""}"`);
+        }
+        if (withContact[0]) {
+          console.log(
+            `  contactLeads note: "${withContact[0].opportunityDossier!.contactLeads!.permit?.note?.slice(0, 70)}"`,
+          );
+        }
+        // Hard requirement: at least one permit must carry the new intelligence,
+        // or the deploy is not "working" regardless of HTTP 200s.
+        return (
+          permits.length > 0 &&
+          withValue.length > 0 &&
+          withContact.length > 0 &&
+          withParcel.length > 0
+        );
+      },
+    },
     { name: "digest preview", run: async () => (await check("/api/digest")).ok },
     {
       name: "map overlays",
