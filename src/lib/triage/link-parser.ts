@@ -26,7 +26,14 @@ export type ParsedTriageLink = {
   resolvable: boolean;
 };
 
-const SEAO_HOSTS = ["seao.ca", "www.seao.ca", "seao.com", "www.seao.com"];
+const SEAO_HOSTS = [
+  "seao.ca",
+  "www.seao.ca",
+  "seao.com",
+  "www.seao.com",
+  "seao.gouv.qc.ca",
+  "www.seao.gouv.qc.ca",
+];
 const CANADABUYS_HOSTS = [
   "canadabuys.canada.ca",
   "www.canadabuys.canada.ca",
@@ -44,11 +51,21 @@ function hostOf(url: URL): string {
  * /avis/123456). Returns null when none is found.
  */
 function extractSeaoId(url: URL): string | null {
+  const itemId =
+    url.searchParams.get("ItemId") ??
+    url.searchParams.get("itemId") ??
+    url.searchParams.get("itemid");
+  if (itemId && /^[0-9a-f-]{8,}$/i.test(itemId)) return itemId;
+
   const q = url.searchParams.get("id") ?? url.searchParams.get("avis") ?? url.searchParams.get("Av");
   if (q && /^\d{3,}$/.test(q)) return q;
   const m = url.pathname.match(/\/(?:avis|notice|item)\/(\d{3,})/i);
   if (m) return m[1];
   return null;
+}
+
+function isSeaoHost(host: string): boolean {
+  return SEAO_HOSTS.some((h) => host === h) || host.endsWith(".seao.ca") || host.startsWith("seao.");
 }
 
 /** Extract a CanadaBuys reference / solicitation number token. */
@@ -81,14 +98,15 @@ export function parseTriageLink(raw: string): ParsedTriageLink {
 
   const host = hostOf(url);
 
-  if (SEAO_HOSTS.some((h) => host === h)) {
+  if (isSeaoHost(host)) {
     const id = extractSeaoId(url);
     return {
       source: "seao",
       sourceId: id,
       sourceLabel: "SEAO",
       host,
-      looksLikeOpportunity: Boolean(id) || /avis|notice|recherche/i.test(url.pathname + url.search),
+      looksLikeOpportunity:
+        Boolean(id) || /avis|notice|recherche|consulter|appel/i.test(url.pathname + url.search),
       resolvable: Boolean(id),
     };
   }
@@ -105,12 +123,13 @@ export function parseTriageLink(raw: string): ParsedTriageLink {
     };
   }
 
-  // Municipal: a .quebec.ca, gouv.qc.ca city, or ville.* host that is not SEAO.
+  // Municipal: city hosts — never classify official SEAO domains as municipal.
   const isMunicipal =
-    /ville\./i.test(host) ||
-    /\.quebec\.ca$/i.test(host) ||
-    /\.qc\.ca$/i.test(host) ||
-    /municipal|appels?-?d-?offres|soumission/i.test(url.pathname);
+    !isSeaoHost(host) &&
+    (/ville\./i.test(host) ||
+      /\.quebec\.ca$/i.test(host) ||
+      (/\.qc\.ca$/i.test(host) && !host.includes("seao")) ||
+      /municipal|appels?-?d-?offres|soumission/i.test(url.pathname));
   if (isMunicipal) {
     const id = url.searchParams.get("id");
     return {

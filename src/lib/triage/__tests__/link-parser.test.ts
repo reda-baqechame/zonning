@@ -36,6 +36,22 @@ describe("parseTriageLink", () => {
     expect(r.resolvable).toBe(false);
   });
 
+  it("detects seao.gouv.qc.ca ItemId UUID", () => {
+    const url =
+      "https://seao.gouv.qc.ca/avis/consulter?ItemId=b65c1ab0-3108-4a2e-9f3a-1c2d3e4f5a6b";
+    const r = parseTriageLink(url);
+    expect(r.source).toBe("seao");
+    expect(r.sourceId).toBe("b65c1ab0-3108-4a2e-9f3a-1c2d3e4f5a6b");
+    expect(r.resolvable).toBe(true);
+    expect(r.looksLikeOpportunity).toBe(true);
+  });
+
+  it("does not classify seao.gouv.qc.ca as municipal", () => {
+    const r = parseTriageLink("https://seao.gouv.qc.ca/recherche");
+    expect(r.source).not.toBe("municipal");
+    expect(r.source).toBe("seao");
+  });
+
   it("returns unknown for garbage", () => {
     const r = parseTriageLink("   ");
     expect(r.source).toBe("unknown");

@@ -1,12 +1,6 @@
-import { requireOnboardingComplete } from "@/lib/require-page";
 import TriageClient from "./TriageClient";
 
-export default async function TriagePage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
-  await requireOnboardingComplete(locale);
+/** Public moat — paste-link triage matches the unauthenticated /api/triage API. */
+export default function TriagePage() {
   return <TriageClient />;
 }

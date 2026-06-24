@@ -186,9 +186,16 @@ async function resolveIndexedTender(
   sourceId: string | null,
 ): Promise<ResolvedTender | null> {
   if (!sourceId) return null;
-  // SEAO OCDS external ids are stored on Tender.externalId. Try a few matches.
-  const candidates = [sourceId, `${source}-${sourceId}`, sourceId.replace(/^0+/, "")];
-  for (const candidate of candidates) {
+  const normalized = sourceId.trim();
+  const candidates = [
+    normalized,
+    `${source}-${normalized}`,
+    normalized.replace(/^0+/, ""),
+    `ItemId=${normalized}`,
+    `itemId=${normalized}`,
+  ];
+  const unique = [...new Set(candidates.filter(Boolean))];
+  for (const candidate of unique) {
     const t = await prisma.tender.findFirst({
       where: {
         OR: [

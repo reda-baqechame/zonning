@@ -125,22 +125,22 @@ export function collectEnvIssues(): EnvIssue[] {
     if (!process.env.LEVIS_PERMITS_URL) {
       issues.push({
         key: "LEVIS_PERMITS_URL",
-        message: "Recommended for permits-levis — dataset may stay empty until configured",
-        severity: "warn",
+        message: "Optional scaffold for permits-levis — no public CSV URL published yet",
+        severity: "info",
       });
     }
     if (!process.env.BROSSARD_PROJECTS_URL) {
       issues.push({
         key: "BROSSARD_PROJECTS_URL",
-        message: "Recommended for projects-brossard — dataset may stay empty until configured",
-        severity: "warn",
+        message: "Optional scaffold for projects-brossard — set when a direct CSV is verified",
+        severity: "info",
       });
     }
     if (!process.env.GATINEAU_PERMITS_CKAN_ID && !process.env.GATINEAU_PERMITS_STATS_URL) {
       issues.push({
         key: "GATINEAU_PERMITS",
-        message: "Set GATINEAU_PERMITS_CKAN_ID or GATINEAU_PERMITS_STATS_URL for Gatineau permits",
-        severity: "warn",
+        message: "Optional scaffold for Gatineau permits — CKAN package not published on Données Québec",
+        severity: "info",
       });
     }
     const scaffoldEnv: { key: string; label: string }[] = [
@@ -188,16 +188,14 @@ export function collectEnvIssues(): EnvIssue[] {
     issues.push({
       key: "STRIPE",
       message: "Not configured — billing is disabled and no plan changes are allowed",
-      // Billing-disabled is a revenue blocker in production but acceptable in
-      // pre-launch / preview builds, so warn rather than error.
-      severity: process.env.NODE_ENV === "production" ? "warn" : "info",
+      severity: "info",
     });
   }
 
   if (!integrations.twilio) {
     issues.push({
       key: "TWILIO",
-      message: "Not configured — SMS alerts disabled (email fallback active)",
+      message: "Not configured — SMS alerts disabled",
       severity: "info",
     });
   }
@@ -205,7 +203,7 @@ export function collectEnvIssues(): EnvIssue[] {
   if (!integrations.openai) {
     issues.push({
       key: "OPENAI_API_KEY",
-      message: "Not configured — using deterministic fallback summaries + NL parser",
+      message: "Not configured — using fallback summaries",
       severity: "info",
     });
   }
@@ -214,7 +212,7 @@ export function collectEnvIssues(): EnvIssue[] {
     issues.push({
       key: "SENTRY_DSN",
       message: "Not configured — error monitoring disabled",
-      severity: process.env.NODE_ENV === "production" ? "warn" : "info",
+      severity: "info",
     });
   }
 

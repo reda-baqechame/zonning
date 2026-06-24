@@ -33,7 +33,7 @@ import {
   assembleCompliance,
   productionComplianceDeps,
 } from "@/lib/compliance/contractor-compliance";
-import { nameToNeq, productionLookups } from "@/lib/compliance/neq-resolver";
+import { resolveWinnerIdentifiers } from "@/lib/compliance/neq-resolver";
 import { buildGovernmentReadinessPassport, profileFromUser } from "@/lib/readiness-passport";
 import { getIncumbentIntelligence } from "@/lib/tenders/incumbent";
 
@@ -385,28 +385,11 @@ export async function GET(req: NextRequest) {
       let tenderCompliance;
       const winner = tenderContactLeads?.tender?.awardedContractor?.name;
       if (winner) {
-        const lookups = productionLookups();
-        const candidates = await nameToNeq(winner, lookups.byName).catch(() => []);
-        const best = candidates[0];
-        const neq = best?.neq;
-        if (neq) {
-          tenderCompliance = await assembleCompliance(
-            { neq },
-            productionComplianceDeps(),
-          ).catch(() => undefined);
-        } else {
-          const renaHit = await prisma.renaRecord
-            .findFirst({
-              where: { name: { contains: winner.slice(0, 24) } },
-              orderBy: { startDate: "desc" },
-            })
-            .catch(() => null);
-          if (renaHit?.neq) {
-            tenderCompliance = await assembleCompliance(
-              { neq: renaHit.neq },
-              productionComplianceDeps(),
-            ).catch(() => undefined);
-          }
+        const ids = await resolveWinnerIdentifiers(winner).catch(() => null);
+        if (ids?.neq || ids?.licenseNumber) {
+          tenderCompliance = await assembleCompliance(ids, productionComplianceDeps()).catch(
+            () => undefined,
+          );
         }
       }
       const incumbent = await getIncumbentIntelligence(t.unspsc, t.category, t.region).catch(

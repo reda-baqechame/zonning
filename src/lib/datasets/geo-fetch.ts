@@ -69,7 +69,15 @@ export async function fetchDatasetGeoJson(
 
   if (!resourceUrl) return [];
 
-  const data = await fetchJson<GeoCollection>(resourceUrl);
+  let data = await fetchJson<GeoCollection>(resourceUrl);
+  if (
+    (!data?.features || data.features.length === 0) &&
+    cfg.directResourceUrl &&
+    resourceUrl === cfg.directResourceUrl
+  ) {
+    await new Promise((r) => setTimeout(r, 8_000));
+    data = await fetchJson<GeoCollection>(resourceUrl);
+  }
   const features = (data?.features ?? []).slice(0, maxFeatures);
   return reprojectGeoJsonFeatures(features, data?.crs?.properties?.name);
 }

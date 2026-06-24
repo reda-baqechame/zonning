@@ -82,6 +82,7 @@ export class ArcGisFeatureAdapter {
         where,
         outFields,
         returnGeometry: returnGeometry ? "true" : "false",
+        outSR: "4326",
         f: "json",
         resultOffset: String(offset),
         resultRecordCount: String(pageSize),

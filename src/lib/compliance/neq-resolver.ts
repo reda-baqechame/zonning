@@ -1,5 +1,63 @@
 import { prisma } from "@/lib/prisma";
 
+export type WinnerIdentifier = { neq?: string | null; licenseNumber?: string | null };
+
+/**
+ * Resolve NEQ or RBQ license for an awarded contractor name.
+ * Uses enterprise registry, RBQ holder names, and RENA records — never fabricates a match.
+ */
+export async function resolveWinnerIdentifiers(winner: string): Promise<WinnerIdentifier | null> {
+  const trimmed = winner.trim();
+  if (trimmed.length < 3) return null;
+
+  const lookups = productionLookups();
+  const candidates = await nameToNeq(trimmed, lookups.byName).catch(() => []);
+  const named = candidates.find((c) => c.neq && c.confidence !== "low");
+  if (named?.neq) return { neq: named.neq };
+
+  const licenseNeedle = trimmed
+    .replace(/\d{4}-\d{4}(-\d{2})?/g, "")
+    .replace(/\s+(inc\.?|ltd\.?|ltée|limitée|s\.e\.n\.c\.|senc)$/i, "")
+    .trim()
+    .slice(0, 32);
+  if (licenseNeedle.length >= 4) {
+    const licenses = await prisma.rbqLicense.findMany({
+      where: {
+        status: "active",
+        holderName: { contains: licenseNeedle },
+      },
+      take: 8,
+      select: { licenseNumber: true, holderName: true },
+    });
+    const norm = (s: string) =>
+      s
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+    const target = norm(licenseNeedle);
+    const best = licenses
+      .map((l) => ({
+        license: l,
+        score: norm(l.holderName ?? "").includes(target) ? 0 : 1,
+      }))
+      .sort((a, b) => a.score - b.score)[0]?.license;
+    if (best?.licenseNumber) {
+      return { licenseNumber: best.licenseNumber, neq: rbqToNeq(best.licenseNumber) };
+    }
+
+    const renaHit = await prisma.renaRecord
+      .findFirst({
+        where: { name: { contains: licenseNeedle } },
+        orderBy: { startDate: "desc" },
+        select: { neq: true },
+      })
+      .catch(() => null);
+    if (renaHit?.neq) return { neq: renaHit.neq };
+  }
+
+  return null;
+}
+
 /**
  * NEQ resolution. The strongest, most honest link is RBQ-license -> NEQ: the
  * RBQ license number's first 4 digits ARE the NEQ (documented RBQ numbering

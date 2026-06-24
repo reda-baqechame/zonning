@@ -16,6 +16,7 @@ export async function politeFetchWithRetry(
 ): Promise<Response> {
   await politeWait(input);
   const res = await fetchWithRetry(input, init, options);
-  recordOutcome(input, res.ok);
+  // Rate limits (429) are transient — do not trip the host circuit breaker.
+  recordOutcome(input, res.ok || res.status === 429);
   return res;
 }

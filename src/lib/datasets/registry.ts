@@ -492,6 +492,8 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     ckanId: "patrimoine-et-paysages-plan-d-urbanisme-et-de-mobilite-2050",
     sourceUrl:
       "https://donnees.montreal.ca/dataset/patrimoine-et-paysages-plan-d-urbanisme-et-de-mobilite-2050",
+    directResourceUrl:
+      "https://donnees.montreal.ca/fr/dataset/6e89c97b-3786-4aad-a664-a07d31f84b2f/resource/40737e55-a611-4a13-b703-0ea13f5f82be/download/immeubles_patrimoniaux_annexe3_pum.geojson",
     preferredFormat: ["GeoJSON", "CSV", "JSON"],
     defaultLimit: 500,
     productionLimit: 2000,
@@ -1214,6 +1216,8 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     label: "Plan de zonage normalisé v1",
     ckanId: "plan-de-zonage",
     sourceUrl: "https://www.donneesquebec.ca/recherche/dataset/plan-de-zonage",
+    directResourceUrl:
+      "https://www.donneesquebec.ca/recherche/dataset/d1935001-9c0c-432a-ab5e-f519384feb24/resource/a1a8d4f1-2610-4f83-ae47-86f876f32d97/download/planzonage.json",
     preferredFormat: "GeoJSON",
     defaultLimit: 2000,
     productionLimit: 10000,

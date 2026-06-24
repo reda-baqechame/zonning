@@ -24,11 +24,15 @@ export async function fetchZoningStandard(
       .slice(0, limit)
       .map((f, i) => {
         const props = f.properties ?? {};
-        const usages = props.usages ?? props.allowed_uses;
+        const usages = props.usages ?? props.allowed_uses ?? props.USAGES;
         return {
           externalId: String(props.id ?? props.OBJECTID ?? `zon-${i}`),
-          city: String(props.municipalite ?? props.city ?? "").trim() || undefined,
-          zoneCode: String(props.zone ?? props.code ?? props.zonage ?? "").trim() || undefined,
+          city:
+            String(props.MUNICIPALITE ?? props.municipalite ?? props.city ?? "").trim() ||
+            undefined,
+          zoneCode:
+            String(props.NO_ZONAGE ?? props.zone ?? props.code ?? props.zonage ?? "").trim() ||
+            undefined,
           allowedUses: usages
             ? String(usages)
                 .split(/[;,]/)

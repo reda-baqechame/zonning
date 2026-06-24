@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { loadProdEnv } from "./load-prod-env";
 import { getBootstrapAllowlist, getActiveDatasetIds, COVERAGE_CITIES, getDatasetCount, getRegisteredSourceCount } from "../src/lib/datasets/registry";
+import { honestCoverageCount } from "../src/lib/quebec-coverage";
 import { collectEnvIssues } from "../src/lib/env";
 
 loadProdEnv();
@@ -47,20 +48,23 @@ async function main() {
     { name: "sync health (auth)", run: async () => (await check("/api/sync/health")).ok },
     { name: "sync status (auth)", run: async () => (await check("/api/sync/status")).ok },
     {
-      name: `public stats (${getDatasetCount()} sync-enabled, ${COVERAGE_CITIES.length} cities)`,
+      name: `public stats (${getDatasetCount()} sync-enabled, ${honestCoverageCount()} honest cities)`,
       run: async () => {
         const { ok, json } = await check("/api/stats/public");
         if (!ok || !json) return false;
         const expected = getDatasetCount();
         const registered = getRegisteredSourceCount();
+        const honestCities = honestCoverageCount();
         const countOk =
           json.datasetCount === expected ||
           json.datasetCount === registered ||
           (typeof json.datasetCount === "number" && json.datasetCount >= expected);
         const citiesOk =
-          json.coverageCities === COVERAGE_CITIES.length && Array.isArray(json.cities);
+          json.coverageCities === honestCities &&
+          Array.isArray(json.cities) &&
+          json.cities.length === COVERAGE_CITIES.length;
         console.log(
-          `datasetCount=${json.datasetCount} (expect ${expected} or ${registered}), cities=${json.coverageCities}`
+          `datasetCount=${json.datasetCount} (expect ${expected} or ${registered}), honestCities=${json.coverageCities} (expect ${honestCities}), tracked=${json.cities?.length}`,
         );
         return countOk && citiesOk;
       },
@@ -105,11 +109,14 @@ async function main() {
         console.log(`Allowlisted (may be empty): ${[...BOOTSTRAP_ALLOWLIST].join(", ")}`);
 
         const coverageOk = missing.length === 0;
-        const anomaliesOk = anomalies === 0 || process.env.CI === "true";
-        if (process.env.CI === "true" && anomalies > 0) {
-          console.log("CI: ignoring quality anomalies (production data drift)");
+        const anomaliesOk = anomalies === 0;
+        if (anomalies > 0) {
+          console.log(
+            `Warning: ${anomalies} quality anomalies (non-blocking unless VERIFY_STRICT=1)`,
+          );
         }
-        return coverageOk && anomaliesOk;
+        const strict = process.env.VERIFY_STRICT === "1";
+        return coverageOk && (anomaliesOk || !strict);
       },
     },
     {

@@ -20,11 +20,17 @@ export async function fetchCadastre(opts: { limit?: number } = {}): Promise<Cada
       url,
       (attrs, centroid, i) => {
         const lotNumber =
-          String(attrs.lot ?? attrs.no_lot ?? attrs.LOT ?? attrs.NUM_LOT ?? "").trim() ||
-          undefined;
+          String(
+            attrs.NO_LOT ??
+              attrs.no_lot ??
+              attrs.lot ??
+              attrs.LOT ??
+              attrs.NUM_LOT ??
+              "",
+          ).trim() || undefined;
         if (!lotNumber) return null;
         return {
-          externalId: String(attrs.OBJECTID ?? attrs.id ?? `lot-${i}`),
+          externalId: String(attrs.OBJECTID ?? attrs.GlobalID ?? attrs.id ?? `lot-${i}`),
           lotNumber,
           city: String(attrs.municipalite ?? attrs.city ?? attrs.MUNICIPALITE ?? "").trim() || undefined,
           geom: { latitude: centroid.latitude, longitude: centroid.longitude },
@@ -32,7 +38,7 @@ export async function fetchCadastre(opts: { limit?: number } = {}): Promise<Cada
         };
       },
       {
-        outFields: "OBJECTID,lot,no_lot,LOT,NUM_LOT,municipalite,MUNICIPALITE",
+        outFields: "OBJECTID,GlobalID,NO_LOT",
         maxRecords: limit,
         pageSize: 500,
         returnGeometry: true,
