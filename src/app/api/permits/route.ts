@@ -93,6 +93,15 @@ export async function GET(req: NextRequest) {
     take: maxPermits * 2,
   });
 
+  // DIAGNOSTIC (temporary): log the raw runtime type/value of a permit latitude
+  // to pinpoint where coordinate mangling originates in the production runtime.
+  if (permits[0]?.latitude != null) {
+    console.log("[diag] permit[0].latitude typeof:", typeof permits[0].latitude);
+    console.log("[diag] permit[0].latitude value:", permits[0].latitude);
+    console.log("[diag] permit[0].latitude JSON:", JSON.stringify(permits[0].latitude));
+    console.log("[diag] permit[0].latitude String:", String(permits[0].latitude));
+  }
+
   const enriched = await (async () => {
     const competitionMap = await batchCompetitionCounts(permits);
     const getIntel =
