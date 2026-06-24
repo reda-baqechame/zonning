@@ -1,4 +1,5 @@
-import { fetchCkanResourceUrl, fetchJson } from "./client";
+import { fetchCkanResourceUrl } from "./client";
+import { politeFetchWithRetry } from "@/lib/http/polite-fetch";
 import { montrealCkan } from "./adapters/MontrealCkanAdapter";
 import { parseGeoJsonCentroids, type GeoFeatureWithProps } from "./geo";
 import type { DatasetId } from "./registry";
@@ -69,17 +70,35 @@ export async function fetchDatasetGeoJson(
 
   if (!resourceUrl) return [];
 
-  let data = await fetchJson<GeoCollection>(resourceUrl);
-  if (
-    (!data?.features || data.features.length === 0) &&
-    cfg.directResourceUrl &&
-    resourceUrl === cfg.directResourceUrl
-  ) {
-    await new Promise((r) => setTimeout(r, 8_000));
-    data = await fetchJson<GeoCollection>(resourceUrl);
+  const data = await fetchGeoJsonCollection(resourceUrl);
+  if (!data?.features?.length) return [];
+
+  const features = data.features.slice(0, maxFeatures);
+  return reprojectGeoJsonFeatures(features, data.crs?.properties?.name);
+}
+
+/** GeoJSON downloads can be large and rate-limited — retry with generous backoff. */
+async function fetchGeoJsonCollection(url: string): Promise<GeoCollection | null> {
+  const attempts = 5;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await politeFetchWithRetry(url, undefined, {
+        retries: 2,
+        baseDelayMs: 2_000,
+        timeoutMs: 180_000,
+      });
+      if (res.ok) {
+        const data = (await res.json()) as GeoCollection;
+        if (data?.features?.length) return data;
+      }
+    } catch {
+      /* retry below */
+    }
+    if (i < attempts - 1) {
+      await new Promise((r) => setTimeout(r, 12_000 * (i + 1)));
+    }
   }
-  const features = (data?.features ?? []).slice(0, maxFeatures);
-  return reprojectGeoJsonFeatures(features, data?.crs?.properties?.name);
+  return null;
 }
 
 export function mapGeoFeatures<T extends Record<string, unknown>>(

@@ -78,8 +78,18 @@ export async function GET(req: NextRequest) {
   }
 
   if (layer === "zoning") {
+    const mtlFilter =
+      city === "Montréal" || city === "Montreal"
+        ? {
+            latitude: { gte: 45.4, lte: 45.7 },
+            longitude: { gte: -73.95, lte: -73.45 },
+          }
+        : city
+          ? { city }
+          : {};
+
     const zoningPoints = await prisma.zoningPoint.findMany({
-      where: city ? { city } : undefined,
+      where: mtlFilter,
       take: Math.floor(limit * 0.6),
       select: {
         id: true,
@@ -102,13 +112,23 @@ export async function GET(req: NextRequest) {
 
     const polyCap = limit - points.length;
     if (polyCap > 0) {
+      const polyWhere =
+        city === "Montréal" || city === "Montreal"
+          ? {
+              minLat: { gte: 45.4 },
+              maxLat: { lte: 45.7 },
+              minLng: { gte: -73.95 },
+              maxLng: { lte: -73.45 },
+            }
+          : {
+              minLat: { not: null },
+              maxLat: { not: null },
+              minLng: { not: null },
+              maxLng: { not: null },
+            };
+
       const polygons = await prisma.zoningPolygon.findMany({
-        where: {
-          minLat: { not: null },
-          maxLat: { not: null },
-          minLng: { not: null },
-          maxLng: { not: null },
-        },
+        where: polyWhere,
         take: polyCap,
         select: {
           id: true,

@@ -392,7 +392,7 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
   "pum2050-zoning": {
     id: "pum2050-zoning",
     label: "PUM 2050 — intensification et affectation du sol",
-    ckanId: "niveaux-intensification-urbaine-densite-affectation-sol-pum-2050",
+    ckanId: "vmtl-niveaux-intensification-urbaine-densite-affectation-sol-pum-2050",
     sourceUrl:
       "https://donnees.montreal.ca/dataset/niveaux-intensification-urbaine-densite-affectation-sol-pum-2050",
     directResourceUrl:
@@ -404,7 +404,7 @@ export const DATASETS: Record<DatasetId, DatasetConfig> = {
     tier: "weekly",
     syncSource: "montreal-pum2050-zoning",
     city: "Montréal",
-    ckanHost: "montreal",
+    ckanHost: "quebec",
   },
   heritage: {
     id: "heritage",

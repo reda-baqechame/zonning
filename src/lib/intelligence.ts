@@ -243,14 +243,15 @@ export async function getIntelligenceForPermit(permit: {
     const lot = await lookupZoning(permit.latitude, permit.longitude, zoningCity);
 
     if (lot.determination === "confirmed") {
-      intel.layers!.regionalZoning = true;
+      intel.layers!.regionalZoning = lot.sourceUrl?.includes("donneesquebec");
+      intel.layers!.pum2050 = !intel.layers!.regionalZoning;
       intel.zoning = {
         zoneCode: lot.zoneCode,
         landUse: lot.landUse,
         densityZone: lot.landUse,
         regulationUrl: lot.regulationUrl,
         sourceUrl: lot.sourceUrl,
-        source: "regional",
+        source: intel.layers!.pum2050 ? "pum2050" : "regional",
         matchMethod: "parcel_intersection",
         evidenceScope: "parcel",
         determination: "confirmed",

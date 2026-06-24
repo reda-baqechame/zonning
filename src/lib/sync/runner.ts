@@ -22,7 +22,7 @@ import { fetchRbqLicensesPage } from "@/lib/datasets/fetchers/rbq";
 import { fetchCityPermitsPaginated, fetchLevisPermits } from "@/lib/datasets/fetchers/city-permits";
 import { fetchHeritageSitesPage } from "@/lib/datasets/fetchers/heritage";
 import { fetchPermitStats } from "@/lib/datasets/fetchers/permit-stats";
-import { fetchPum2050Zoning } from "@/lib/datasets/fetchers/pum2050-zoning";
+import { fetchPum2050Zoning, fetchPum2050ZoningPolygons } from "@/lib/datasets/fetchers/pum2050-zoning";
 import { fetchContaminationGtc } from "@/lib/datasets/fetchers/contamination-gtc";
 import {
   fetchHeritageLpc,
@@ -1335,24 +1335,78 @@ export async function syncPum2050Zoning(): Promise<SyncResult> {
         ],
       },
     });
-    if (invalidStoredCoordinates === 0) {
+    const storedPoints = await prisma.zoningPoint.count({
+      where: { externalId: { startsWith: "pum2050-" } },
+    });
+    const storedPolygons = await prisma.zoningPolygon.count({
+      where: { externalId: { startsWith: "pum2050-poly:" } },
+    });
+    if (invalidStoredCoordinates === 0 && storedPoints > 0 && storedPolygons > 0) {
       const skipped = await trySkipUnchangedWeekly("pum2050-zoning");
       if (skipped) return skipped;
     }
-    const remote = await fetchPum2050Zoning();
+
+    const [remote, polygons] = await Promise.all([
+      fetchPum2050Zoning(),
+      fetchPum2050ZoningPolygons(),
+    ]);
+
     if (remote.length > 0) {
       await prisma.zoningPoint.deleteMany({
         where: { externalId: { startsWith: "pum2050-" } },
       });
     }
-    const { processed } = await upsertZoningPointBatch(remote);
+    const { processed: pointCount } = await upsertZoningPointBatch(remote);
+
+    let polyCount = 0;
+    if (polygons.length > 0) {
+      await prisma.zoningPolygon.deleteMany({
+        where: { externalId: { startsWith: "pum2050-poly:" } },
+      });
+      const batch = await transactionChunkUpsert(polygons, 25, (p) =>
+        prisma.zoningPolygon.upsert({
+          where: { externalId: p.externalId },
+          create: {
+            externalId: p.externalId,
+            city: p.city,
+            borough: p.borough,
+            zoneCode: p.zoneCode,
+            landUse: p.landUse,
+            regulationUrl: p.regulationUrl,
+            geometryJson: p.geometryJson,
+            minLat: p.minLat,
+            maxLat: p.maxLat,
+            minLng: p.minLng,
+            maxLng: p.maxLng,
+            sourceUrl: p.sourceUrl,
+            sourceFetchedAt: new Date(),
+          },
+          update: {
+            borough: p.borough,
+            zoneCode: p.zoneCode,
+            landUse: p.landUse,
+            regulationUrl: p.regulationUrl,
+            geometryJson: p.geometryJson,
+            minLat: p.minLat,
+            maxLat: p.maxLat,
+            minLng: p.minLng,
+            maxLng: p.maxLng,
+            sourceFetchedAt: new Date(),
+          },
+        }),
+      );
+      polyCount = batch.processed;
+    }
+
+    const processed = pointCount + polyCount;
     await persistSourceMetadata("pum2050-zoning");
-    await logSync(cfg.syncSource, remote.length ? "success" : "empty", processed);
+    const hasData = remote.length > 0 || polygons.length > 0;
+    await logSync(cfg.syncSource, hasData ? "success" : "empty", processed);
     return {
       dataset: "pum2050-zoning",
       ok: true,
       processed,
-      source: remote.length ? "live" : "empty",
+      source: hasData ? "live" : "empty",
     };
   });
 }

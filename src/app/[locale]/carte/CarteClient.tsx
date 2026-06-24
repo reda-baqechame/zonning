@@ -83,7 +83,11 @@ export default function CarteClient({ layers }: { layers: LayerInfo[] }) {
           return;
         }
 
-        const res = await fetch(`/api/map/layer?layer=${active}&limit=500`);
+        const layerUrl =
+          active === "zoning"
+            ? `/api/map/layer?layer=${active}&limit=500&city=${encodeURIComponent("Montréal")}`
+            : `/api/map/layer?layer=${active}&limit=500`;
+        const res = await fetch(layerUrl);
         const d = await res.json();
         if (cancelled) return;
         const kind = OVERLAY_KIND[active as keyof typeof OVERLAY_KIND];
