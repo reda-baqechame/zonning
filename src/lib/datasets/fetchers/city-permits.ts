@@ -10,6 +10,7 @@ import {
 } from "../parser";
 import type { PermitRecord } from "./permits";
 import { assessPermitQuality, buildPermitExternalId } from "@/lib/permits/quality";
+import { parseCoordinate } from "@/lib/permits/coordinate";
 
 export type CityPermitDatasetId =
   | "permits-laval"
@@ -102,8 +103,8 @@ export function parsePermitRows(
       workType: pick(row, "nature_travaux", "description", "DESCRIPTION") || undefined,
       borough: pick(row, "arrondissement", "secteur", "quartier", "ARRONDISSEMENT") || undefined,
       address,
-      latitude: parseFloatSafe(pick(row, "latitude", "lat", "y", "LATITUDE")),
-      longitude: parseFloatSafe(pick(row, "longitude", "long", "x", "lon", "LONGITUDE")),
+      latitude: parseCoordinate(pick(row, "latitude", "lat", "y", "LATITUDE")),
+      longitude: parseCoordinate(pick(row, "longitude", "long", "x", "lon", "LONGITUDE")),
       estimatedCost: parseMoney(
         pick(row, "cout_estime", "cout", "montant", "COUT_ESTIME", "valeur_travaux", "cout_permis"),
       ),

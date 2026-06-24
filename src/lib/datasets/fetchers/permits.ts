@@ -1,6 +1,7 @@
 import { assessPermitQuality, buildPermitExternalId } from "@/lib/permits/quality";
 import { fetchCkanDatastoreSearch, fetchCkanPackage, fetchCkanResourceUrl, fetchText } from "../client";
 import { parseCsvLine, parseDate, parseFloatSafe, parseMoney, pick } from "../parser";
+import { parseCoordinate } from "@/lib/permits/coordinate";
 import { DATASETS, getSyncLimit } from "../registry";
 
 export type PermitRecord = {
@@ -84,8 +85,8 @@ export function parsePermitRows(
       address,
       matricule: pick(row, "matricule", "idu", "no_matricule", "matricule83") || undefined,
       city: "Montréal",
-      latitude: parseFloatSafe(pick(row, "latitude", "lat", "y")),
-      longitude: parseFloatSafe(pick(row, "longitude", "long", "x", "lon")),
+      latitude: parseCoordinate(pick(row, "latitude", "lat", "y")),
+      longitude: parseCoordinate(pick(row, "longitude", "long", "x", "lon")),
       estimatedCost: parseMoney(
         pick(row, "cout_estime", "cout", "estimated_cost", "valeur", "montant"),
       ),

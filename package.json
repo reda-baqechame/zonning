@@ -39,7 +39,8 @@
     "discover:quebec": "npx tsx scripts/discover-quebec-sources.ts",
     "harvest:quebec": "npx tsx scripts/harvest-quebec.ts",
     "vercel:plan": "npx tsx scripts/use-vercel-plan.ts",
-    "setup:links": "scripts/open-setup-links.bat"
+    "setup:links": "scripts/open-setup-links.bat",
+    "repair:coordinates": "npx tsx scripts/repair-quebec-coordinates.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.8.0",
