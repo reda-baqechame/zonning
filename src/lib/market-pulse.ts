@@ -7,6 +7,8 @@ import {
   getPermitCoverageStatusForCity,
   RGM_CITIES,
   QUEBEC_INTEL_REFRESH_IDS,
+  honestCoverageCount,
+  citiesWithoutOpenFeed,
 } from "@/lib/quebec-coverage";
 import {
   COVERAGE_CITIES,
@@ -60,6 +62,7 @@ export type MarketPulseStats = {
   permitsLastSuccessAt: string | null;
   datasetCount: number;
   coverageCities: number;
+  uncoveredCities: string[];
   registeredSources: number;
   searchableMunicipalities: number;
   cities: string[];
@@ -267,7 +270,8 @@ async function loadMarketPulseStats(): Promise<MarketPulseStats> {
     contracts,
     permitsLastSuccessAt: permitState?.lastSuccessAt?.toISOString() ?? null,
     datasetCount: getDatasetCount(),
-    coverageCities: COVERAGE_CITIES.length,
+    coverageCities: honestCoverageCount(),
+    uncoveredCities: citiesWithoutOpenFeed(),
     registeredSources: getRegisteredSourceCount(),
     searchableMunicipalities: cityBreakdown.filter((city) => city.totalPermits > 0).length,
     cities: [...COVERAGE_CITIES],

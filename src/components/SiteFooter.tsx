@@ -1,12 +1,14 @@
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
-import { COVERAGE_CITIES, getDatasetCount } from "@/lib/datasets/registry";
+import { getDatasetCount } from "@/lib/datasets/registry";
+import { honestCoverageCount } from "@/lib/quebec-coverage";
 
 export async function SiteFooter() {
   const t = await getTranslations("legal");
   const f = await getTranslations("footer");
   const n = await getTranslations("nav");
   const registeredSources = getDatasetCount();
+  const honestCities = honestCoverageCount();
 
   return (
     <footer className="border-t border-line bg-white py-10">
@@ -16,8 +18,8 @@ export async function SiteFooter() {
           {f("trustTruth", {
             indexed: registeredSources,
             sources: registeredSources,
-            searchable: COVERAGE_CITIES.length,
-            monitored: COVERAGE_CITIES.length,
+            searchable: honestCities,
+            monitored: honestCities,
           })}
         </p>
         <nav className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-muted">

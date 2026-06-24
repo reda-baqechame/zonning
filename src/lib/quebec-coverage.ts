@@ -224,3 +224,27 @@ export function citySourceLabel(city: (typeof COVERAGE_CITIES)[number]): string 
   if (!datasetId) return DATASETS["projects-brossard"].label;
   return DATASETS[datasetId].label;
 }
+
+/**
+ * A city is "honestly covered" only when it has a permit dataset that is
+ * sync-enabled (not document_only / unavailable / a search placeholder).
+ * Counting a placeholder city as covered is what made the app feel generic —
+ * the public coverage surface must respect this invariant.
+ */
+export function cityIsHonestlyCovered(city: string): boolean {
+  const datasetId =
+    CITY_TO_PERMIT_DATASET[city as (typeof COVERAGE_CITIES)[number]] ??
+    (city === "Montréal" ? ("permits" as DatasetId) : null);
+  if (!datasetId) return false;
+  return isDatasetSyncEnabled(datasetId);
+}
+
+/** Number of cities with a real, sync-enabled permit feed. */
+export function honestCoverageCount(): number {
+  return COVERAGE_CITIES.filter((c) => cityIsHonestlyCovered(c)).length;
+}
+
+/** Cities that are registered but have no open permit feed yet. */
+export function citiesWithoutOpenFeed(): string[] {
+  return COVERAGE_CITIES.filter((c) => !cityIsHonestlyCovered(c));
+}
