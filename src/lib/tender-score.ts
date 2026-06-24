@@ -5,6 +5,7 @@ import {
   type RankingConfidence,
   type RankingReason,
 } from "@/lib/pipeline-score";
+import { classifyContractorTender } from "@/lib/contractor-fit";
 
 export type TenderScoreInput = {
   title: string;
@@ -80,12 +81,13 @@ export function computeTenderScore(
       .filter(Boolean)
       .join(" "),
   );
+  const contractorFit = classifyContractorTender(tender);
   const normalizedRegion = normalize(tender.region ?? "");
   const tradeFit = user.trades.length
     ? matchesAny(searchable, user.trades)
       ? 100
       : 20
-    : null;
+    : contractorFit.score;
   const regionFit = user.regions.length
     ? matchesAny(normalizedRegion, user.regions)
       ? 100
@@ -139,13 +141,16 @@ export function computeTenderScore(
   confidence = Math.min(100, confidence);
   const confidenceLevel: RankingConfidence =
     confidence >= 80 ? "high" : confidence >= 55 ? "medium" : "low";
-  const score = Math.max(
+  const uncappedScore = Math.max(
     0,
     Math.min(100, Math.round(combined.fitScore * (0.55 + confidence * 0.0045))),
   );
+  const score = contractorFit.contractorWork
+    ? uncappedScore
+    : Math.min(uncappedScore, 38);
 
   const reasons: RankingReason[] = [];
-  if ((tradeFit ?? 0) >= 90)
+  if ((tradeFit ?? 0) >= 90 && contractorFit.contractorWork)
     reasons.push({ id: "trade_match", impact: "positive" });
   else if (tradeFit !== null && tradeFit < 40) {
     reasons.push({ id: "trade_mismatch", impact: "warning" });

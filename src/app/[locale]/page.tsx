@@ -9,6 +9,7 @@ import { getSessionUser } from "@/lib/auth";
 import { formatCad } from "@/lib/format-cad";
 import { fetchMarketPulseStats } from "@/lib/market-pulse";
 import { prisma } from "@/lib/prisma";
+import { classifyContractorTender } from "@/lib/contractor-fit";
 
 const COPY = {
   fr: {
@@ -168,7 +169,7 @@ export default async function HomePage({
         ],
       },
       orderBy: { closesAt: "asc" },
-      take: 7,
+      take: 20,
       select: {
         id: true,
         title: true,
@@ -189,14 +190,20 @@ export default async function HomePage({
   });
 
   const tenderItems: PublicDeskOpportunity[] = tenders.map((tender) => {
+    const fit = classifyContractorTender(tender);
     const daysLeft = tender.closesAt
       ? differenceInCalendarDays(tender.closesAt, now)
       : null;
-    const decision = daysLeft != null && daysLeft <= 7 ? "review" : "watch";
+    const decision: PublicDeskOpportunity["decision"] =
+      fit.contractorWork && daysLeft != null && daysLeft >= 3 && daysLeft <= 21
+        ? "review"
+        : fit.contractorWork
+          ? "qualify"
+          : "watch";
     const deadline = tender.closesAt ? dateFormatter.format(tender.closesAt) : null;
     return {
       id: `tender:${tender.id}`,
-      kind: "tender",
+      kind: "tender" as const,
       title: tender.title,
       location: tender.region ?? tender.organization ?? "Québec",
       organization: tender.organization ?? copy.seaoSource,
@@ -205,11 +212,16 @@ export default async function HomePage({
         : copy.valueUnknown,
       dateLabel: deadline ? interpolate(copy.closes, deadline) : copy.deadlineUnknown,
       decision,
-      reason: copy.tenderDecision,
+      reason: fit.contractorWork
+        ? copy.tenderDecision
+        : locale === "fr"
+          ? "Dossier lié au chantier mais pas encore qualifié: vérifiez les documents avant de déplacer du temps d'estimation."
+          : "Jobsite-related file, not yet qualified: verify documents before moving estimating time.",
       confirmed: [
         copy.tenderConfirmed,
         copy.sourceConfirmed,
         ...(deadline ? [copy.dateConfirmed] : []),
+        ...(locale === "fr" ? fit.reasonsFr : fit.reasonsEn).slice(0, 1),
       ],
       checks: [
         copy.documentsCheck,
@@ -220,7 +232,7 @@ export default async function HomePage({
       sourceUrl: tender.sourceUrl,
       sourceLabel: copy.seaoSource,
     };
-  });
+  }).filter((item) => item.decision !== "watch").slice(0, 7);
 
   const permitItems: PublicDeskOpportunity[] = permits.map((permit) => {
     const observed = permit.issueDate ? dateFormatter.format(permit.issueDate) : null;

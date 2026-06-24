@@ -7,6 +7,7 @@ import { Lock } from "lucide-react";
 import { LeadCard } from "@/components/LeadCard";
 import { Button, EmptyState, SkeletonList } from "@/components/ui";
 import type { LeadSignal } from "@/lib/lead-signals";
+import { classifyContractorTender } from "@/lib/contractor-fit";
 
 type PermitItem = {
   id: string;
@@ -36,42 +37,12 @@ type TenderItem = {
 };
 
 const SAMPLE_LIMIT = 10;
-const CONSTRUCTION_TERMS = [
-  "construction",
-  "renovation",
-  "rénovation",
-  "refection",
-  "réfection",
-  "travaux",
-  "toiture",
-  "batiment",
-  "bâtiment",
-  "ecole",
-  "école",
-  "aqueduc",
-  "route",
-  "pavage",
-  "parc",
-  "electric",
-  "électri",
-  "plomberie",
-  "mecanique",
-  "mécanique",
-];
-const SUMMARY_CONSTRUCTION_TERMS = CONSTRUCTION_TERMS.filter(
-  (term) => term !== "construction",
-);
 
 function isConstructionTender(tender: TenderItem) {
-  const titleAndBuyer = [tender.title, tender.organization]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-  const summary = (tender.plainSummary ?? "").toLowerCase();
-  return (
-    CONSTRUCTION_TERMS.some((term) => titleAndBuyer.includes(term)) ||
-    SUMMARY_CONSTRUCTION_TERMS.some((term) => summary.includes(term))
-  );
+  return classifyContractorTender({
+    title: tender.title,
+    description: tender.plainSummary,
+  }).contractorWork;
 }
 
 export default function FeedPreviewClient({ signedIn }: { signedIn: boolean }) {

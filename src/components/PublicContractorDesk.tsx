@@ -40,9 +40,9 @@ type DeskStats = {
 
 const COPY = {
   fr: {
-    title: "Trouvez les contrats et permis qui valent votre temps.",
+    title: "Le bureau de triage des entrepreneurs RBQ.",
     description:
-      "ZONNING classe les permis municipaux et avis SEAO en actions simples: poursuivre, vérifier, surveiller ou ignorer.",
+      "Repérez les vrais chantiers publics, les permis utiles et les preuves manquantes avant de perdre du temps d'estimation.",
     openCockpit: "Créer mon espace",
     signIn: "Connexion",
     queue: "Décisions du jour",
@@ -62,7 +62,7 @@ const COPY = {
     officialSource: "Ouvrir la source officielle",
     personalize: "Classer selon mon RBQ et mon territoire",
     noMatch: "Aucun dossier ne correspond à cette recherche.",
-    stats: ["permis émis (7 j)", "clôturent jeudi", "avis SEAO ouverts", "jeux de données actifs"],
+    stats: ["permis récents", "clôtures jeudi", "avis à filtrer", "sources suivies"],
     howTitle: "Comment utiliser ZONNING",
     howSteps: [
       "Complétez votre profil RBQ",
@@ -92,9 +92,9 @@ const COPY = {
     },
   },
   en: {
-    title: "Find the contracts and permits worth your time.",
+    title: "The triage desk for RBQ contractors.",
     description:
-      "ZONNING turns municipal permits and SEAO notices into simple actions: pursue, verify, watch, or ignore.",
+      "Spot real public work, useful permit signals, and missing proof before wasting estimating time.",
     openCockpit: "Create my workspace",
     signIn: "Sign in",
     queue: "Today's decisions",
@@ -114,7 +114,7 @@ const COPY = {
     officialSource: "Open official source",
     personalize: "Rank for my RBQ profile and territory",
     noMatch: "No record matches this search.",
-    stats: ["permits issued (7d)", "close Thursday", "open SEAO notices", "active datasets"],
+    stats: ["recent permits", "Thursday closes", "notices to filter", "tracked sources"],
     howTitle: "How to use ZONNING",
     howSteps: [
       "Complete your RBQ profile",
