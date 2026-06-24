@@ -160,11 +160,15 @@ async function main() {
         const { res, json } = await fetchJson(
           "/api/intelligence?address=1000%20Rue%20Saint-Denis&city=Montr%C3%A9al",
         );
-        const body = json as { hasData?: boolean; zoning?: { zoneCode?: string } } | null;
+        const body = json as {
+          hasData?: boolean;
+          intelligence?: { zoning?: { zoneCode?: string; landUse?: string; determination?: string } };
+        } | null;
+        const z = body?.intelligence?.zoning;
         const pass = res.ok && body != null;
         log(
           pass ? "✓" : "✗",
-          `intelligence ${res.status} hasData=${body?.hasData} zoning=${body?.zoning?.zoneCode ?? "—"}`,
+          `intelligence ${res.status} hasData=${body?.hasData} zoning=${z?.determination ?? z?.landUse ?? z?.zoneCode ?? "—"}`,
         );
         return pass;
       },
