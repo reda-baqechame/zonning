@@ -49,6 +49,7 @@ describe("classifyContractorPermit", () => {
   it("does not treat tree cutting or generic certificates as contractor opportunities", () => {
     const tree = classifyContractorPermit({
       permitType: "Permis abattage d'arbres",
+      workType: "Structure fragilisée à corriger",
     });
     const certificate = classifyContractorPermit({
       permitType: "Certificat d'autorisation",

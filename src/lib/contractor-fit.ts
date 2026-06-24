@@ -241,12 +241,23 @@ export function classifyContractorPermit(permit: PermitLike): ContractorTenderFi
   const text = [permitType, workType].filter(Boolean).join(" ");
 
   const hasHighSignal = includesAny(text, HIGH_SIGNAL_PERMIT_TERMS);
-  const hasLowSignal = includesAny(text, LOW_SIGNAL_PERMIT_TERMS);
+  const permitTypeHasHighSignal = includesAny(permitType, HIGH_SIGNAL_PERMIT_TERMS);
+  const permitTypeHasLowSignal = includesAny(permitType, LOW_SIGNAL_PERMIT_TERMS);
   const genericConstructionOnly = [
     "construction",
     "permis construction",
     "permis de construction",
   ].includes(text);
+
+  if (permitTypeHasLowSignal && !permitTypeHasHighSignal) {
+    return {
+      score: 18,
+      level: "weak",
+      contractorWork: false,
+      reasonsFr: ["Le permis ressemble à un petit dossier administratif ou extérieur plutôt qu'à une occasion de chantier."],
+      reasonsEn: ["The permit looks like a small administrative or exterior file rather than a jobsite opportunity."],
+    };
+  }
 
   if (hasHighSignal && !genericConstructionOnly) {
     return {
@@ -255,16 +266,6 @@ export function classifyContractorPermit(permit: PermitLike): ContractorTenderFi
       contractorWork: true,
       reasonsFr: ["Le permis indique des travaux de construction, transformation ou métier à qualifier."],
       reasonsEn: ["The permit indicates construction, renovation, or trade work to qualify."],
-    };
-  }
-
-  if (hasLowSignal) {
-    return {
-      score: 18,
-      level: "weak",
-      contractorWork: false,
-      reasonsFr: ["Le permis ressemble à un petit dossier administratif ou extérieur plutôt qu'à une occasion de chantier."],
-      reasonsEn: ["The permit looks like a small administrative or exterior file rather than a jobsite opportunity."],
     };
   }
 
