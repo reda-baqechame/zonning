@@ -79,6 +79,18 @@ const PROFESSIONAL_SERVICE_TERMS = [
   "consultation",
 ];
 
+const STUDY_OR_MONITORING_TERMS = [
+  "protocole",
+  "suivi ecologique",
+  "suivi écologique",
+  "monitoring",
+  "etude environnementale",
+  "étude environnementale",
+  "caracterisation",
+  "caractérisation",
+  "plan directeur",
+];
+
 const NON_CONTRACTOR_TERMS = [
   "logiciel",
   "informatique",
@@ -113,8 +125,19 @@ export function classifyContractorTender(tender: TenderLike): ContractorTenderFi
 
   const hasExecution = includesAny(text, EXECUTION_TERMS);
   const hasProfessionalService = includesAny(text, PROFESSIONAL_SERVICE_TERMS);
+  const hasStudyOrMonitoring = includesAny(text, STUDY_OR_MONITORING_TERMS);
   const hasNonContractor = includesAny(text, NON_CONTRACTOR_TERMS);
   const hasSupply = includesAny(text, SUPPLY_TERMS);
+
+  if (hasStudyOrMonitoring) {
+    return {
+      score: 12,
+      level: "weak",
+      contractorWork: false,
+      reasonsFr: ["Le dossier semble viser une étude, un protocole ou un suivi plutôt que des travaux à exécuter."],
+      reasonsEn: ["The file appears to target a study, protocol, or monitoring work rather than executable work."],
+    };
+  }
 
   if (hasNonContractor && !hasExecution) {
     return {
