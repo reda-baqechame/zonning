@@ -123,6 +123,73 @@ function unique(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
 }
 
+type TenderSourceProfile = {
+  kind: "seao" | "canadabuys" | "other";
+  sourceLabel: string;
+  officialSourceName: string;
+  openNoticeLabel: string;
+  addendaLabel: string;
+  addendaDocumentLabel: string;
+  officialSiteAction: string;
+};
+
+function tenderSourceProfile(tender: TenderRecord, locale: DossierLocale): TenderSourceProfile {
+  const source = tender.sourceUrl.toLowerCase();
+  const isCanadaBuys =
+    source.includes("open.canada.ca") ||
+    source.includes("canadabuys") ||
+    source.includes("achatsetventes");
+  const isSeao =
+    source.includes("seao") ||
+    source.includes("donneesquebec.ca/recherche/dataset/systeme-electronique-dappel-doffres-seao");
+
+  if (isCanadaBuys) {
+    return {
+      kind: "canadabuys",
+      sourceLabel: copy(locale, "Avis CanadaBuys (données ouvertes fédérales)", "CanadaBuys notice (federal open data)"),
+      officialSourceName: "CanadaBuys",
+      openNoticeLabel: copy(locale, "Ouvrir l'avis CanadaBuys", "Open the CanadaBuys notice"),
+      addendaLabel: copy(locale, "Vérifier échéance et modifications", "Check deadline and amendments"),
+      addendaDocumentLabel: copy(locale, "Registre des modifications ou avis CanadaBuys.", "CanadaBuys amendment/change notice log."),
+      officialSiteAction: copy(
+        locale,
+        "Ouvrir CanadaBuys ou la source fédérale, vérifier l'avis, les modifications et les exigences obligatoires avant de télécharger les documents et avant d'assigner l'estimation.",
+        "Open CanadaBuys or the federal source, verify the notice, amendments, and mandatory requirements before downloading documents and before assigning estimating time.",
+      ),
+    };
+  }
+
+  if (isSeao) {
+    return {
+      kind: "seao",
+      sourceLabel: copy(locale, "Avis public SEAO", "SEAO public tender notice"),
+      officialSourceName: "SEAO",
+      openNoticeLabel: copy(locale, "Ouvrir l'avis SEAO", "Open the SEAO notice"),
+      addendaLabel: copy(locale, "Vérifier échéance et addendas", "Check deadline and addenda"),
+      addendaDocumentLabel: copy(locale, "Registre des addendas/avis modificateurs SEAO.", "SEAO addenda/amendment log."),
+      officialSiteAction: copy(
+        locale,
+        "Ouvrir SEAO, vérifier l'avis, les addendas et les exigences obligatoires avant d'acheter ou télécharger les documents et avant d'assigner l'estimation.",
+        "Open SEAO, verify the notice, addenda, and mandatory requirements before buying/downloading documents and before assigning estimating time.",
+      ),
+    };
+  }
+
+  return {
+    kind: "other",
+    sourceLabel: copy(locale, "Avis public d'approvisionnement", "Public procurement notice"),
+    officialSourceName: copy(locale, "la source officielle", "the official source"),
+    openNoticeLabel: copy(locale, "Ouvrir l'avis officiel", "Open the official notice"),
+    addendaLabel: copy(locale, "Vérifier échéance et modifications", "Check deadline and amendments"),
+    addendaDocumentLabel: copy(locale, "Registre des addendas ou modifications de la source officielle.", "Official-source addenda or amendment log."),
+    officialSiteAction: copy(
+      locale,
+      "Ouvrir la source officielle, vérifier l'avis, les modifications et les exigences obligatoires avant de télécharger les documents et avant d'assigner l'estimation.",
+      "Open the official source, verify the notice, amendments, and mandatory requirements before downloading documents and before assigning estimating time.",
+    ),
+  };
+}
+
 function evidenceGapText(id: string, locale: DossierLocale): string {
   const text: Record<string, [string, string]> = {
     rbq_profile: [
@@ -392,13 +459,18 @@ function buildTenderGovernmentMission(input: {
   recommendation: TriageRecommendation;
   thresholds: ReturnType<typeof evidenceThresholds>;
   ranking: TenderScoreResult;
+  sourceProfile: TenderSourceProfile;
   locale: DossierLocale;
 }): GovernmentMission {
-  const { tender, recommendation, thresholds, ranking, locale } = input;
+  const { tender, recommendation, thresholds, ranking, sourceProfile, locale } = input;
   const deadline = tenderDeadline(tender.closesAt, locale);
   const deadlineBlocksBuying = deadline.deadlineRisk === "urgent" || deadline.deadlineRisk === "missed" || deadline.deadlineRisk === "unknown";
   const missingReadiness = unique([
-    ...thresholds.missingEvidence.map((item) => readinessGapText(item, locale)),
+    ...thresholds.missingEvidence.map((item) =>
+      item === "closing_date"
+        ? copy(locale, `Date et heure exactes de dépôt dans ${sourceProfile.officialSourceName}.`, `Exact ${sourceProfile.officialSourceName} submission date and time.`)
+        : readinessGapText(item, locale),
+    ),
     tender.requiresAmp ? readinessGapText("amp_review_required", locale) : "",
     !tender.organization ? copy(locale, "Organisme acheteur confirmé.", "Confirmed buyer organization.") : "",
   ]);
@@ -416,14 +488,10 @@ function buildTenderGovernmentMission(input: {
       !deadlineBlocksBuying &&
       (recommendation === "act_now" || (recommendation === "verify_first" && ranking.confidence >= 55)),
     ...deadline,
-    officialSiteAction: copy(
-      locale,
-      "Ouvrir SEAO, vérifier l'avis, les addendas et les exigences obligatoires avant d'acheter ou télécharger les documents et avant d'assigner l'estimation.",
-      "Open SEAO, verify the notice, addenda, and mandatory requirements before buying/downloading documents and before assigning estimating time.",
-    ),
+    officialSiteAction: sourceProfile.officialSiteAction,
     requiredDocuments: unique([
       copy(locale, "Documents officiels de l'appel d'offres et devis.", "Official tender documents and specifications."),
-      copy(locale, "Registre des addendas/avis modificateurs SEAO.", "SEAO addenda/amendment log."),
+      sourceProfile.addendaDocumentLabel,
       copy(locale, "Formulaire de soumission et bordereau de prix.", "Bid form and pricing sheet."),
       copy(locale, "Attestation Revenu Québec.", "Revenu Québec attestation."),
       copy(locale, "Déclaration de lobbyisme ou non-collusion si exigée.", "Lobbying or non-collusion declaration if required."),
@@ -440,21 +508,21 @@ function buildTenderGovernmentMission(input: {
     ]),
     taskBoard: [
       {
-        id: "open-seao",
-        title: copy(locale, "Ouvrir l'avis SEAO", "Open the SEAO notice"),
+        id: sourceProfile.kind === "seao" ? "open-seao" : "open-official-notice",
+        title: sourceProfile.openNoticeLabel,
         detail: copy(locale, "Confirmer l'acheteur, le numéro d'avis, les dates, la catégorie et la méthode de dépôt.", "Confirm buyer, notice number, dates, category, and submission method."),
         status: "todo",
         deadlineLabel: deadline.deadlineLabel,
-        buttonLabel: copy(locale, "Ouvrir SEAO", "Open SEAO"),
+        buttonLabel: sourceProfile.kind === "seao" ? copy(locale, "Ouvrir SEAO", "Open SEAO") : copy(locale, "Ouvrir la source", "Open source"),
         href: tender.sourceUrl,
       },
       {
         id: "deadline-addenda",
-        title: copy(locale, "Vérifier échéance et addendas", "Check deadline and addenda"),
-        detail: copy(locale, "Relire les addendas publiés avant toute décision de prix ou dépôt.", "Review published addenda before any pricing or submission decision."),
+        title: sourceProfile.addendaLabel,
+        detail: copy(locale, "Relire les addendas ou modifications publiés avant toute décision de prix ou dépôt.", "Review published addenda or amendments before any pricing or submission decision."),
         status: deadlineStatus,
         deadlineLabel: deadline.deadlineLabel,
-        buttonLabel: copy(locale, "Voir les addendas", "View addenda"),
+        buttonLabel: copy(locale, "Voir les modifications", "View changes"),
         href: tender.sourceUrl,
       },
       {
@@ -492,7 +560,7 @@ function buildTenderGovernmentMission(input: {
     nextButtons: [
       {
         kind: "official_source",
-        label: copy(locale, "Ouvrir SEAO", "Open SEAO"),
+        label: sourceProfile.kind === "seao" ? copy(locale, "Ouvrir SEAO", "Open SEAO") : copy(locale, "Ouvrir la source", "Open source"),
         href: tender.sourceUrl,
       },
       {
@@ -628,13 +696,18 @@ export function buildPermitOpportunityDossier(input: PermitDossierInput): Opport
 export function buildTenderOpportunityDossier(input: TenderDossierInput): OpportunityDossier {
   const { tender, ranking } = input;
   const locale = input.locale ?? "en";
+  const sourceProfile = tenderSourceProfile(tender, locale);
   const limitations = unique([
-    ...ranking.missingEvidence.map((item) => evidenceGapText(item, locale)),
+    ...ranking.missingEvidence.map((item) =>
+      item === "closing_date"
+        ? copy(locale, `La date et l'heure limites de dépôt doivent être confirmées dans ${sourceProfile.officialSourceName}.`, `The bid closing date and time must be confirmed in ${sourceProfile.officialSourceName}.`)
+        : evidenceGapText(item, locale),
+    ),
     tender.requiresAmp ? copy(locale, "L'autorisation AMP doit être confirmée avant de soumissionner.", "AMP authorization must be confirmed before bidding.") : "",
-    tender.amendmentCount ? copy(locale, "Un ou plusieurs addendas doivent être révisés sur SEAO.", "One or more addenda/amendments must be reviewed on SEAO.") : "",
+    tender.amendmentCount ? copy(locale, `Un ou plusieurs addendas ou modifications doivent être révisés sur ${sourceProfile.officialSourceName}.`, `One or more addenda/amendments must be reviewed on ${sourceProfile.officialSourceName}.`) : "",
     !tender.organization ? copy(locale, "L'organisme acheteur n'est pas normalisé.", "Buyer organization is not normalized.") : "",
     !tender.closesAt ? copy(locale, "La date de clôture n'est pas publiée ou normalisée.", "Closing date is not published or not normalized.") : "",
-    copy(locale, "Les documents officiels et addendas SEAO doivent être révisés avant une décision de soumission.", "Official SEAO documents and addenda must be reviewed before a bid/no-bid decision."),
+    copy(locale, `Les documents officiels et modifications ${sourceProfile.officialSourceName} doivent être révisés avant une décision de soumission.`, `Official ${sourceProfile.officialSourceName} documents and amendments must be reviewed before a bid/no-bid decision.`),
   ]);
   const thresholds = evidenceThresholds({
     score: input.score,
@@ -644,9 +717,9 @@ export function buildTenderOpportunityDossier(input: TenderDossierInput): Opport
   });
   const whyRanked = unique([
     ...ranking.reasons.map((reason) => reasonText(reason, locale)),
-    input.hasSimilarAwards ? copy(locale, "Un historique d'attributions SEAO similaires est indexé.", "Similar SEAO award history is indexed.") : "",
+    input.hasSimilarAwards ? copy(locale, "Un historique d'attributions similaires est indexé.", "Similar award history is indexed.") : "",
     input.signals.some((signal) => signal.id === "urgent_close") ? copy(locale, "La date de clôture exige une action rapide.", "Closing date requires near-term action.") : "",
-    input.signals.some((signal) => signal.id === "thursday_seao") ? copy(locale, "Le contrat ferme dans la fenêtre de risque du jeudi SEAO.", "Tender closes on the Thursday SEAO risk window.") : "",
+    input.signals.some((signal) => signal.id === "thursday_seao") ? copy(locale, `Le contrat ferme dans la fenêtre de risque du jeudi ${sourceProfile.officialSourceName}.`, `Tender closes on the Thursday ${sourceProfile.officialSourceName} risk window.`) : "",
     thresholds.canCallTopLead ? copy(locale, "Le seuil de preuve permet un traitement prioritaire.", "Evidence threshold passed for top-lead treatment.") : copy(locale, "Le seuil de preuve ne permet pas de qualifier ce dossier comme prioritaire.", "Evidence threshold not high enough for a top-lead claim."),
   ]);
   const recommendation = thresholds.canCallTopLead
@@ -676,10 +749,10 @@ export function buildTenderOpportunityDossier(input: TenderDossierInput): Opport
     signals: input.signals,
     whyRanked,
     nextAction: thresholds.canCallTopLead
-      ? copy(locale, "Réviser les documents et addendas SEAO, assigner un estimateur, puis décider de soumissionner ou non.", "Review SEAO documents and addenda, assign an estimator, then decide bid/no-bid.")
+      ? copy(locale, `Réviser les documents et modifications ${sourceProfile.officialSourceName}, assigner un estimateur, puis décider de soumissionner ou non.`, `Review ${sourceProfile.officialSourceName} documents and amendments, assign an estimator, then decide bid/no-bid.`)
       : copy(locale, "Vérifier les preuves d'adéquation manquantes avant d'engager du temps d'estimation.", "Review missing fit evidence before committing estimating time."),
     sourceUrl: tender.sourceUrl,
-    sourceLabel: copy(locale, "Avis public SEAO", "SEAO public tender notice"),
+    sourceLabel: sourceProfile.sourceLabel,
     freshness: freshness(tender.publishedAt, tender.publishedAt),
     limitations,
     evidenceThresholds: thresholds,
@@ -702,6 +775,7 @@ export function buildTenderOpportunityDossier(input: TenderDossierInput): Opport
       recommendation,
       thresholds,
       ranking,
+      sourceProfile,
       locale,
     }),
     pipelineBreakdown: ranking.breakdown,

@@ -51,6 +51,42 @@ function matchesAny(haystack: string, needles: string[]): boolean {
   });
 }
 
+const OUT_OF_QUEBEC_REGION_TERMS = [
+  "alberta",
+  "edmonton",
+  "calgary",
+  "british columbia",
+  "colombie-britannique",
+  "vancouver",
+  "ontario",
+  "toronto",
+  "ottawa",
+  "manitoba",
+  "winnipeg",
+  "saskatchewan",
+  "regina",
+  "nova scotia",
+  "nouvelle-ecosse",
+  "halifax",
+  "new brunswick",
+  "nouveau-brunswick",
+  "newfoundland",
+  "terre-neuve",
+  "prince edward island",
+  "ile-du-prince-edouard",
+  "yukon",
+  "northwest territories",
+  "territoires du nord-ouest",
+  "nunavut",
+];
+
+function isClearlyOutsideQuebec(region?: string | null, organization?: string | null): boolean {
+  const text = normalize([region, organization].filter(Boolean).join(" "));
+  if (!text) return false;
+  if (text.includes("quebec") || text.includes("montreal")) return false;
+  return OUT_OF_QUEBEC_REGION_TERMS.some((term) => text.includes(normalize(term)));
+}
+
 export function scoreBidWindow(
   closesAt: Date | null | undefined,
   now = new Date(),
@@ -146,7 +182,9 @@ export function computeTenderScore(
     Math.min(100, Math.round(combined.fitScore * (0.55 + confidence * 0.0045))),
   );
   const score = contractorFit.contractorWork
-    ? uncappedScore
+    ? user.regions.length === 0 && isClearlyOutsideQuebec(tender.region, tender.organization)
+      ? Math.min(uncappedScore, 42)
+      : uncappedScore
     : Math.min(uncappedScore, 38);
 
   const reasons: RankingReason[] = [];

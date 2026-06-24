@@ -205,6 +205,38 @@ describe("OpportunityDossier", () => {
     ]);
   });
 
+  it("labels CanadaBuys records without pretending they are SEAO notices", () => {
+    const dossier = buildTenderOpportunityDossier({
+      tender: {
+        id: "tender-canadabuys",
+        title: "Public building demolition",
+        organization: "Public Services and Procurement Canada",
+        category: "Construction",
+        region: "*Edmonton",
+        estimatedValue: null,
+        publishedAt: new Date(),
+        closesAt: new Date(Date.now() + 9 * 86_400_000),
+        requiresAmp: false,
+        sourceUrl: "https://open.canada.ca/data/en/dataset/6abd20d4-7a1c-4b38-baa2-9525d0bb2fd2",
+        unspsc: null,
+        status: "open",
+      },
+      score: 42,
+      signals: [],
+      ranking: { ...weakTenderRanking, confidence: 55 },
+      locale: "fr",
+    });
+
+    expect(dossier.sourceLabel).toContain("CanadaBuys");
+    expect(dossier.sourceLabel).not.toContain("SEAO");
+    expect(dossier.governmentMission?.officialSiteAction).toContain(
+      "CanadaBuys",
+    );
+    expect(dossier.governmentMission?.taskBoard[0]?.id).toBe(
+      "open-official-notice",
+    );
+  });
+
   it("blocks SEAO document spend when AMP and readiness gaps are unresolved", () => {
     const dossier = buildTenderOpportunityDossier({
       tender: {

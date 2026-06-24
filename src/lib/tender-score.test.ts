@@ -65,4 +65,21 @@ describe("computeTenderScore", () => {
       "limited_evidence",
     );
   });
+
+  it("does not let out-of-Quebec federal construction outrank the Quebec queue without service regions", () => {
+    const result = computeTenderScore(
+      {
+        title: "Abatement, demolition and removal",
+        category: "Construction",
+        region: "*Edmonton",
+        organization: "Public Services and Procurement Canada",
+        closesAt: new Date("2026-06-22T12:00:00Z"),
+        sourceUrl: "https://open.canada.ca/data/en/dataset/6abd20d4-7a1c-4b38-baa2-9525d0bb2fd2",
+      },
+      { trades: [], regions: [], ampAuthorized: false },
+      { now },
+    );
+
+    expect(result.score).toBeLessThanOrEqual(42);
+  });
 });
