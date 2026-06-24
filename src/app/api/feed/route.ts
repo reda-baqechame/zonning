@@ -378,7 +378,7 @@ export async function GET(req: NextRequest) {
       if (winner) {
         const lookups = productionLookups();
         const candidates = await nameToNeq(winner, lookups.byName).catch(() => []);
-        const best = candidates.find((c) => c.confidence !== "low");
+        const best = candidates[0];
         const neq = best?.neq;
         if (neq) {
           tenderCompliance = await assembleCompliance(

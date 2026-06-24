@@ -3,8 +3,11 @@ import { join } from "path";
 
 const ROOT = process.cwd();
 
-export function loadProdEnv() {
-  for (const file of [".env.production.local", ".env.production.secrets", ".env.local", ".env"]) {
+export function loadProdEnv(options?: { productionOnly?: boolean }) {
+  const files = options?.productionOnly
+    ? [".env.production.local", ".env.production.secrets"]
+    : [".env.production.local", ".env.production.secrets", ".env.local", ".env"];
+  for (const file of files) {
     const path = join(ROOT, file);
     if (!existsSync(path)) continue;
     for (const line of readFileSync(path, "utf8").split("\n")) {

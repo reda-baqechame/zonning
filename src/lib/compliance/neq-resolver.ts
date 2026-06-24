@@ -96,30 +96,39 @@ export function productionLookups() {
         : null;
     },
     byName: async (name: string): Promise<EnterpriseLike[]> => {
-      const [enterprises, companies] = await Promise.all([
-        prisma.enterpriseRecord.findMany({
-          where: { name: { contains: name } },
-          take: 10,
-        }),
-        prisma.company.findMany({
-          where: { name: { contains: name } },
-          take: 10,
-        }),
-      ]);
-      const merged = [
-        ...enterprises.map((r) => ({
-          id: r.id,
-          neq: r.neq,
-          name: r.name,
-          legalStatus: r.legalStatus,
-        })),
-        ...companies.map((r) => ({
-          id: r.id,
-          neq: r.neq,
-          name: r.name,
-          legalStatus: "Immatriculée",
-        })),
-      ];
+      const queries = [
+        name,
+        name.replace(/\d{4}-\d{4}/, "").trim(),
+        name.split(/\s+/).slice(-3).join(" "),
+      ].filter((q, i, arr) => q.length >= 3 && arr.indexOf(q) === i);
+
+      const merged: EnterpriseLike[] = [];
+      for (const query of queries) {
+        const [enterprises, companies] = await Promise.all([
+          prisma.enterpriseRecord.findMany({
+            where: { name: { contains: query } },
+            take: 10,
+          }),
+          prisma.company.findMany({
+            where: { name: { contains: query } },
+            take: 10,
+          }),
+        ]);
+        merged.push(
+          ...enterprises.map((r) => ({
+            id: r.id,
+            neq: r.neq,
+            name: r.name,
+            legalStatus: r.legalStatus,
+          })),
+          ...companies.map((r) => ({
+            id: r.id,
+            neq: r.neq,
+            name: r.name,
+            legalStatus: "Immatriculée",
+          })),
+        );
+      }
       const seen = new Set<string>();
       return merged.filter((r) => {
         const key = r.neq ?? r.name ?? r.id;
